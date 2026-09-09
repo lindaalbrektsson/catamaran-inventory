@@ -65,7 +65,16 @@ npm test
 npm run build
 ```
 
-Database tests use embedded PostgreSQL (PGlite) with minimal Supabase Auth roles/functions. They exercise the actual migration and RLS; live Supabase Auth, cookie refresh and PostgREST still require a real project. Browser verification instructions and test coverage will be updated with the vertical slice.
+Database tests use embedded PostgreSQL (PGlite) with minimal Supabase Auth roles/functions. They exercise the actual migration and RLS; live Supabase Auth, cookie refresh and PostgREST still require a real project.
+
+Browser checks (run with Supabase variables unset, before connecting a real project):
+
+```powershell
+npx playwright install chromium
+npm run test:e2e
+```
+
+This starts the real Next.js app and a separate isolated component harness on port 4174. The harness uses test-only fixtures and is never served by the Next.js application. Screenshots are saved to the ignored `artifacts/` folder. See `docs/VERIFICATION.md` for the live acceptance checks still pending.
 
 ## Structure
 
@@ -75,6 +84,8 @@ Database tests use embedded PostgreSQL (PGlite) with minimal Supabase Auth roles
 - `supabase/migrations/` — versioned PostgreSQL schema, RLS and transactional functions
 - `supabase/seed.sql` — optional catalog, with no invented operational quantities
 - `IMPLEMENTATION_PLAN.md` — milestone scope and architecture decisions
+- `docs/ARCHITECTURE.md` — authorization, integrity rules and future module boundaries
+- `tests/` — PostgreSQL, domain, translation and isolated browser tests
 - `.env.example` — required public environment variable names
 - `vercel.json` — standard Next.js build configuration
 

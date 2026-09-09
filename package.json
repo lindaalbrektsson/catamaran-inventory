@@ -2,6 +2,9 @@
   "name": "coral-tours-operations",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -9,7 +12,9 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "format": "prettier --write src tests *.ts *.json *.md",
+    "format:check": "prettier --check src tests *.ts *.json *.md"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -30,13 +35,16 @@
     "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "prettier": "^3.9.6",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "vite": "^8.2.2",
     "vitest": "^5.0.0"
   }
 }
