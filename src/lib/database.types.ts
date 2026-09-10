@@ -84,7 +84,7 @@ type Table<Row, Insert = Partial<Row>> = {
   Update: Partial<Row>;
   Relationships: [];
 };
-// Maintained against migrations through 20260910000100. Regenerate using the
+// Maintained against migrations through 20260910000400. Regenerate using the
 // Supabase CLI after applying migrations, then review the generated diff.
 export type Database = {
   public: {
@@ -114,6 +114,7 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      save_inventory_items: { Args: { p_id: string; p_rows: Json }; Returns: string };
       record_spending: {
         Args: {
           p_id: string;

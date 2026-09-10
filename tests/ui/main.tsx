@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client';
+import { ItemManager } from '../../src/components/item-manager';
 import { ReceiptUploader } from '../../src/components/receipt-uploader';
 import { InventoryList } from '../../src/components/inventory-list';
 import { StockForm } from '../../src/components/stock-form';
@@ -71,19 +72,17 @@ const items = [
   },
 ];
 // Isolated visual fixtures only; none are sent to Supabase or the Next.js app.
-const locations: LocationSummary[] = ['Cas Cat', 'Bodega / Storage'].map(
-  (name, index) => ({
-    id: `10000000-0000-4000-8000-00000000000${index === 0 ? 1 : 3}`,
-    name,
-    type: index === 1 ? 'STORAGE' : 'BOAT',
-    active: true,
-    created_at: '2026-09-09T14:00:00Z',
-    activeItems: index === 1 ? 0 : 3,
-    lowStockCount: index === 0 ? 1 : 0,
-    latestMovement:
-      index === 1 ? null : { created_at: '2026-09-09T14:00:00Z', transaction_type: 'TOUR_USE' },
-  }),
-);
+const locations: LocationSummary[] = ['Cas Cat', 'Bodega / Storage'].map((name, index) => ({
+  id: `10000000-0000-4000-8000-00000000000${index === 0 ? 1 : 3}`,
+  name,
+  type: index === 1 ? 'STORAGE' : 'BOAT',
+  active: true,
+  created_at: '2026-09-09T14:00:00Z',
+  activeItems: index === 1 ? 0 : 3,
+  lowStockCount: index === 0 ? 1 : 0,
+  latestMovement:
+    index === 1 ? null : { created_at: '2026-09-09T14:00:00Z', transaction_type: 'TOUR_USE' },
+}));
 createRoot(document.getElementById('root')!).render(
   <div>
     <aside className="fixed inset-y-0 left-0 hidden w-64 border-r bg-card p-6 md:block">
@@ -102,8 +101,20 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.get('view') === 'receipt' ? (
-          <ReceiptUploader locale={locale} kind="EXPENSE" parentId="70000000-0000-4000-8000-000000000001" requestId="80000000-0000-4000-8000-000000000001" />
+        {params.get('view') === 'items' ? (
+          <ItemManager
+            locale={locale}
+            importing={false}
+            requestId="50000000-0000-4000-8000-000000000001"
+            catalog={{ categories: [item.category!], locations, products: [] }}
+          />
+        ) : params.get('view') === 'receipt' ? (
+          <ReceiptUploader
+            locale={locale}
+            kind="EXPENSE"
+            parentId="70000000-0000-4000-8000-000000000001"
+            requestId="80000000-0000-4000-8000-000000000001"
+          />
         ) : params.get('view') === 'locations' ? (
           <LocationCards locations={locations} locale={locale} />
         ) : params.get('view') === 'detail' ? (

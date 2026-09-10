@@ -1,5 +1,53 @@
 export type Locale = 'en' | 'es';
 export const en = {
+  itemInitialQuantity: 'Initial quantity',
+  installAccepted:
+    'Installation accepted. Follow any browser confirmation, then look for Coral Tours on your home screen or in your apps.',
+  installDismissed:
+    'Installation was dismissed. You can install later from your browser menu when available.',
+  installFailed:
+    'The installation prompt could not open. Try the browser menu, or reopen the app in Chrome or Safari.',
+  installDesktop:
+    'On desktop Chrome or Edge, use the install icon in the address bar or Install app in the browser menu when available.',
+  addItem: 'Add item',
+  downloadTemplate: 'Download Excel template',
+  importItems: 'Import items from Excel',
+  exportItems: 'Export inventory to Excel',
+  itemName: 'Name',
+  itemUnit: 'Unit',
+  itemLocation: 'Location',
+  itemMinimum: 'Minimum stock',
+  itemTarget: 'Target stock',
+  itemCost: 'Estimated unit cost',
+  itemActive: 'Active',
+  itemNotes: 'Notes',
+  itemSave: 'Save item',
+  itemSaved: 'Items saved. Active items are now visible in Inventory.',
+  itemPreview: 'Preview file',
+  itemConfirm: 'Confirm import',
+  itemSkip: 'Skip',
+  itemUpdate: 'Update metadata only',
+  itemCreate: 'Create',
+  itemRow: 'Row',
+  itemChoose: 'Choose…',
+  itemSheet: 'Items',
+  itemInstructions: 'Instructions',
+  currentQuantity: 'Current quantity (read-only)',
+  itemExcelHint:
+    'Use the first sheet, keep English column headers, and enter values only (no formulas). Maximum 200 rows / 1 MB. Use categories, units and locations listed below. Stock: up to 3 decimal places; costs: up to 2. Blank or zero initial quantity creates no movement. Duplicate rows must be resolved before confirmation.',
+  itemExportHint:
+    'Exports are read-only snapshots, not import files. Metadata updates apply to the shared product; existing units cannot change. Existing products cannot receive initial stock from an import. Inactive items are hidden from operational lists.',
+  ITEM_INVALID:
+    'Invalid or missing field, category, unit, location or numeric value. Check minimum and target stock.',
+  ITEM_DUPLICATE:
+    'Duplicate product. Choose skip or metadata update; repeated names within a file must be corrected.',
+  ITEM_STOCK_CONFLICT:
+    'Existing products cannot receive initial stock here. Set Initial quantity to zero or skip.',
+  ITEM_UNIT_CONFLICT: 'An existing product’s unit cannot be changed through import.',
+  ITEM_FILE: 'Use a valid .xlsx template with 1–200 rows, at most 1 MB, and values only.',
+  ITEM_FAILED: 'Could not save. Check your permissions and database setup, then retry.',
+  itemWorking: 'Working…',
+  itemBack: 'Back to Inventory',
   newExpense: 'New expense',
   purchaseCapture: 'Capture purchase receipt',
   purchaseDraft: 'Purchase draft',
@@ -75,11 +123,11 @@ export const en = {
   installApp: 'Install app',
   installHint: 'Keep Coral Tours a tap away on your home screen.',
   installInstructions: 'How to install',
-  installIos:
-    'iPhone: open in Safari, tap Share, then Add to Home Screen and Open as Web App if shown.',
+  installIos: 'To install the app on your iPhone, tap Share and choose Add to Home Screen.',
   installAndroid:
     'Android: open in Chrome, then use Install app or Add to Home screen in the browser menu when available.',
-  installUnavailable: 'Use your browser menu to install when available.',
+  installUnavailable:
+    'Automatic installation is not available in this browser right now. Open the site in Chrome or Safari and follow the instructions below. It may already be installed.',
   brand: 'Coral Tours',
   brandSub: 'BOATS · STOCK · CREW',
   home: 'Home',
@@ -243,6 +291,56 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const es: Record<Key, string> = {
+  itemInitialQuantity: 'Cantidad inicial',
+  installAccepted:
+    'Instalación aceptada. Sigue las indicaciones del navegador y busca Coral Tours en la pantalla de inicio o entre tus aplicaciones.',
+  installDismissed:
+    'Se canceló la instalación. Puedes instalar más tarde desde el menú del navegador cuando esté disponible.',
+  installFailed:
+    'No se pudo abrir la instalación. Usa el menú del navegador o abre la app en Chrome o Safari.',
+  installDesktop:
+    'En Chrome o Edge de escritorio, usa el icono de instalación en la barra de direcciones o Instalar aplicación en el menú, cuando esté disponible.',
+  addItem: 'Agregar artículo',
+  downloadTemplate: 'Descargar plantilla de Excel',
+  importItems: 'Importar artículos desde Excel',
+  exportItems: 'Exportar inventario a Excel',
+  itemName: 'Nombre',
+  itemUnit: 'Unidad',
+  itemLocation: 'Ubicación',
+  itemMinimum: 'Inventario mínimo',
+  itemTarget: 'Inventario objetivo',
+  itemCost: 'Costo unitario estimado',
+  itemActive: 'Activo',
+  itemNotes: 'Notas',
+  itemSave: 'Guardar artículo',
+  itemSaved: 'Artículos guardados. Los artículos activos ya aparecen en Inventario.',
+  itemPreview: 'Vista previa del archivo',
+  itemConfirm: 'Confirmar importación',
+  itemSkip: 'Omitir',
+  itemUpdate: 'Actualizar solo los datos',
+  itemCreate: 'Crear',
+  itemRow: 'Fila',
+  itemChoose: 'Seleccionar…',
+  itemSheet: 'Artículos',
+  itemInstructions: 'Instrucciones',
+  currentQuantity: 'Cantidad actual (solo lectura)',
+  itemExcelHint:
+    'Use la primera hoja y conserve los encabezados en inglés. Ingrese valores, sin fórmulas. Máximo 200 filas / 1 MB. Use las categorías, unidades y ubicaciones indicadas abajo. Inventario: hasta 3 decimales; costos: hasta 2. Una cantidad inicial vacía o cero no crea movimientos. Resuelva los duplicados antes de confirmar.',
+  itemExportHint:
+    'Las exportaciones son consultas, no archivos para importar. Los cambios de datos afectan al producto compartido; no se puede cambiar su unidad. No se puede agregar inventario inicial a productos existentes mediante importación. Los artículos inactivos no aparecen en las listas operativas.',
+  ITEM_INVALID:
+    'Campo, categoría, unidad, ubicación o valor numérico inválido o faltante. Revise el mínimo y el objetivo.',
+  ITEM_DUPLICATE:
+    'Producto duplicado. Elija omitir o actualizar los datos; corrija los nombres repetidos dentro del archivo.',
+  ITEM_STOCK_CONFLICT:
+    'No se permite inventario inicial para productos existentes. Indique cero u omita la fila.',
+  ITEM_UNIT_CONFLICT:
+    'No se puede cambiar la unidad de un producto existente mediante importación.',
+  ITEM_FILE: 'Use la plantilla .xlsx con 1–200 filas, máximo 1 MB y valores sin fórmulas.',
+  ITEM_FAILED:
+    'No se pudo guardar. Revise sus permisos y la configuración de la base de datos e inténtelo de nuevo.',
+  itemWorking: 'Procesando…',
+  itemBack: 'Volver al Inventario',
   newExpense: 'Nuevo gasto',
   purchaseCapture: 'Registrar recibo de compra',
   purchaseDraft: 'Borrador de compra',
@@ -323,7 +421,7 @@ export const es: Record<Key, string> = {
   installHint: 'Abre Coral Tours con un toque desde tu pantalla de inicio.',
   installInstructions: 'Cómo instalar',
   installIos:
-    'iPhone: abre en Safari, toca Compartir y luego Agregar a inicio. Activa Abrir como app web si aparece.',
+    'Para instalar la app en tu iPhone, toca Compartir y selecciona Añadir a pantalla de inicio.',
   installAndroid:
     'Android: abre en Chrome y usa Instalar aplicación o Agregar a la pantalla principal en el menú cuando esté disponible.',
   installUnavailable: 'Usa el menú del navegador para instalar cuando esté disponible.',

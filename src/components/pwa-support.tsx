@@ -8,7 +8,18 @@ type InstallEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 };
-const InstallContext = createContext<InstallEvent | null>(null);
+const InstallContext = createContext<{
+  event: InstallEvent | null;
+  installed: boolean;
+  consume: () => void;
+}>({ event: null, installed: false, consume: () => {} });
+const subscribeDevice = () => () => {};
+function isIos() {
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
 function subscribeOnline(callback: () => void) {
   window.addEventListener('online', callback);
   window.addEventListener('offline', callback);
@@ -35,6 +46,7 @@ function isStandalone() {
 
 export function PwaProvider({ locale, children }: { locale: Locale; children: React.ReactNode }) {
   const [installEvent, setInstallEvent] = useState<InstallEvent | null>(null);
+  const [installed, setInstalled] = useState(false);
   const online = useSyncExternalStore(
     subscribeOnline,
     () => navigator.onLine,
@@ -54,7 +66,10 @@ export function PwaProvider({ locale, children }: { locale: Locale; children: Re
       event.preventDefault();
       setInstallEvent(event as InstallEvent);
     };
-    const installed = () => setInstallEvent(null);
+    const installed = () => {
+      setInstallEvent(null);
+      setInstalled(true);
+    };
     // Prevent known-offline form submissions. No queue or background sync exists.
     const submit = (event: Event) => {
       if (!navigator.onLine) {
@@ -94,7 +109,9 @@ export function PwaProvider({ locale, children }: { locale: Locale; children: Re
     };
   }, []);
   return (
-    <InstallContext.Provider value={installEvent}>
+    <InstallContext.Provider
+      value={{ event: installEvent, installed, consume: () => setInstallEvent(null) }}
+    >
       {!online && (
         <div role="alert" className="border-b bg-warning-soft px-5 py-3 text-sm text-warning">
           <p>{t.offlineBanner}</p>
@@ -109,38 +126,62 @@ export function PwaProvider({ locale, children }: { locale: Locale; children: Re
 }
 
 export function InstallControls({ locale }: { locale: Locale }) {
-  const event = useContext(InstallContext);
-  const [usedEvent, setUsedEvent] = useState<InstallEvent | null>(null);
+  const { event, installed, consume } = useContext(InstallContext);
+  const [feedback, setFeedback] = useState<
+    'installAccepted' | 'installDismissed' | 'installFailed' | null
+  >(null);
+  const [prompting, setPrompting] = useState(false);
+  const ios = useSyncExternalStore(subscribeDevice, isIos, () => false);
   const standalone = useSyncExternalStore(subscribeStandalone, isStandalone, () => false);
   const t = dictionary(locale);
-  if (standalone) return null;
+  if (standalone || installed) return null;
   return (
     <section className="mx-auto mt-6 max-w-lg rounded-xl border bg-card p-4 text-left">
       <h2 className="text-sm font-semibold">{t.installTitle}</h2>
       <p className="mt-2 text-sm text-muted-foreground">{t.installHint}</p>
-      {event && event !== usedEvent && (
+      {ios ? (
+        <p className="mt-3 text-sm leading-6">{t.installIos}</p>
+      ) : (
         <Button
           className="mt-3 w-full"
           variant="outline"
+          disabled={!event || prompting}
           onClick={async () => {
-            setUsedEvent(event);
+            if (!event) {
+              setFeedback('installFailed');
+              return;
+            }
+            consume();
+            setPrompting(true);
+            setFeedback(null);
             try {
               await event.prompt();
-              await event.userChoice;
+              const choice = await event.userChoice;
+              setFeedback(choice.outcome === 'accepted' ? 'installAccepted' : 'installDismissed');
             } catch {
-              /* Browser menu remains available. */
+              setFeedback('installFailed');
+            } finally {
+              setPrompting(false);
             }
           }}
         >
           {t.installApp}
         </Button>
       )}
+      {feedback && (
+        <p role="status" className="mt-3 text-sm leading-6">
+          {t[feedback]}
+        </p>
+      )}
+      {!ios && !event && !prompting && !feedback && (
+        <p className="mt-3 text-sm leading-6">{t.installUnavailable}</p>
+      )}
       <details className="mt-2 text-sm">
         <summary className="min-h-11 cursor-pointer py-3 text-primary">
           {t.installInstructions}
         </summary>
-        <p className="mb-3 leading-6">{t.installIos}</p>
-        <p className="leading-6">{t.installAndroid}</p>
+        {!ios && <p className="leading-6">{t.installAndroid}</p>}
+        <p className="mt-3 leading-6">{t.installDesktop}</p>
       </details>
     </section>
   );

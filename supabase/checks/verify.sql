@@ -11,7 +11,7 @@ md5(replace(p.prosrc,chr(13),'')) as normalized_body_md5,
 has_function_privilege('anon',p.oid,'EXECUTE') as anonymous_can_execute,
 has_function_privilege('authenticated',p.oid,'EXECUTE') as authenticated_can_execute
 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-where (n.nspname='public' and p.proname in ('change_stock','configure_inventory','set_language','transfer_stock','record_spending','reserve_receipt','complete_receipt'))
+where (n.nspname='public' and p.proname in ('change_stock','configure_inventory','set_language','transfer_stock','record_spending','reserve_receipt','complete_receipt','save_inventory_items'))
 or (n.nspname='private' and p.proname in ('current_role','can_access_location','can_move','create_profile','reject_history_change','audit_record','touch_updated_at','can_spend','can_read_receipt','protect_receipt'))
 order by n.nspname,p.proname;
 
