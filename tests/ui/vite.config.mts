@@ -7,6 +7,10 @@ export default defineConfig({
   plugins: [tailwindcss()],
   resolve: {
     alias: [
+      {
+        find: '@/lib/operational-actions',
+        replacement: path.join(root, 'tests/ui/operational-actions.ts'),
+      },
       { find: '@/lib/item-actions', replacement: path.join(root, 'tests/ui/item-actions.ts') },
       { find: 'next/image', replacement: path.join(root, 'tests/ui/image.tsx') },
       {

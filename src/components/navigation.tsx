@@ -10,7 +10,7 @@ export function Navigation({ locale }: { locale: Locale }) {
     { href: '/', label: t.home, icon: House },
     { href: '/inventory', label: t.inventory, icon: Package },
     { href: '/add', label: t.add, icon: Plus },
-    { href: '/expenses', label: t.expenses, icon: ReceiptText },
+    { href: '/expenses', label: t.receipts, icon: ReceiptText },
     { href: '/more', label: t.more, icon: Ellipsis },
   ];
   return (

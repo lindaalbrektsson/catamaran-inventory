@@ -1,4 +1,6 @@
-# Coral Tours Inventory, receipts and Fuel
+> Current simplified workflow: see [Simplified operations](SIMPLIFIED_OPERATIONS.md). The rollout details below describe earlier milestones.
+
+# Catamaran Belize Inventory, receipts and Fuel
 
 Implemented locally on September 10, 2026. All three migrations below were applied to the hosted project on September 10, 2026; all four migration-history entries and live schema/Storage metadata checks passed. Existing authentication and inventory history remain in place.
 
@@ -44,7 +46,7 @@ The receipts migration creates a private JPEG-only, 3 MB Storage bucket and rest
 
 ## Receipt and Fuel behavior
 
-Active Owners and Managers can record an expense or capture a purchase draft, then attach a camera photo or an existing JPEG, PNG or WebP image. Fuel / Combustible is an expense category with amount, BZD/USD currency, boat/location, active payer, payment method, notes and device-local date/time. Transaction details show Belize time.
+Legacy financial records are now owner-only. Operational users use the simplified fuel/store receipt capture described in SIMPLIFIED_OPERATIONS.md. Fuel / Combustible is an expense category with amount, BZD/USD currency, boat/location, active payer, payment method, notes and device-local date/time. Transaction details show Belize time.
 
 Purchase capture is a receipt draft only: no purchasing workflow, line items, stock posting or reimbursement logic is implemented. Expenses are immutable; a future controlled correction workflow is needed for mistakes. Fuel does not yet track litres, engines or tank levels.
 

@@ -1,10 +1,10 @@
 # PWA setup and testing
 
-Implemented and locally verified on 2026-09-10 in the existing Coral Tours project. No deployment, hosted database changes, Auth user changes or stock data were made for this task.
+Implemented and locally verified on 2026-09-10 in the existing Catamaran Belize project. No deployment, hosted database changes, Auth user changes or stock data were made for this task.
 
 ## Implementation
 
-The App Router manifest names **Coral Tours Operations**, with short name **Coral Tours**, standalone display, portrait orientation, root start URL/scope and business/productivity categories. Existing green branding, navigation, accessibility zoom and English/Spanish dictionaries are preserved. iOS receives both mobile-web-app capability tags, Apple title/status-bar metadata and a 180px touch icon. Login and workspace layouts account for safe areas; mobile bottom navigation has matching content clearance.
+The App Router manifest names **Catamaran Belize**, with short name **Catamaran Belize**, standalone display, portrait orientation, root start URL/scope and business/productivity categories. Existing green branding, navigation, accessibility zoom and English/Spanish dictionaries are preserved. iOS receives both mobile-web-app capability tags, Apple title/status-bar metadata and a 180px touch icon. Login and workspace layouts account for safe areas; mobile bottom navigation has matching content clearance.
 
 The native service worker has no library or bundler plugin dependency. `npm run build` and `npm run dev` generate `public/sw.js` and `public/offline.html` from source and the shared dictionary. Registration happens only in production. `npm run start` requires a completed build. The build may show Node's harmless module-type detection warning while reading the TypeScript dictionary.
 
@@ -16,7 +16,7 @@ The worker's version is a hash of its source and public assets. Registration byp
 
 ## Icon source
 
-The existing local `public/icon.svg` sailboat is the temporary branded source. Existing 192px/512px PNGs and the 180px Apple icon are retained. New files are a 32px PNG favicon and an opaque 512px maskable icon with the sailboat scaled to fit the central safe area. Replace the SVG and regenerate the PNG variants when the final Coral Tours logo is available. No remote image is used.
+The existing local `public/icon.svg` sailboat is the temporary branded source. Existing 192px/512px PNGs and the 180px Apple icon are retained. New files are a 32px PNG favicon and an opaque 512px maskable icon with the sailboat scaled to fit the central safe area. Replace the SVG and regenerate the PNG variants when the final Catamaran Belize logo is available. No remote image is used.
 
 ## Local verification
 

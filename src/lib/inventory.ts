@@ -160,7 +160,25 @@ export async function getHistory(locationId: string, productId: string, page: nu
     .order('id', { ascending: false })
     .range((page - 1) * 20, page * 20 - 1);
   if (error) throw new Error('HISTORY_LOAD_FAILED');
-  const ids = [...new Set(data.map((m) => m.performed_by_user_id))];
+  const originalIds = data.flatMap((m) =>
+    m.reverses_transaction_id ? [m.reverses_transaction_id] : [],
+  );
+  const [reversals, originals] = await Promise.all([
+    data.length
+      ? db
+          .from('inventory_transactions')
+          .select('reverses_transaction_id')
+          .in(
+            'reverses_transaction_id',
+            data.map((m) => m.id),
+          )
+      : Promise.resolve({ data: [], error: null }),
+    originalIds.length
+      ? db.from('inventory_transactions').select('*').in('id', originalIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (reversals.error || originals.error) throw new Error('HISTORY_LINKS_FAILED');
+  const ids = [...new Set([...data, ...(originals.data ?? [])].map((m) => m.performed_by_user_id))];
   const profiles = ids.length
     ? await db.from('profiles').select('id,display_name').in('id', ids)
     : { data: [], error: null };
@@ -178,6 +196,17 @@ export async function getHistory(locationId: string, productId: string, page: nu
     movements: data.map((m) => ({
       ...m,
       actor: names.get(m.performed_by_user_id) ?? m.performed_by_user_id,
+      reversed: reversals.data?.some((r) => r.reverses_transaction_id === m.id),
+      original: (() => {
+        const o = originals.data?.find((o) => o.id === m.reverses_transaction_id);
+        return o
+          ? {
+              actor: names.get(o.performed_by_user_id) ?? o.performed_by_user_id,
+              created_at: o.created_at,
+              quantity: o.quantity,
+            }
+          : undefined;
+      })(),
       relatedLocation: m.related_location_id ? locationNames.get(m.related_location_id) : undefined,
     })),
     hasNext: (count ?? 0) > page * 20,

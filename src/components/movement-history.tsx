@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
-import { dictionary, dateTime, number, type Locale, type Key } from '@/lib/i18n';
+import { dictionary, number, type Locale, type Key } from '@/lib/i18n';
+import { LocalTime } from './local-time';
+import { UndoStock } from './undo-stock';
 import type { Movement } from '@/lib/database.types';
 import { Card, CardContent } from './ui/card';
 import { EmptyState } from './empty-state';
@@ -11,12 +13,19 @@ export function MovementHistory({
   page,
   hasNext,
   basePath,
+  viewer,
 }: {
-  movements: (Movement & { actor: string; relatedLocation?: string })[];
+  movements: (Movement & {
+    actor: string;
+    relatedLocation?: string;
+    reversed?: boolean;
+    original?: { actor: string; created_at: string; quantity: number };
+  })[];
   locale: Locale;
   page: number;
   hasNext: boolean;
   basePath: string;
+  viewer?: { id: string; role: string };
 }) {
   const t = dictionary(locale);
   return (
@@ -56,12 +65,24 @@ export function MovementHistory({
                           {m.relatedLocation}
                         </p>
                       )}
-                      <time
-                        dateTime={m.created_at}
-                        className="mt-1 block text-xs text-muted-foreground"
-                      >
-                        {dateTime(m.created_at, locale)}
-                      </time>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        <LocalTime value={m.created_at} locale={locale} />
+                      </p>
+                      {m.original && (
+                        <p className="mt-2 text-xs">
+                          {t.reversesAction}: {m.original.actor} ·{' '}
+                          <LocalTime value={m.original.created_at} locale={locale} /> ·{' '}
+                          {number(m.original.quantity, locale)}
+                        </p>
+                      )}
+                      {m.reversed && <p className="mt-2 text-xs">{t.reversed}</p>}
+                      {viewer &&
+                        !m.reverses_transaction_id &&
+                        !m.reversed &&
+                        (viewer.role === 'OWNER' ||
+                          (viewer.role === 'MANAGER' && viewer.id === m.performed_by_user_id)) && (
+                          <UndoStock id={m.id} locale={locale} />
+                        )}
                       <p className="mt-3 text-xs">
                         {t.previous}: {number(m.previous_quantity, locale)}{' '}
                         <span aria-hidden="true">→</span> {t.resulting}:{' '}

@@ -9,12 +9,12 @@ export default async function Items({
   searchParams: Promise<{ import?: string }>;
 }) {
   const profile = await requireProfile();
-  if (!['OWNER', 'MANAGER'].includes(profile.role)) redirect('/inventory');
+  if (profile.role !== 'OWNER') redirect('/inventory');
   const locale = await getLocale(),
     t = dictionary(locale),
     importing = !!(await searchParams).import;
   return (
-    <div className="page">
+    <div className={importing ? 'page hidden md:block' : 'page'}>
       <h1 className="mb-5 text-2xl font-semibold">{importing ? t.importItems : t.addItem}</h1>
       <ItemManager
         catalog={await itemCatalog()}

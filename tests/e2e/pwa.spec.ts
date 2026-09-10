@@ -6,8 +6,8 @@ test('production PWA metadata, icons and safe public cache', async ({ page, requ
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
   const response = await request.get('/manifest.webmanifest');
   const manifest = await response.json();
-  expect(manifest.name).toBe('Coral Tours Operations');
-  expect(manifest.short_name).toBe('Coral Tours');
+  expect(manifest.name).toBe('Catamaran Belize');
+  expect(manifest.short_name).toBe('Catamaran Belize');
   expect(manifest.display).toBe('standalone');
   expect(manifest.orientation).toBe('portrait');
   expect(manifest.start_url).toBe('/');

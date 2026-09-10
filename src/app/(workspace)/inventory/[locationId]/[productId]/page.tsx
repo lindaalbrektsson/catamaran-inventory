@@ -43,7 +43,13 @@ export default async function ProductDetail({
       )}
       <div className="grid items-start gap-8 xl:grid-cols-[0.9fr_1.1fr]">
         <ProductOverview item={item} role={profile.role} locale={locale} basePath={basePath} />
-        <MovementHistory {...history} locale={locale} page={page} basePath={basePath} />
+        <MovementHistory
+          {...history}
+          viewer={profile}
+          locale={locale}
+          page={page}
+          basePath={basePath}
+        />
       </div>
     </div>
   );

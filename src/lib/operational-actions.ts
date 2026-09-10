@@ -1,0 +1,111 @@
+'use server';
+import { createHash } from 'node:crypto';
+import { z } from 'zod';
+import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
+import { requireProfile } from './auth';
+import { supabase } from './supabase/server';
+import { normalizeReceipt } from './receipt-image';
+import type { ActionState } from './actions';
+import type { Key } from './i18n';
+export async function reverseStock(request: string, original: string): Promise<ActionState> {
+  const p = await requireProfile();
+  if (!['OWNER', 'MANAGER'].includes(p.role)) return { error: 'FORBIDDEN' };
+  if (!z.uuid().safeParse(request).success || !z.uuid().safeParse(original).success)
+    return { error: 'INVALID_INPUT' };
+  const { error } = await (
+    await supabase()
+  ).rpc('reverse_stock', { p_request: request, p_original: original });
+  if (error) {
+    const keys: Key[] = [
+      'FORBIDDEN',
+      'INSUFFICIENT_STOCK',
+      'ALREADY_REVERSED',
+      'REVERSAL_INVALID',
+      'REQUEST_CONFLICT',
+    ];
+    return { error: keys.find((k) => error.message.includes(k)) ?? 'UNKNOWN' };
+  }
+  revalidatePath('/inventory', 'layout');
+  return {};
+}
+export async function captureSimpleReceipt(
+  _previous: ActionState,
+  form: FormData,
+): Promise<ActionState> {
+  const p = await requireProfile();
+  if (!['OWNER', 'MANAGER'].includes(p.role)) return { error: 'FORBIDDEN' };
+  const parsed = z
+    .object({
+      requestId: z.uuid(),
+      receiptType: z.enum(['FUEL', 'STORE']),
+      payment: z.enum(['CASH', 'CARD', 'CREDIT']),
+    })
+    .safeParse(Object.fromEntries(form));
+  const file = form.get('receipt');
+  if (!parsed.success || !(file instanceof File) || file.size > 3145728 || !file.size)
+    return { error: 'RECEIPT_INVALID' };
+  let bytes: Buffer;
+  try {
+    bytes = await normalizeReceipt(new Uint8Array(await file.arrayBuffer()));
+  } catch {
+    return { error: 'RECEIPT_INVALID' };
+  }
+  const v = parsed.data,
+    db = await supabase(),
+    hash = createHash('sha256').update(bytes).digest('hex');
+  const reserve = await db.rpc('capture_receipt', {
+    p_id: v.requestId,
+    p_type: v.receiptType,
+    p_payment: v.payment,
+    p_hash: hash,
+    p_size: bytes.length,
+  });
+  if (reserve.error || !reserve.data)
+    return {
+      error: reserve.error?.message.includes('REQUEST_CONFLICT')
+        ? 'REQUEST_CONFLICT'
+        : 'RECEIPT_UPLOAD_INCOMPLETE',
+    };
+  const upload = await db.storage
+    .from('receipts')
+    .upload(reserve.data, bytes, { contentType: 'image/jpeg', cacheControl: '0', upsert: false });
+  if (upload.error) {
+    const existing = await db.storage.from('receipts').download(reserve.data);
+    if (
+      existing.error ||
+      !existing.data ||
+      createHash('sha256')
+        .update(Buffer.from(await existing.data.arrayBuffer()))
+        .digest('hex') !== hash
+    )
+      return { error: 'RECEIPT_UPLOAD_INCOMPLETE' };
+  }
+  const completed = await db.rpc('complete_intake', { p_id: v.requestId });
+  if (completed.error) return { error: 'RECEIPT_UPLOAD_INCOMPLETE' };
+  revalidatePath('/expenses', 'layout');
+  redirect('/expenses?saved=1');
+}
+export async function reviewReceipt(_previous: ActionState, form: FormData): Promise<ActionState> {
+  const p = await requireProfile();
+  if (p.role !== 'OWNER') return { error: 'FORBIDDEN' };
+  const parsed = z
+    .object({
+      id: z.uuid(),
+      status: z.enum(['NEW', 'REVIEWED', 'ARCHIVED']),
+      supplier: z.string().trim().max(200),
+      amount: z.string().regex(/^(?:\d{1,12}(?:\.\d{1,2})?)?$/),
+      currency: z.enum(['BZD', 'USD']),
+      category: z.string().max(200),
+      notes: z.string().max(1000),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { error: 'SPENDING_INVALID' };
+  const { id, status, ...details } = parsed.data;
+  const { error } = await (
+    await supabase()
+  ).rpc('review_intake', { p_id: id, p_status: status, p_details: details });
+  if (error) return { error: 'UNKNOWN' };
+  revalidatePath('/expenses', 'layout');
+  redirect('/expenses');
+}

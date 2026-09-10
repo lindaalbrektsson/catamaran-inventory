@@ -1,4 +1,6 @@
 import { createRoot } from 'react-dom/client';
+import { LocalTime } from '../../src/components/local-time';
+import { InventoryAdminActions } from '../../src/components/inventory-admin-actions';
 import { ItemManager } from '../../src/components/item-manager';
 import { ReceiptUploader } from '../../src/components/receipt-uploader';
 import { InventoryList } from '../../src/components/inventory-list';
@@ -101,22 +103,30 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.get('view') === 'items' ? (
+        {params.get('view') === 'time' ? (
+          <LocalTime value="2026-09-09T14:00:00Z" locale={locale} />
+        ) : params.get('view') === 'admin' ? (
+          <InventoryAdminActions
+            locale={locale}
+            role={params.has('manager') ? 'MANAGER' : 'OWNER'}
+          />
+        ) : params.get('view') === 'items' ? (
           <ItemManager
             locale={locale}
             importing={false}
             requestId="50000000-0000-4000-8000-000000000001"
             catalog={{ categories: [item.category!], locations, products: [] }}
           />
-        ) : params.get('view') === 'receipt' ? (
+        ) : params.get('view') === 'receipt' || params.get('view') === 'intake' ? (
           <ReceiptUploader
+            intakeType={params.get('view') === 'intake' ? 'FUEL' : undefined}
             locale={locale}
             kind="EXPENSE"
             parentId="70000000-0000-4000-8000-000000000001"
             requestId="80000000-0000-4000-8000-000000000001"
           />
         ) : params.get('view') === 'locations' ? (
-          <LocationCards locations={locations} locale={locale} />
+          <LocationCards locations={locations} locale={locale} canAdd />
         ) : params.get('view') === 'detail' ? (
           <ProductOverview
             item={item}

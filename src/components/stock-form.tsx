@@ -30,7 +30,7 @@ export function StockForm({
     mode === 'add'
       ? ['other', 'returned', 'correction']
       : can(role, 'inventory.remove')
-        ? ['tour', 'damaged', 'lost', 'staff', 'other']
+        ? ['other', 'tour', 'damaged', 'lost', 'staff']
         : ['tour'];
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState<Reason>(choices[0]);
@@ -49,30 +49,34 @@ export function StockForm({
         invalid={Boolean(state.fields?.quantity)}
         disabled={pending}
       />
-      <div className="field">
-        <Label htmlFor="reason">{t.reason}</Label>
-        <select
-          disabled={pending}
-          id="reason"
-          name="reason"
-          value={reason}
-          onChange={(event) => setReason(event.target.value as Reason)}
-          required
-          aria-invalid={Boolean(state.fields?.reason)}
-          aria-describedby={state.fields?.reason ? 'reason-error' : undefined}
-        >
-          {choices.map((reason) => (
-            <option value={reason} key={reason}>
-              {t[reason]}
-            </option>
-          ))}
-        </select>
-        {state.fields?.reason && (
-          <p id="reason-error" className="text-xs text-destructive">
-            {t[state.fields.reason]}
-          </p>
-        )}
-      </div>
+      {mode === 'add' ? (
+        <input type="hidden" name="reason" value="other" />
+      ) : (
+        <div className="field">
+          <Label htmlFor="reason">{t.reason}</Label>
+          <select
+            disabled={pending}
+            id="reason"
+            name="reason"
+            value={reason}
+            onChange={(event) => setReason(event.target.value as Reason)}
+            required
+            aria-invalid={Boolean(state.fields?.reason)}
+            aria-describedby={state.fields?.reason ? 'reason-error' : undefined}
+          >
+            {choices.map((reason) => (
+              <option value={reason} key={reason}>
+                {t[reason]}
+              </option>
+            ))}
+          </select>
+          {state.fields?.reason && (
+            <p id="reason-error" className="text-xs text-destructive">
+              {t[state.fields.reason]}
+            </p>
+          )}
+        </div>
+      )}
       <details className="rounded-xl border p-3">
         <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">{t.addNotes}</summary>
         <div className="field">
@@ -106,7 +110,6 @@ export function StockForm({
           {t[state.error]}
         </p>
       )}
-      <p className="text-xs leading-5 text-muted-foreground">{t.stockActionHint}</p>
       <div className="stock-actions grid grid-cols-[1fr_2fr] gap-3">
         <Button variant="outline" asChild>
           <Link href={`/inventory/${locationId}/${productId}`}>{t.cancel}</Link>

@@ -63,6 +63,7 @@ export type Balance = {
   updated_at: string;
 };
 export type Movement = {
+  reverses_transaction_id?: string | null;
   transfer_id: string | null;
   related_location_id: string | null;
   id: string;
@@ -84,11 +85,26 @@ type Table<Row, Insert = Partial<Row>> = {
   Update: Partial<Row>;
   Relationships: [];
 };
-// Maintained against migrations through 20260910000400. Regenerate using the
+// Maintained against migrations through 20260910000700. Regenerate using the
 // Supabase CLI after applying migrations, then review the generated diff.
 export type Database = {
   public: {
     Tables: {
+      receipt_intake: Table<{
+        id: string;
+        uploaded_by: string;
+        created_at: string;
+        receipt_type: 'FUEL' | 'STORE';
+        payment_method: 'CASH' | 'CARD' | 'CREDIT';
+        object_path: string;
+        content_sha256: string;
+        byte_size: number;
+        upload_ready: boolean;
+        status: 'NEW' | 'REVIEWED' | 'ARCHIVED';
+        review_details: Json;
+        reviewed_by: string | null;
+        reviewed_at: string | null;
+      }>;
       expense_categories: Table<Category>;
       expenses: Table<Spending>;
       purchases: Table<Spending & { status: 'DRAFT' }>;
@@ -114,6 +130,16 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      reverse_stock: { Args: { p_request: string; p_original: string }; Returns: string };
+      capture_receipt: {
+        Args: { p_id: string; p_type: string; p_payment: string; p_hash: string; p_size: number };
+        Returns: string;
+      };
+      complete_intake: { Args: { p_id: string }; Returns: undefined };
+      review_intake: {
+        Args: { p_id: string; p_status: string; p_details: Json };
+        Returns: undefined;
+      };
       save_inventory_items: { Args: { p_id: string; p_rows: Json }; Returns: string };
       record_spending: {
         Args: {

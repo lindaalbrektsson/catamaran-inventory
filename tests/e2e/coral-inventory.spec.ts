@@ -1,18 +1,21 @@
 import { test, expect } from '@playwright/test';
 const fixture = 'http://127.0.0.1:4174/';
 
-test('Coral Tours location summaries fit mobile and show an honest empty state', async ({
+test('Catamaran Belize location summaries fit mobile and show an honest empty state', async ({
   page,
 }) => {
   await page.goto(`${fixture}?view=locations&lang=es`);
   for (const name of ['Cas Cat', 'Bodega / Storage'])
     await expect(page.getByRole('heading', { name, exact: true }).last()).toBeVisible();
   const storage = page
-    .locator('a')
+    .locator('article')
     .filter({ has: page.getByRole('heading', { name: 'Bodega / Storage' }) });
-  await expect(storage).toContainText('Aún no hay movimientos');
-  await expect(storage).toContainText('Productos activos');
-  await expect(storage).toContainText('Inventario bajo');
+  await expect(storage.getByRole('link', { name: 'Agregar', exact: true })).toHaveAttribute(
+    'href',
+    /action=add$/,
+  );
+  await expect(storage).not.toContainText('Productos activos');
+  await expect(storage).not.toContainText('Inventario bajo');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({
     path: `artifacts/coral-locations-${test.info().project.name}.png`,

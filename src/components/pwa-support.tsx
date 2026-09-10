@@ -44,9 +44,18 @@ function isStandalone() {
   );
 }
 
-export function PwaProvider({ locale, children }: { locale: Locale; children: React.ReactNode }) {
+export function PwaProvider({
+  locale,
+  children,
+  version = 'local',
+}: {
+  locale: Locale;
+  children: React.ReactNode;
+  version?: string;
+}) {
   const [installEvent, setInstallEvent] = useState<InstallEvent | null>(null);
   const [installed, setInstalled] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   const online = useSyncExternalStore(
     subscribeOnline,
     () => navigator.onLine,
@@ -83,6 +92,14 @@ export function PwaProvider({ locale, children }: { locale: Locale; children: Re
     let registration: ServiceWorkerRegistration | undefined;
     let lastCheck = 0;
     const checkUpdate = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) {
+        void fetch('/app-version', { cache: 'no-store' })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((data) => {
+            if (data?.version && data.version !== version) setUpdateAvailable(true);
+          })
+          .catch(() => {});
+      }
       if (document.visibilityState === 'visible' && Date.now() - lastCheck > 60 * 60 * 1000) {
         lastCheck = Date.now();
         void registration?.update().catch(() => {});
@@ -94,6 +111,14 @@ export function PwaProvider({ locale, children }: { locale: Locale; children: Re
         .register('/sw.js', { scope: '/', updateViaCache: 'none' })
         .then((value) => {
           registration = value;
+          if (value.waiting) setUpdateAvailable(true);
+          value.addEventListener('updatefound', () => {
+            const worker = value.installing;
+            worker?.addEventListener('statechange', () => {
+              if (worker.state === 'installed' && navigator.serviceWorker.controller)
+                setUpdateAvailable(true);
+            });
+          });
           checkUpdate();
         })
         .catch(() => {
@@ -107,11 +132,35 @@ export function PwaProvider({ locale, children }: { locale: Locale; children: Re
       document.removeEventListener('submit', submit, true);
       document.removeEventListener('visibilitychange', checkUpdate);
     };
-  }, []);
+  }, [version]);
   return (
     <InstallContext.Provider
       value={{ event: installEvent, installed, consume: () => setInstallEvent(null) }}
     >
+      {updateAvailable && (
+        <div
+          role="status"
+          className="flex items-center justify-between gap-3 border-b bg-secondary p-3 text-sm"
+        >
+          <span>{t.newVersion}</span>
+          <Button
+            disabled={!online}
+            onClick={async () => {
+              const registration = await navigator.serviceWorker?.getRegistration();
+              if (registration?.waiting) {
+                navigator.serviceWorker.addEventListener(
+                  'controllerchange',
+                  () => window.location.reload(),
+                  { once: true },
+                );
+                registration.waiting.postMessage('SKIP_WAITING');
+              } else window.location.reload();
+            }}
+          >
+            {t.updateApp}
+          </Button>
+        </div>
+      )}
       {!online && (
         <div role="alert" className="border-b bg-warning-soft px-5 py-3 text-sm text-warning">
           <p>{t.offlineBanner}</p>

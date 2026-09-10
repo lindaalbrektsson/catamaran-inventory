@@ -1,6 +1,8 @@
-# Coral Tours operations
+# Catamaran Belize operations
 
-A real local, mobile-first Next.js application for Coral Tours, Belize. English/Spanish interface, Supabase Auth and PostgreSQL inventory with immutable stock movements.
+A real local, mobile-first Next.js application for Catamaran Belize, Belize. English/Spanish interface, Supabase Auth and PostgreSQL inventory with immutable stock movements.
+
+See [Simplified daily operations](docs/SIMPLIFIED_OPERATIONS.md) for the current mobile flows, owner administration, receipt review and role restrictions.
 
 ## Project root
 
@@ -117,6 +119,6 @@ References: [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/cre
 ## Mobile installation
 
 See [PWA setup and testing](docs/PWA_SETUP_AND_TESTING.md) for the public-only caching policy, production-mode local checks, and iPhone/Android installation instructions. Run npm run build before npm run test:e2e. No deployment is required for desktop localhost checks.
-# Coral Tours customization
+# Catamaran Belize customization
 
 See [Inventory, receipts and Fuel setup](docs/CORAL_TOURS_SETUP.md) for pending migrations, safe catalog setup, permissions and live acceptance checks.

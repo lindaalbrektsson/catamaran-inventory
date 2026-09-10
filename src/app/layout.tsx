@@ -46,7 +46,9 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <PwaProvider locale={locale}>{children}</PwaProvider>
+        <PwaProvider locale={locale} version={process.env.VERCEL_GIT_COMMIT_SHA ?? 'local'}>
+          {children}
+        </PwaProvider>
       </body>
     </html>
   );

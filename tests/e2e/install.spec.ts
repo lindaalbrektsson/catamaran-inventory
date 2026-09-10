@@ -50,7 +50,7 @@ test('standalone mode hides installation controls', async ({ page }) => {
     Object.defineProperty(navigator, 'standalone', { get: () => true }),
   );
   await page.goto('/login');
-  await expect(page.getByRole('heading', { name: 'Coral Tours on your phone' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Catamaran Belize on your phone' })).toHaveCount(0);
 });
 test('iPad desktop mode uses visible Spanish instructions', async ({ page, context }) => {
   await context.addCookies([

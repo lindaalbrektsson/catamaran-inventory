@@ -9,7 +9,7 @@ import type { Json } from './database.types';
 import { parseItems } from './item-excel';
 export async function uploadItemPreview(data: FormData) {
   const profile = await requireProfile();
-  if (!['OWNER', 'MANAGER'].includes(profile.role)) return { error: 'ITEM_FAILED' as const };
+  if (profile.role !== 'OWNER') return { error: 'ITEM_FAILED' as const };
   const file = data.get('file');
   if (
     !(file instanceof File) ||
@@ -34,7 +34,7 @@ export async function saveItems(
   values: ItemInput[],
 ): Promise<{ error?: ItemError; success?: boolean }> {
   const profile = await requireProfile();
-  if (!['OWNER', 'MANAGER'].includes(profile.role)) return { error: 'ITEM_FAILED' };
+  if (profile.role !== 'OWNER') return { error: 'ITEM_FAILED' };
   if (
     !z.uuid().safeParse(id).success ||
     !z.array(itemSchema).min(1).max(200).safeParse(values).success
@@ -60,7 +60,7 @@ export async function saveItems(
 }
 export async function previewItems(values: ItemInput[]) {
   const profile = await requireProfile();
-  if (!['OWNER', 'MANAGER'].includes(profile.role) || !Array.isArray(values) || values.length > 200)
+  if (profile.role !== 'OWNER' || !Array.isArray(values) || values.length > 200)
     throw new Error('FORBIDDEN');
   return validateItems(values, await itemCatalog());
 }

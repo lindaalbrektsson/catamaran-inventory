@@ -8,9 +8,9 @@ export default async function LocationInventory({
   searchParams,
 }: {
   params: Promise<{ locationId: string }>;
-  searchParams: Promise<{ low?: string }>;
+  searchParams: Promise<{ low?: string; action?: string }>;
 }) {
-  await requireProfile();
+  const profile = await requireProfile();
   const { locationId } = await params,
     locale = await getLocale(),
     t = dictionary(locale);
@@ -23,11 +23,18 @@ export default async function LocationInventory({
     <div className="page">
       <PageHeader
         title={location.name}
-        description={t.inventoryIntro}
+        description={search.action === 'add' ? t.chooseItem : t.inventoryIntro}
         back="/inventory"
         locale={locale}
       />
-      <InventoryList items={items} locale={locale} initialLow={search.low === '1'} />
+      <InventoryList
+        items={items}
+        locale={locale}
+        initialLow={search.low === '1'}
+        action={
+          search.action === 'add' && ['OWNER', 'MANAGER'].includes(profile.role) ? 'add' : undefined
+        }
+      />
     </div>
   );
 }

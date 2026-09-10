@@ -1,5 +1,9 @@
 /* Built into public/sw.js. Cache only the explicit, public allowlist below. */
 const CACHE = 'coral-public-__VERSION__';
+// Activated only after the user explicitly chooses Update; never during a form.
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
+});
 const STATIC_PATHS = new Set([
   '/offline.html',
   '/offline.js',

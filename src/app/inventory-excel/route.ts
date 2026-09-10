@@ -6,8 +6,7 @@ import { collect } from '@/lib/inventory';
 export const runtime = 'nodejs';
 export async function GET(request: Request) {
   const profile = await getProfile();
-  if (!profile?.active || !['OWNER', 'MANAGER'].includes(profile.role))
-    return new Response(null, { status: 403 });
+  if (!profile?.active || profile.role !== 'OWNER') return new Response(null, { status: 403 });
   const catalog = await itemCatalog(),
     locale = await getLocale(),
     exporting = new URL(request.url).searchParams.has('export');
