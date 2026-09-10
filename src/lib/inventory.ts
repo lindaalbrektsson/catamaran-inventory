@@ -1,6 +1,7 @@
 import 'server-only';
 import { supabase } from './supabase/server';
-import type { Balance, Category, Product } from './database.types';
+import type { Balance, Category, Product, Location } from './database.types';
+import { isLowStock, type MovementType } from './domain';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { cache } from 'react';
@@ -9,7 +10,7 @@ export function validId(id: string) {
   if (!z.uuid().safeParse(id).success) notFound();
 }
 // Page through PostgREST instead of silently truncating its default row limit.
-async function collect<T>(
+export async function collect<T>(
   read: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
 ): Promise<T[]> {
   const rows: T[] = [];
@@ -50,7 +51,7 @@ export async function getLocation(id: string) {
   if (!data) notFound();
   return data;
 }
-export async function getInventory(locationId: string): Promise<InventoryItem[]> {
+export const getInventory = cache(async (locationId: string): Promise<InventoryItem[]> => {
   validId(locationId);
   const db = await supabase();
   const [balances, { products, categories }] = await Promise.all([
@@ -73,6 +74,57 @@ export async function getInventory(locationId: string): Promise<InventoryItem[]>
       return product && category ? [{ ...b, product, category }] : [];
     })
     .sort((a, b) => a.product.name.localeCompare(b.product.name));
+});
+
+export type LocationSummary = Location & {
+  activeItems: number;
+  lowStockCount: number;
+  latestMovement: { created_at: string; transaction_type: MovementType } | null;
+};
+export async function getLocationSummaries(): Promise<LocationSummary[]> {
+  const db = await supabase();
+  const locations = await getLocations();
+  return Promise.all(
+    locations.map(async (location) => {
+      const [items, latest] = await Promise.all([
+        getInventory(location.id),
+        db
+          .from('inventory_transactions')
+          .select('created_at,transaction_type')
+          .eq('location_id', location.id)
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      if (latest.error) throw new Error('LOCATION_ACTIVITY_LOAD_FAILED');
+      return {
+        ...location,
+        activeItems: items.length,
+        lowStockCount: items.filter((item) => isLowStock(item.quantity, item.minimum_stock)).length,
+        latestMovement: latest.data,
+      };
+    }),
+  );
+}
+
+export async function getTransferDestinations(productId: string, sourceId: string) {
+  validId(productId);
+  validId(sourceId);
+  const db = await supabase();
+  const [locations, balances] = await Promise.all([
+    getLocations(),
+    collect((from, to) =>
+      db
+        .from('inventory_balances')
+        .select('*')
+        .eq('product_id', productId)
+        .order('location_id')
+        .range(from, to),
+    ),
+  ]);
+  const configured = new Set(balances.map((balance) => balance.location_id));
+  return locations.filter((location) => location.id !== sourceId && configured.has(location.id));
 }
 export async function getItem(locationId: string, productId: string) {
   validId(locationId);
@@ -114,10 +166,19 @@ export async function getHistory(locationId: string, productId: string, page: nu
     : { data: [], error: null };
   if (profiles.error) throw new Error('ACTORS_LOAD_FAILED');
   const names = new Map(profiles.data?.map((p) => [p.id, p.display_name]));
+  const relatedIds = [
+    ...new Set(data.flatMap((m) => (m.related_location_id ? [m.related_location_id] : []))),
+  ];
+  const related = relatedIds.length
+    ? await db.from('locations').select('id,name').in('id', relatedIds)
+    : { data: [], error: null };
+  if (related.error) throw new Error('RELATED_LOCATIONS_LOAD_FAILED');
+  const locationNames = new Map(related.data?.map((location) => [location.id, location.name]));
   return {
     movements: data.map((m) => ({
       ...m,
       actor: names.get(m.performed_by_user_id) ?? m.performed_by_user_id,
+      relatedLocation: m.related_location_id ? locationNames.get(m.related_location_id) : undefined,
     })),
     hasNext: (count ?? 0) > page * 20,
   };

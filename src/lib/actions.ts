@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { supabase } from './supabase/server';
 import { isConfigured } from './supabase/config';
 import { requireProfile } from './auth';
-import { can, movementType, stockSchema } from './domain';
+import { can, movementType, stockSchema, transferSchema } from './domain';
 import type { Key } from './i18n';
 import { z } from 'zod';
 export type ActionState = {
@@ -101,4 +101,35 @@ export async function changeStock(_previous: ActionState, form: FormData): Promi
   }
   revalidatePath('/', 'layout');
   redirect(`/inventory/${value.locationId}/${value.productId}?saved=1`);
+}
+
+export async function transferStock(_previous: ActionState, form: FormData): Promise<ActionState> {
+  const profile = await requireProfile();
+  if (!can(profile.role, 'inventory.transfer')) return { error: 'FORBIDDEN' };
+  const parsed = transferSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { error: 'INVALID_INPUT' };
+  const value = parsed.data;
+  const { error } = await (
+    await supabase()
+  ).rpc('transfer_stock', {
+    p_request_id: value.requestId,
+    p_product_id: value.productId,
+    p_source_id: value.sourceId,
+    p_destination_id: value.destinationId,
+    p_quantity: Number(value.quantity),
+    p_notes: value.notes,
+  });
+  if (error) {
+    const known = [
+      'INSUFFICIENT_STOCK',
+      'FORBIDDEN',
+      'NOT_FOUND',
+      'INVALID_INPUT',
+      'REQUEST_CONFLICT',
+      'DESTINATION_NOT_CONFIGURED',
+    ] as const;
+    return { error: known.find((code) => error.message.includes(code)) ?? 'UNKNOWN' };
+  }
+  revalidatePath('/', 'layout');
+  redirect(`/inventory/${value.sourceId}/${value.productId}?transferred=1`);
 }

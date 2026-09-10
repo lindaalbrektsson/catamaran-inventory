@@ -36,6 +36,11 @@ export type Permission =
   | 'inventory.add'
   | 'inventory.remove'
   | 'inventory.consume'
+  | 'inventory.transfer'
+  | 'expenses.read'
+  | 'expenses.create'
+  | 'purchases.capture'
+  | 'receipts.upload'
   | 'catalog.manage'
   | 'users.manage'
   | 'audit.read';
@@ -45,6 +50,11 @@ const permissions: Record<Role, readonly Permission[]> = {
     'inventory.add',
     'inventory.remove',
     'inventory.consume',
+    'inventory.transfer',
+    'expenses.read',
+    'expenses.create',
+    'purchases.capture',
+    'receipts.upload',
     'catalog.manage',
     'users.manage',
     'audit.read',
@@ -54,6 +64,11 @@ const permissions: Record<Role, readonly Permission[]> = {
     'inventory.add',
     'inventory.remove',
     'inventory.consume',
+    'inventory.transfer',
+    'expenses.read',
+    'expenses.create',
+    'purchases.capture',
+    'receipts.upload',
     'audit.read',
   ],
   CAPTAIN: ['inventory.read', 'inventory.consume'],
@@ -105,6 +120,20 @@ export const stockSchema = z
 export function isLowStock(quantity: number, minimum: number | null) {
   return minimum !== null && quantity < minimum;
 }
+
+export const transferSchema = z
+  .object({
+    requestId: z.uuid(),
+    productId: z.uuid(),
+    sourceId: z.uuid(),
+    destinationId: z.uuid(),
+    quantity: stockSchema.shape.quantity,
+    notes: z.string().trim().max(1000),
+  })
+  .refine((value) => value.sourceId !== value.destinationId, {
+    path: ['destinationId'],
+    message: 'INVALID_INPUT',
+  });
 
 // Future financial modules must use integer minor units or PostgreSQL numeric.
 export function moneyToMinor(value: string): bigint {

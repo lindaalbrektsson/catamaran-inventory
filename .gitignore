@@ -47,3 +47,7 @@ next-env.d.ts
 /supabase/.temp/
 /supabase/.branches/
 /artifacts/
+
+# Generated from the shared dictionary and public-only worker source
+/public/sw.js
+/public/offline.html

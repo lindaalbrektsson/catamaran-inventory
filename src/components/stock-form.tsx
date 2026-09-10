@@ -5,8 +5,9 @@ import { changeStock } from '@/lib/actions';
 import { dictionary, type Locale } from '@/lib/i18n';
 import { type Reason, can, type Role } from '@/lib/domain';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
+import { QuantityField } from './quantity-field';
 import { Label } from './ui/label';
+import { usePreservedForm } from './use-preserved-form';
 export function StockForm({
   locale,
   productId,
@@ -27,45 +28,31 @@ export function StockForm({
   const [stableRequestId] = useState(requestId);
   const choices: Reason[] =
     mode === 'add'
-      ? ['returned', 'correction', 'other']
+      ? ['other', 'returned', 'correction']
       : can(role, 'inventory.remove')
         ? ['tour', 'damaged', 'lost', 'staff', 'other']
         : ['tour'];
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState<Reason>(choices[0]);
   const [notes, setNotes] = useState('');
+  const formRef = usePreservedForm();
   return (
-    <form action={action} className="grid gap-6">
+    <form ref={formRef} action={action} className="grid gap-6">
       <input type="hidden" name="requestId" value={stableRequestId} />
       <input type="hidden" name="productId" value={productId} />
       <input type="hidden" name="locationId" value={locationId} />
       <input type="hidden" name="mode" value={mode} />
-      <div className="field">
-        <Label htmlFor="quantity">{t.quantity}</Label>
-        <Input
-          id="quantity"
-          name="quantity"
-          value={quantity}
-          onChange={(event) => setQuantity(event.target.value)}
-          type="text"
-          inputMode="decimal"
-          required
-          maxLength={15}
-          pattern="(?:0|[1-9][0-9]{0,10})(?:\.[0-9]{1,3})?"
-          autoComplete="off"
-          aria-invalid={Boolean(state.fields?.quantity)}
-          aria-describedby="quantity-hint"
-        />
-        <p
-          id="quantity-hint"
-          className={`text-xs ${state.fields?.quantity ? 'text-destructive' : 'text-muted-foreground'}`}
-        >
-          {t.fieldQuantity}
-        </p>
-      </div>
+      <QuantityField
+        locale={locale}
+        value={quantity}
+        onChange={setQuantity}
+        invalid={Boolean(state.fields?.quantity)}
+        disabled={pending}
+      />
       <div className="field">
         <Label htmlFor="reason">{t.reason}</Label>
         <select
+          disabled={pending}
           id="reason"
           name="reason"
           value={reason}
@@ -86,27 +73,31 @@ export function StockForm({
           </p>
         )}
       </div>
-      <div className="field">
-        <Label htmlFor="notes">
-          {t.notes} <span className="font-normal text-muted-foreground">({t.optional})</span>
-        </Label>
-        <textarea
-          id="notes"
-          name="notes"
-          value={notes}
-          onChange={(event) => setNotes(event.target.value)}
-          rows={3}
-          maxLength={1000}
-          placeholder={t.notesHint}
-          aria-invalid={Boolean(state.fields?.notes)}
-          aria-describedby={state.fields?.notes ? 'notes-error' : undefined}
-        />
-        {state.fields?.notes && (
-          <p id="notes-error" className="text-xs text-destructive">
-            {t[state.fields.notes]}
-          </p>
-        )}
-      </div>
+      <details className="rounded-xl border p-3">
+        <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">{t.addNotes}</summary>
+        <div className="field">
+          <Label htmlFor="notes">
+            {t.notes} <span className="font-normal text-muted-foreground">({t.optional})</span>
+          </Label>
+          <textarea
+            disabled={pending}
+            id="notes"
+            name="notes"
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            rows={3}
+            maxLength={1000}
+            placeholder={t.notesHint}
+            aria-invalid={Boolean(state.fields?.notes)}
+            aria-describedby={state.fields?.notes ? 'notes-error' : undefined}
+          />
+          {state.fields?.notes && (
+            <p id="notes-error" className="text-xs text-destructive">
+              {t[state.fields.notes]}
+            </p>
+          )}
+        </div>
+      </details>
       {state.error && (
         <p
           role="alert"
@@ -116,7 +107,7 @@ export function StockForm({
         </p>
       )}
       <p className="text-xs leading-5 text-muted-foreground">{t.stockActionHint}</p>
-      <div className="grid grid-cols-[1fr_2fr] gap-3">
+      <div className="stock-actions grid grid-cols-[1fr_2fr] gap-3">
         <Button variant="outline" asChild>
           <Link href={`/inventory/${locationId}/${productId}`}>{t.cancel}</Link>
         </Button>

@@ -3,6 +3,7 @@ import { getLocale } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import { PwaProvider } from '@/components/pwa-support';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -17,10 +18,17 @@ const geistMono = Geist_Mono({
 export async function generateMetadata(): Promise<Metadata> {
   const t = dictionary(await getLocale());
   return {
-    title: { default: t.brand, template: `%s · ${t.brand}` },
+    title: { default: t.appName, template: `%s · ${t.brand}` },
     description: t.signInHint,
     appleWebApp: { capable: true, statusBarStyle: 'default', title: t.brand },
-    icons: { icon: '/icon.svg', apple: '/apple-icon.png' },
+    other: { 'apple-mobile-web-app-capable': 'yes' },
+    icons: {
+      icon: [
+        { url: '/icon.svg', type: 'image/svg+xml' },
+        { url: '/favicon.png', sizes: '32x32', type: 'image/png' },
+      ],
+      apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
+    },
   };
 }
 export const viewport: Viewport = {
@@ -37,7 +45,9 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
       lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <PwaProvider locale={locale}>{children}</PwaProvider>
+      </body>
     </html>
   );
 }

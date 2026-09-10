@@ -120,9 +120,9 @@ export function InventoryList({
                         aria-hidden="true"
                       />
                     </div>
-                    <div className="mt-6 flex items-end justify-between gap-3">
-                      <div>
-                        <span className="text-3xl font-semibold tabular-nums tracking-tight">
+                    <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
+                      <div className="min-w-0 break-words">
+                        <span className="text-3xl font-semibold tabular-nums tracking-tight break-all">
                           {number(item.quantity, locale)}
                         </span>
                         <span className="ml-2 text-xs text-muted-foreground">
@@ -135,11 +135,10 @@ export function InventoryList({
                         {item.quantity === 0 ? t.outOfStock : lowStock ? t.lowStock : t.inStock}
                       </span>
                     </div>
-                    {item.minimum_stock !== null && (
-                      <p className="mt-3 text-xs text-muted-foreground">
-                        {t.minimum}: {number(item.minimum_stock, locale)}
-                      </p>
-                    )}
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      {t.minimum}:{' '}
+                      {item.minimum_stock === null ? t.notSet : number(item.minimum_stock, locale)}
+                    </p>
                   </CardContent>
                 </Card>
               </Link>

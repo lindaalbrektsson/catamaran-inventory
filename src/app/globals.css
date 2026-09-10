@@ -100,6 +100,18 @@
 .field {
   @apply grid gap-2;
 }
+.stock-actions {
+  position: sticky;
+  bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  z-index: 20;
+  background: var(--card);
+  padding-block: 12px;
+}
+@media (min-width: 768px) {
+  .stock-actions {
+    bottom: 0;
+  }
+}
 .sea-lines {
   background-image: repeating-radial-gradient(
     ellipse at 100% 100%,
@@ -118,5 +130,24 @@
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Standalone safe areas apply to login and authenticated pages alike. */
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+.workspace-content {
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+.safe-bottom {
+  padding-left: max(8px, env(safe-area-inset-left));
+  padding-right: max(8px, env(safe-area-inset-right));
+}
+@media (min-width: 768px) {
+  .workspace-content {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }

@@ -31,9 +31,11 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 
 Use the project URL and publishable key from Supabase Project Settings > API. Never use a service-role key in this application. `.env.local` and all other environment files are ignored; `.env.example` is deliberately tracked with empty values.
 
-## Supabase provisioning (pending)
+## Supabase provisioning
 
-1. Create a Supabase project. Run `supabase/migrations/202609090001_inventory.sql` in its SQL editor, or apply versioned migrations using the Supabase CLI.
+Follow [the reviewed hosted-deployment procedure](docs/SUPABASE_DEPLOYMENT.md) first. It includes a read-only preflight, CLI dry run and version-history checks. Do not paste schema migrations directly into the hosted SQL Editor or apply an initial migration over an existing schema.
+
+1. Apply `supabase/migrations/20260909000100_inventory.sql` through the Supabase CLI after the documented preflight.
 2. Optionally run `supabase/seed.sql`. This creates catalog entries and zero balances only. It contains no credentials or user accounts.
 3. Create a confirmed user through the Supabase Auth dashboard. Set the user's display name in their profile. New profiles are inactive CREW regardless of user metadata; users cannot self-promote.
 4. Bootstrap the first owner in the SQL editor, replacing the UUID with the actual Auth user ID:
@@ -111,3 +113,10 @@ Current work is the foundation and the first inventory slice, not the complete f
 Future purchases, transfers, stock counts, receipts and reimbursements will be implemented module by module. Money must use PostgreSQL numeric and integer minor-unit calculations. No offline synchronization or private-data service-worker caching is implemented.
 
 References: [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/creating-a-client), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [database functions](https://supabase.com/docs/guides/database/functions).
+
+## Mobile installation
+
+See [PWA setup and testing](docs/PWA_SETUP_AND_TESTING.md) for the public-only caching policy, production-mode local checks, and iPhone/Android installation instructions. Run npm run build before npm run test:e2e. No deployment is required for desktop localhost checks.
+# Coral Tours customization
+
+See [Inventory, receipts and Fuel setup](docs/CORAL_TOURS_SETUP.md) for pending migrations, safe catalog setup, permissions and live acceptance checks.

@@ -1,18 +1,21 @@
 import { test, expect } from '@playwright/test';
-test('unconfigured app shows setup, redirects protected routes and persists Spanish', async ({
-  page,
-}) => {
+test('auth gate redirects protected routes and persists Spanish', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/inventory');
-  await expect(page).toHaveURL(/\/setup$/);
+  await expect(page).toHaveURL(/\/(setup|login)$/);
+  const configured = new URL(page.url()).pathname === '/login';
   await expect(
-    page.getByRole('heading', { name: 'Your workspace is almost ready.' }),
+    page.getByRole('heading', {
+      name: configured ? 'Welcome aboard.' : 'Your workspace is almost ready.',
+    }),
   ).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await page.getByRole('button', { name: 'Language' }).click();
   await expect(
-    page.getByRole('heading', { name: 'Tu espacio de trabajo está casi listo.' }),
+    page.getByRole('heading', {
+      name: configured ? 'Bienvenido a bordo.' : 'Tu espacio de trabajo está casi listo.',
+    }),
   ).toBeVisible();
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'es');
@@ -68,10 +71,10 @@ test('isolated Spanish stock form displays server error and preserves retry ID',
   page,
 }) => {
   await page.goto('http://127.0.0.1:4174/?form=1&lang=es');
-  await page.getByLabel('Cantidad').fill('50');
+  await page.getByLabel('Cantidad', { exact: true }).fill('50');
   await page.getByRole('button', { name: 'Guardar cambio' }).click();
   await expect(page.getByRole('alert')).toContainText('No hay suficientes existencias');
-  await expect(page.getByLabel('Cantidad')).toHaveValue('50');
+  await expect(page.getByLabel('Cantidad', { exact: true })).toHaveValue('50');
   await expect(page.locator('input[name="requestId"]')).toHaveValue(
     '50000000-0000-4000-8000-000000000001',
   );

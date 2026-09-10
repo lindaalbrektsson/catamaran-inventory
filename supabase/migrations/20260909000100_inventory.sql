@@ -1,4 +1,8 @@
 -- Single-company inventory foundation. Run as database administrator.
+-- Unapplied initial migration, reviewed before first hosted deployment.
+-- Apply with the Supabase migration runner. Do not insert COMMIT statements:
+-- the runner owns the migration transaction and its history record.
+
 create schema if not exists private;
 revoke all on schema private from public;
 grant usage on schema private to authenticated;
@@ -31,8 +35,8 @@ create table public.location_assignments (
 );
 create table public.categories (
   id uuid primary key default gen_random_uuid(),
-  name_en text not null,
-  name_es text not null,
+  name_en text not null check (length(trim(name_en)) between 1 and 100),
+  name_es text not null check (length(trim(name_es)) between 1 and 100),
   active boolean not null default true
 );
 create table public.products (
@@ -42,7 +46,7 @@ create table public.products (
   description text not null default '',
   photo_path text,
   unit public.stock_unit not null default 'piece',
-  estimated_unit_cost numeric(14,2) check (estimated_unit_cost >= 0),
+  estimated_unit_cost numeric(14,2) check (estimated_unit_cost between 0 and 999999999999.99),
   cost_currency text not null default 'BZD' check (cost_currency in ('BZD','USD')),
   active boolean not null default true,
   created_at timestamptz not null default now(),
@@ -51,9 +55,9 @@ create table public.products (
 create table public.inventory_balances (
   product_id uuid not null references public.products(id),
   location_id uuid not null references public.locations(id),
-  quantity numeric(14,3) not null default 0 check (quantity >= 0),
-  minimum_stock numeric(14,3) check (minimum_stock >= 0),
-  target_stock numeric(14,3) check (target_stock >= 0),
+  quantity numeric(14,3) not null default 0 check (quantity between 0 and 99999999999.999),
+  minimum_stock numeric(14,3) check (minimum_stock between 0 and 99999999999.999),
+  target_stock numeric(14,3) check (target_stock between 0 and 99999999999.999),
   updated_at timestamptz not null default now(),
   primary key(product_id,location_id),
   check (target_stock is null or minimum_stock is null or target_stock >= minimum_stock)
@@ -64,14 +68,20 @@ create table public.inventory_transactions (
   product_id uuid not null references public.products(id),
   location_id uuid not null references public.locations(id),
   transaction_type public.movement_type not null,
-  quantity numeric(14,3) not null check (quantity <> 0),
-  previous_quantity numeric(14,3) not null check (previous_quantity >= 0),
-  resulting_quantity numeric(14,3) not null check (resulting_quantity >= 0),
-  reason text not null,
+  quantity numeric(14,3) not null check (quantity <> 0 and quantity between -99999999999.999 and 99999999999.999),
+  previous_quantity numeric(14,3) not null check (previous_quantity between 0 and 99999999999.999),
+  resulting_quantity numeric(14,3) not null check (resulting_quantity between 0 and 99999999999.999),
+  reason text not null check (length(trim(reason)) between 1 and 100),
   notes text not null default '' check (length(notes) <= 1000),
   performed_by_user_id uuid not null references public.profiles(id),
   created_at timestamptz not null default now(),
-  check (resulting_quantity = previous_quantity + quantity)
+  check (resulting_quantity = previous_quantity + quantity),
+  foreign key(product_id,location_id) references public.inventory_balances(product_id,location_id),
+  check (
+    (transaction_type in ('ADD','PURCHASE','TRANSFER_IN') and quantity > 0) or
+    (transaction_type in ('REMOVE','TRANSFER_OUT','DAMAGE','LOSS','STAFF_USE','TOUR_USE') and quantity < 0) or
+    transaction_type in ('STOCK_COUNT_ADJUSTMENT','CORRECTION')
+  )
 );
 create table public.audit_events (
   id uuid primary key default gen_random_uuid(),
@@ -87,9 +97,11 @@ create table public.audit_events (
 create index inventory_location_idx on public.inventory_balances(location_id);
 create index inventory_history_idx on public.inventory_transactions(location_id,product_id,created_at desc,id desc);
 create index inventory_actor_idx on public.inventory_transactions(performed_by_user_id);
+create index inventory_product_idx on public.inventory_transactions(product_id);
 create index assignment_location_idx on public.location_assignments(location_id);
 create index products_category_idx on public.products(category_id);
 create index audit_location_idx on public.audit_events(location_id,created_at desc);
+create index audit_actor_idx on public.audit_events(actor_id,created_at desc);
 
 create function private.current_role() returns public.app_role
 language sql stable security definer set search_path = '' as $$
@@ -126,13 +138,19 @@ begin raise exception 'IMMUTABLE_HISTORY'; end;
 $$;
 create trigger immutable_movements before update or delete on public.inventory_transactions for each row execute function private.reject_history_change();
 create trigger immutable_audit before update or delete on public.audit_events for each row execute function private.reject_history_change();
+create trigger immutable_movements_truncate before truncate on public.inventory_transactions for each statement execute function private.reject_history_change();
+create trigger immutable_audit_truncate before truncate on public.audit_events for each statement execute function private.reject_history_change();
 
 create function private.audit_record() returns trigger
 language plpgsql security definer set search_path = '' as $$
+declare v_record jsonb;
 begin
+  v_record := case when TG_OP = 'DELETE' then to_jsonb(old) else to_jsonb(new) end;
   insert into public.audit_events(actor_id,entity_type,entity_id,action,before_data,after_data)
-  values(auth.uid(),TG_TABLE_NAME,coalesce(to_jsonb(new)->>'id',to_jsonb(new)::text),TG_OP,
-    case when TG_OP = 'UPDATE' then to_jsonb(old) else null end,to_jsonb(new));
+  values(auth.uid(),TG_TABLE_NAME,coalesce(v_record->>'id',v_record::text),TG_OP,
+    case when TG_OP in ('UPDATE','DELETE') then to_jsonb(old) else null end,
+    case when TG_OP = 'DELETE' then null else to_jsonb(new) end);
+  if TG_OP = 'DELETE' then return old; end if;
   return new;
 end;
 $$;
@@ -140,7 +158,20 @@ create trigger audit_profiles after insert or update on public.profiles for each
 create trigger audit_locations after insert or update on public.locations for each row execute function private.audit_record();
 create trigger audit_products after insert or update on public.products for each row execute function private.audit_record();
 create trigger audit_categories after insert or update on public.categories for each row execute function private.audit_record();
-create trigger audit_assignments after insert or update on public.location_assignments for each row execute function private.audit_record();
+create trigger audit_assignments after insert or update or delete on public.location_assignments for each row execute function private.audit_record();
+
+create function private.touch_updated_at() returns trigger
+language plpgsql set search_path = '' as $$
+begin new.updated_at := now(); return new; end;
+$$;
+create trigger touch_product before update on public.products for each row execute function private.touch_updated_at();
+create trigger touch_profile before update on public.profiles for each row execute function private.touch_updated_at();
+
+-- Existing Auth users receive the same inactive CREW defaults as new signups.
+-- Nothing in user metadata can grant a role or activate an account.
+insert into public.profiles(id,display_name)
+select id,coalesce(nullif(left(trim(raw_user_meta_data->>'display_name'),100),''),'New user')
+from auth.users on conflict(id) do nothing;
 
 create function public.set_language(p_language text) returns void
 language plpgsql security definer set search_path = '' as $$
@@ -161,8 +192,9 @@ declare
   v_id uuid;
   v_existing public.inventory_transactions;
 begin
-  if auth.uid() is null or not private.can_move(p_location_id,p_type::text) then raise exception 'FORBIDDEN'; end if;
-  if p_request_id is null or p_quantity is null or p_quantity <= 0 or p_quantity > 99999999999.999
+  if auth.uid() is null or private.can_move(p_location_id,p_type::text) is not true then raise exception 'FORBIDDEN'; end if;
+  if p_request_id is null or p_product_id is null or p_location_id is null
+    or p_quantity is null or p_quantity <= 0 or p_quantity > 99999999999.999
     or p_quantity <> round(p_quantity,3) or p_quantity::text in ('NaN','Infinity','-Infinity')
     or p_reason is null or p_notes is null or length(p_notes)>1000 then raise exception 'INVALID_INPUT'; end if;
   if p_type is null or p_type not in ('ADD','REMOVE','DAMAGE','LOSS','STAFF_USE','TOUR_USE') then raise exception 'INVALID_INPUT'; end if;
@@ -187,6 +219,7 @@ begin
   select quantity into v_before from public.inventory_balances
     where product_id=p_product_id and location_id=p_location_id for update;
   if not found then raise exception 'NOT_FOUND'; end if;
+  if p_type='ADD' and v_before+p_quantity > 99999999999.999 then raise exception 'INVALID_INPUT'; end if;
   v_after := v_before + case when p_type='ADD' then p_quantity else -p_quantity end;
   if v_after < 0 then raise exception 'INSUFFICIENT_STOCK'; end if;
   update public.inventory_balances set quantity=v_after,updated_at=now()
@@ -204,15 +237,25 @@ $$;
 -- product/location pairs and thresholds, but can never overwrite a balance.
 create function public.configure_inventory(p_product_id uuid,p_location_id uuid,p_minimum numeric,p_target numeric) returns void
 language plpgsql security definer set search_path = '' as $$
-declare v_before jsonb;
+declare v_before jsonb; v_created boolean;
 begin
   if private.current_role() is distinct from 'OWNER' then raise exception 'FORBIDDEN'; end if;
-  if p_minimum < 0 or p_target < 0 or p_target < p_minimum
+  if p_product_id is null or p_location_id is null
+    or p_minimum < 0 or p_target < 0 or p_target < p_minimum
+    or p_minimum > 99999999999.999 or p_target > 99999999999.999
+    or p_minimum <> round(p_minimum,3) or p_target <> round(p_target,3)
     or p_minimum::text in ('NaN','Infinity','-Infinity') or p_target::text in ('NaN','Infinity','-Infinity') then raise exception 'INVALID_INPUT'; end if;
-  select to_jsonb(b) into v_before from public.inventory_balances b where product_id=p_product_id and location_id=p_location_id for update;
-  insert into public.inventory_balances(product_id,location_id,minimum_stock,target_stock)
-    values(p_product_id,p_location_id,p_minimum,p_target)
-    on conflict(product_id,location_id) do update set minimum_stock=excluded.minimum_stock,target_stock=excluded.target_stock,updated_at=now();
+  if not exists(select 1 from public.products where id=p_product_id and active)
+    or not exists(select 1 from public.locations where id=p_location_id and active) then raise exception 'NOT_FOUND'; end if;
+  -- Establish the pair before locking so concurrent first-time configuration
+  -- has an accurate before image, too. This never changes an existing quantity.
+  insert into public.inventory_balances(product_id,location_id)
+    values(p_product_id,p_location_id) on conflict(product_id,location_id) do nothing
+    returning true into v_created;
+  select case when v_created then null else to_jsonb(b) end into v_before
+    from public.inventory_balances b where product_id=p_product_id and location_id=p_location_id for update;
+  update public.inventory_balances set minimum_stock=p_minimum,target_stock=p_target,updated_at=now()
+    where product_id=p_product_id and location_id=p_location_id;
   insert into public.audit_events(actor_id,entity_type,entity_id,action,location_id,before_data,after_data)
     values(auth.uid(),'inventory_balances',p_product_id::text,'THRESHOLD_CHANGE',p_location_id,v_before,jsonb_build_object('minimum_stock',p_minimum,'target_stock',p_target));
 end;
@@ -245,10 +288,11 @@ create policy category_update on public.categories for update to authenticated u
 create policy product_insert on public.products for insert to authenticated with check(private.current_role()='OWNER');
 create policy product_update on public.products for update to authenticated using(private.current_role()='OWNER') with check(private.current_role()='OWNER');
 
-revoke all on all tables in schema public from anon,authenticated;
+-- Scope ACL changes to this application, not unrelated public-schema tables.
+revoke all on public.profiles,public.locations,public.location_assignments,public.categories,public.products,public.inventory_balances,public.inventory_transactions,public.audit_events from public,anon,authenticated;
 grant select on public.profiles,public.locations,public.location_assignments,public.categories,public.products,public.inventory_balances,public.inventory_transactions,public.audit_events to authenticated;
 grant insert,update on public.locations,public.categories,public.products to authenticated;
-revoke all on all functions in schema private from public,anon,authenticated;
+revoke all on function private.current_role(),private.can_access_location(uuid),private.can_move(uuid,text),private.create_profile(),private.reject_history_change(),private.audit_record(),private.touch_updated_at() from public,anon,authenticated;
 grant execute on function private.current_role(),private.can_access_location(uuid),private.can_move(uuid,text) to authenticated;
 revoke all on function public.change_stock(uuid,uuid,uuid,numeric,public.movement_type,text,text),public.set_language(text),public.configure_inventory(uuid,uuid,numeric,numeric) from public,anon;
 grant execute on function public.change_stock(uuid,uuid,uuid,numeric,public.movement_type,text,text),public.set_language(text),public.configure_inventory(uuid,uuid,numeric,numeric) to authenticated;

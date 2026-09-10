@@ -75,3 +75,6 @@ PGlite tests execute the actual migration, constraints, role grants and RLS agai
 Playwright tests run the real unconfigured Next.js application plus a separate test-only component harness. The harness uses explicit fixtures and adapters for Next.js navigation/server actions. It is not routed, imported or served by the application. It verifies rendering and interactions, not authentication or persistence.
 
 Before operational rollout, apply migrations to a real Supabase project and verify password login, cookie refresh, PostgREST results, stock mutations, retries and simultaneous removals with multiple sessions. Confirm real device/browser behavior and deployment configuration. The current milestone is not a claim of production readiness without those checks.
+# September 10 implementation update
+
+The Inventory slice now includes atomic paired transfers, mobile quantity shortcuts and location summaries. Additive migrations also introduce immutable expense records, purchase receipt drafts, Fuel / Combustible and private Supabase Storage receipts. Full purchasing, reimbursements and detailed fuel tracking remain future work. See [Coral Tours setup](CORAL_TOURS_SETUP.md) for rollout status and acceptance checks; the new migrations have been applied and their live schema and Storage metadata verified.

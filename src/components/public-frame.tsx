@@ -1,3 +1,4 @@
+import { InstallControls } from './pwa-support';
 import { Brand } from './brand';
 import { LanguageSwitch } from './language-switch';
 import { dictionary, type Locale } from '@/lib/i18n';
@@ -30,8 +31,9 @@ export function PublicFrame({ locale, children }: { locale: Locale; children: Re
         <main id="main" className="m-auto w-full max-w-lg px-6 pb-12 pt-8 md:px-10">
           {children}
         </main>
-        <footer className="px-6 pb-7 text-center text-xs text-muted-foreground">
+        <footer className="px-6 pb-[calc(1.75rem+env(safe-area-inset-bottom))] text-center text-xs text-muted-foreground">
           {t.brand} · {t.operations}
+          <InstallControls locale={locale} />
         </footer>
       </div>
     </div>

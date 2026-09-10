@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, TriangleAlert, CheckCircle2 } from 'lucide-react';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary, number } from '@/lib/i18n';
-import { getLocations, getInventory } from '@/lib/inventory';
+import { getLocationSummaries, getInventory } from '@/lib/inventory';
 import { isLowStock } from '@/lib/domain';
 import { LocationCards } from '@/components/location-cards';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,7 +11,7 @@ export default async function Home() {
   await requireProfile();
   const locale = await getLocale(),
     t = dictionary(locale),
-    locations = await getLocations();
+    locations = await getLocationSummaries();
   const inventory = await Promise.all(
     locations.map(async (location) => ({ location, items: await getInventory(location.id) })),
   );

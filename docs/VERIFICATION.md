@@ -13,7 +13,7 @@ Story: an authorized staff member chooses a location and product, records a stoc
 | Translation coverage            | Pass         | Matching dictionaries, domain-label coverage and source scan for literal JSX/accessible-label text.                               |
 | Mobile/desktop                  | Pass locally | 390px phone and 1440px desktop checks; no horizontal overflow, 44px controls, screenshots visually reviewed.                      |
 | PWA                             | Pass locally | Manifest is served and both PNG icon sizes exist.                                                                                 |
-| Hosted Auth and PostgREST       | Pending      | No Supabase project has been provisioned.                                                                                         |
+| Hosted Auth and PostgREST       | Pending      | Hosted migration and anonymous denial verified; authenticated flow awaits manual account confirmation. See HOSTED_MIGRATION_VERIFICATION.md.                                                                                         |
 | Independent-session concurrency | Pending      | Requires hosted/local full PostgreSQL connections; PGlite serializes statements.                                                  |
 | Vercel deployment               | Pending      | Configuration exists; no project was deployed.                                                                                    |
 

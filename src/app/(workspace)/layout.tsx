@@ -32,7 +32,7 @@ export default async function Workspace({ children }: { children: React.ReactNod
           </div>
         </div>
       </aside>
-      <div className="pb-24 md:ml-64 md:pb-0">
+      <div className="workspace-content md:ml-64">
         <header className="flex h-20 items-center justify-between border-b bg-card px-5 md:px-10">
           <div className="md:hidden">
             <Brand locale={locale} />

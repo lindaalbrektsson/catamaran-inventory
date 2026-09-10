@@ -1,13 +1,13 @@
 import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
-import { getLocations } from '@/lib/inventory';
+import { getLocationSummaries } from '@/lib/inventory';
 import { PageHeader } from '@/components/page-header';
 import { LocationCards } from '@/components/location-cards';
 export default async function Inventory() {
   await requireProfile();
   const locale = await getLocale(),
     t = dictionary(locale),
-    locations = await getLocations();
+    locations = await getLocationSummaries();
   return (
     <div className="page">
       <PageHeader title={t.inventory} description={t.inventoryIntro} locale={locale} />

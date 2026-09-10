@@ -1,3 +1,4 @@
+import { InstallControls } from '@/components/pwa-support';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
 import { signOut } from '@/lib/actions';
@@ -28,6 +29,7 @@ export default async function More() {
           </form>
         </CardContent>
       </Card>
+      <InstallControls locale={locale} />
     </div>
   );
 }

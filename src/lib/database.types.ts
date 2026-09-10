@@ -17,6 +17,30 @@ export type Location = {
   created_at: string;
 };
 export type Category = { id: string; name_en: string; name_es: string; active: boolean };
+export type Spending = {
+  id: string;
+  category_id: string;
+  amount: number;
+  currency: 'BZD' | 'USD';
+  location_id: string;
+  paid_by: string;
+  payment_method: 'CASH' | 'COMPANY_CARD' | 'PERSONAL_MONEY' | 'BANK_TRANSFER' | 'OTHER';
+  occurred_at: string;
+  notes: string;
+  created_by: string;
+  created_at: string;
+};
+export type Receipt = {
+  id: string;
+  expense_id: string | null;
+  purchase_id: string | null;
+  uploaded_by: string;
+  object_path: string;
+  content_sha256: string;
+  byte_size: number;
+  status: 'PENDING' | 'READY';
+  created_at: string;
+};
 export type Product = {
   id: string;
   name: string;
@@ -39,6 +63,8 @@ export type Balance = {
   updated_at: string;
 };
 export type Movement = {
+  transfer_id: string | null;
+  related_location_id: string | null;
   id: string;
   request_id: string;
   product_id: string;
@@ -58,11 +84,15 @@ type Table<Row, Insert = Partial<Row>> = {
   Update: Partial<Row>;
   Relationships: [];
 };
-// Maintained against migration 202609090001. Regenerate using the Supabase CLI
-// when a project is provisioned (see README), then review the generated diff.
+// Maintained against migrations through 20260910000100. Regenerate using the
+// Supabase CLI after applying migrations, then review the generated diff.
 export type Database = {
   public: {
     Tables: {
+      expense_categories: Table<Category>;
+      expenses: Table<Spending>;
+      purchases: Table<Spending & { status: 'DRAFT' }>;
+      receipts: Table<Receipt>;
       profiles: Table<Profile>;
       locations: Table<Location, Pick<Location, 'name' | 'type'> & Partial<Location>>;
       categories: Table<Category, Pick<Category, 'name_en' | 'name_es'> & Partial<Category>>;
@@ -84,6 +114,43 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      record_spending: {
+        Args: {
+          p_id: string;
+          p_kind: string;
+          p_category_id: string;
+          p_amount: string;
+          p_currency: string;
+          p_location_id: string;
+          p_paid_by: string;
+          p_payment_method: string;
+          p_occurred_at: string;
+          p_notes: string;
+        };
+        Returns: string;
+      };
+      reserve_receipt: {
+        Args: {
+          p_id: string;
+          p_expense_id: string | null;
+          p_purchase_id: string | null;
+          p_sha256: string;
+          p_size: number;
+        };
+        Returns: string;
+      };
+      complete_receipt: { Args: { p_id: string }; Returns: undefined };
+      transfer_stock: {
+        Args: {
+          p_request_id: string;
+          p_product_id: string;
+          p_source_id: string;
+          p_destination_id: string;
+          p_quantity: number;
+          p_notes?: string;
+        };
+        Returns: string;
+      };
       change_stock: {
         Args: {
           p_request_id: string;

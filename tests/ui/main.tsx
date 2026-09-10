@@ -1,6 +1,11 @@
 import { createRoot } from 'react-dom/client';
+import { ReceiptUploader } from '../../src/components/receipt-uploader';
 import { InventoryList } from '../../src/components/inventory-list';
 import { StockForm } from '../../src/components/stock-form';
+import { TransferForm } from '../../src/components/transfer-form';
+import { LocationCards } from '../../src/components/location-cards';
+import { ProductOverview } from '../../src/components/product-overview';
+import type { LocationSummary } from '../../src/lib/inventory';
 import { Brand } from '../../src/components/brand';
 import { Navigation } from '../../src/components/navigation';
 import { PageHeader } from '../../src/components/page-header';
@@ -65,6 +70,20 @@ const items = [
     },
   },
 ];
+// Isolated visual fixtures only; none are sent to Supabase or the Next.js app.
+const locations: LocationSummary[] = ['Cas Cat', 'Bodega / Storage'].map(
+  (name, index) => ({
+    id: `10000000-0000-4000-8000-00000000000${index === 0 ? 1 : 3}`,
+    name,
+    type: index === 1 ? 'STORAGE' : 'BOAT',
+    active: true,
+    created_at: '2026-09-09T14:00:00Z',
+    activeItems: index === 1 ? 0 : 3,
+    lowStockCount: index === 0 ? 1 : 0,
+    latestMovement:
+      index === 1 ? null : { created_at: '2026-09-09T14:00:00Z', transaction_type: 'TOUR_USE' },
+  }),
+);
 createRoot(document.getElementById('root')!).render(
   <div>
     <aside className="fixed inset-y-0 left-0 hidden w-64 border-r bg-card p-6 md:block">
@@ -73,7 +92,7 @@ createRoot(document.getElementById('root')!).render(
         <Navigation locale={locale} />
       </div>
     </aside>
-    <div className="pb-24 md:ml-64">
+    <div className="workspace-content md:ml-64">
       <header className="flex h-20 items-center border-b bg-card px-5">
         <Brand locale={locale} />
       </header>
@@ -83,7 +102,28 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.has('form') ? (
+        {params.get('view') === 'receipt' ? (
+          <ReceiptUploader locale={locale} kind="EXPENSE" parentId="70000000-0000-4000-8000-000000000001" requestId="80000000-0000-4000-8000-000000000001" />
+        ) : params.get('view') === 'locations' ? (
+          <LocationCards locations={locations} locale={locale} />
+        ) : params.get('view') === 'detail' ? (
+          <ProductOverview
+            item={item}
+            locale={locale}
+            role={params.has('crew') ? 'CREW' : 'MANAGER'}
+            basePath={`/inventory/${item.location_id}/${item.product_id}`}
+          />
+        ) : params.get('view') === 'transfer' ? (
+          <div className="max-w-lg">
+            <TransferForm
+              locale={locale}
+              productId={item.product_id}
+              sourceId={item.location_id}
+              destinations={locations.slice(1)}
+              requestId="50000000-0000-4000-8000-000000000001"
+            />
+          </div>
+        ) : params.has('form') ? (
           <div className="max-w-lg">
             <StockForm
               locale={locale}

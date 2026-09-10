@@ -7,6 +7,8 @@ export default defineConfig({
   plugins: [tailwindcss()],
   resolve: {
     alias: [
+      { find: 'next/image', replacement: path.join(root, 'tests/ui/image.tsx') },
+      { find: '@/lib/spending-actions', replacement: path.join(root, 'tests/ui/spending-actions.ts') },
       { find: 'next/link', replacement: path.join(root, 'tests/ui/link.tsx') },
       { find: 'next/navigation', replacement: path.join(root, 'tests/ui/navigation.ts') },
       { find: '@/lib/actions', replacement: path.join(root, 'tests/ui/actions.ts') },

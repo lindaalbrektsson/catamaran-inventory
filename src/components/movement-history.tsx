@@ -12,7 +12,7 @@ export function MovementHistory({
   hasNext,
   basePath,
 }: {
-  movements: (Movement & { actor: string })[];
+  movements: (Movement & { actor: string; relatedLocation?: string })[];
   locale: Locale;
   page: number;
   hasNext: boolean;
@@ -50,6 +50,12 @@ export function MovementHistory({
                       <p className="mt-1 text-xs text-muted-foreground">
                         {t.by}: {m.actor}
                       </p>
+                      {m.relatedLocation && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {m.transaction_type === 'TRANSFER_IN' ? t.source : t.destination}:{' '}
+                          {m.relatedLocation}
+                        </p>
+                      )}
                       <time
                         dateTime={m.created_at}
                         className="mt-1 block text-xs text-muted-foreground"

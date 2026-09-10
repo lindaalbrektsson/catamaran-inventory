@@ -3,3 +3,6 @@ import type { ActionState } from '../../src/lib/actions';
 export async function changeStock(): Promise<ActionState> {
   return { error: 'INSUFFICIENT_STOCK' };
 }
+export async function transferStock(): Promise<ActionState> {
+  return { error: 'INSUFFICIENT_STOCK' };
+}
