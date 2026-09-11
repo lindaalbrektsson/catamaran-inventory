@@ -1,5 +1,11 @@
 # Mobile compatibility review
 
+Release checks: lint, typecheck and production build passed; 247 unit/integration
+tests passed; 107 normal browser checks passed (3 desktop-only mobile skips);
+61 compatibility checks passed (1 documented WebKit offline-emulation skip).
+The broader local branch including pending account features separately passed
+299 tests, 119 normal browser checks and 73 compatibility checks.
+
 ## Evidence and scope
 
 This is automated browser emulation and source/visual review, **not real-device
