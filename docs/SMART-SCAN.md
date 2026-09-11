@@ -35,6 +35,8 @@ Upload, analysis and review do write scan/audit records and private image storag
 they **do not write operational Inventory or Needs**. Approval is one database
 transaction: any invalid row rolls everything back. Repeating an identical
 approved request is a no-op; changing its contents afterward is rejected.
+If an approval response is lost, the UI keeps the draft and tells the user to
+check scan history. It does not falsely claim that no changes occurred.
 
 Provider output is untrusted candidate data, never executable instructions or
 authorization. The immutable extraction is a workflow audit record, not a signed

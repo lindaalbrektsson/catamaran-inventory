@@ -81,7 +81,7 @@ export function ScanReviewForm({
           if (state.error) setError(state.error);
           else setSaved(true);
         } catch {
-          setError('scanFailed');
+          setError('scanApprovalUnknown');
         } finally {
           setBusy(false);
         }

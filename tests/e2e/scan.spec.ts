@@ -1,4 +1,22 @@
 import { test, expect } from '@playwright/test';
+test('lost approval response preserves the draft and gives honest retry guidance', async ({
+  page,
+}) => {
+  await page.goto('http://127.0.0.1:4174/scan.html');
+  await page.getByLabel('What should happen?').first().selectOption('NEED');
+  await page.getByLabel('Quantity', { exact: true }).first().fill('2.5');
+  await page.evaluate(() => sessionStorage.setItem('scan-drop-response', 'yes'));
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('button', { name: 'Approve selected actions' }).click();
+  await expect(page.getByRole('alert')).toContainText('Check scan history before retrying');
+  await expect(page.getByRole('alert')).not.toContainText('No inventory changed');
+  await expect(page.getByLabel('Quantity', { exact: true }).first()).toHaveValue('2.5');
+  const submitted = await page.evaluate(() => sessionStorage.getItem('scan-approved'));
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('button', { name: 'Approve selected actions' }).click();
+  await expect(page.getByRole('status')).toContainText('Scan approved');
+  expect(await page.evaluate(() => sessionStorage.getItem('scan-approved'))).toBe(submitted);
+});
 test('review corrects ambiguous rows, keeps IDs and requires approval before any action', async ({
   page,
 }) => {
