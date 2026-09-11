@@ -89,7 +89,7 @@ export default async function Needs({
             ))}
           </select>
         </label>
-        <button className={`${control} self-end`}>{t.search}</button>
+        <button className={`${control} self-end`}>{t.applyFilters}</button>
       </form>
       <div className="grid gap-4 sm:grid-cols-2">
         {needs.map((n) => (

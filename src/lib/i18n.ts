@@ -10,6 +10,7 @@ export const en = {
   SIMILAR_ITEM:
     'A similar item exists. Review the matches and confirm only if this is a different item.',
   needNav: 'Need',
+  applyFilters: 'Apply filters',
   addInventory: 'Add inventory',
   addToNeed: 'Add to Need',
   lowNeedHint: '{item} is running low in {location}',
@@ -18,7 +19,7 @@ export const en = {
   needMarkDone: 'Mark Done',
   needOptional: 'Optional details',
   needsTitle: 'Need to Purchase',
-  needNew: 'Add purchase need',
+  needNew: 'Add need',
   needEdit: 'Edit purchase need',
   needCountry: 'Purchase country',
   BELIZE: 'Belize',
@@ -411,6 +412,7 @@ export const es: Record<Key, string> = {
   SIMILAR_ITEM:
     'Existe un artículo similar. Revisa las coincidencias y confirma solo si es diferente.',
   needNav: 'Necesitamos',
+  applyFilters: 'Aplicar filtros',
   addInventory: 'Añadir inventario',
   addToNeed: 'Añadir a Necesitamos',
   lowNeedHint: '{item} tiene inventario bajo en {location}',
