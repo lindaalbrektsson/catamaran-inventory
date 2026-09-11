@@ -166,7 +166,26 @@ createRoot(document.getElementById('root')!).render(
         ) : params.get('view') === 'need' ? (
           <NeedForm
             locale={locale}
-            catalog={{ categories: [item.category], products: [item.product], locations }}
+            catalog={{
+              categories: [item.category],
+              products: [item.product],
+              locations,
+              balances: [item],
+              needs: params.has('activeNeed')
+                ? [
+                    {
+                      id: '90000000-0000-4000-8000-000000000004',
+                      product_id: item.product_id,
+                      status: params.get('activeNeed') === 'ORDERED' ? 'ORDERED' : 'PENDING',
+                    },
+                  ]
+                : [],
+            }}
+            suggestion={
+              params.has('linked')
+                ? { name: item.product.name, product_id: item.product_id }
+                : undefined
+            }
             id="90000000-0000-4000-8000-000000000002"
             requestId="90000000-0000-4000-8000-000000000003"
           />

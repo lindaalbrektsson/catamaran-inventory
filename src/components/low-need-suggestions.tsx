@@ -14,20 +14,22 @@ export async function LowNeedSuggestions({
   location: Location;
   locale: Locale;
 }) {
-  const low = items.filter((i) => isLowStock(i.quantity, i.minimum_stock));
-  if (!low.length) return null;
   const t = dictionary(locale),
     db = await supabase();
   const open = await collect((a, b) =>
     db
       .from('purchase_needs')
-      .select('id,product_id')
-      .eq('location_id', location.id)
+      .select('id,product_id,status')
       .eq('archived', false)
       .in('status', ['PENDING', 'ORDERED'])
       .order('id')
       .range(a, b),
   );
+  const low = items.filter(
+    (i) =>
+      isLowStock(i.quantity, i.minimum_stock) || open.some((n) => n.product_id === i.product_id),
+  );
+  if (!low.length) return null;
   return (
     <div className="mb-5 grid gap-3">
       {low.map((i) => {
@@ -35,15 +37,19 @@ export async function LowNeedSuggestions({
         return (
           <div key={i.product_id} className="rounded-xl border bg-secondary p-4">
             <p>
-              {t.lowNeedHint.replace('{item}', i.product.name).replace('{location}', location.name)}
+              {i.product.name} · {location.name}
             </p>
+            <p>
+              {t.quantity}: {Number(i.quantity)} · {t.minimum}: {Number(i.minimum_stock)}
+            </p>
+            {existing && (
+              <p>
+                {t.needAlreadyActive} · {existing.status === 'PENDING' ? t.needPending : t.ORDERED}
+              </p>
+            )}
             <Link
               className="mt-2 inline-flex min-h-12 items-center rounded-xl border bg-card p-3 font-semibold"
-              href={
-                existing
-                  ? `/needs/${existing.id}`
-                  : `/needs/new?product=${i.product_id}&location=${location.id}`
-              }
+              href={existing ? `/needs/${existing.id}` : `/needs/new?product=${i.product_id}`}
             >
               {existing ? t.needOpen : t.addToNeed}
             </Link>

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { units } from './domain';
-import type { Category, Location, Product } from './database.types';
+import type { Category, Location, Product, Balance, PurchaseNeed } from './database.types';
 const stock = z
   .string()
   .regex(/^(?:0|[1-9]\d{0,10})(?:\.\d{1,3})?$/)
@@ -27,7 +27,13 @@ export const itemSchema = z
   .refine((r) => !r.minimum || !r.target || Number(r.target) >= Number(r.minimum))
   .refine((r) => r.active || !Number(r.quantity));
 export type ItemInput = z.infer<typeof itemSchema>;
-export type ItemCatalog = { categories: Category[]; locations: Location[]; products: Product[] };
+export type ItemCatalog = {
+  categories: Category[];
+  locations: Location[];
+  products: Product[];
+  balances?: Balance[];
+  needs?: Pick<PurchaseNeed, 'id' | 'product_id' | 'status'>[];
+};
 export type ItemError =
   | 'ITEM_INVALID'
   | 'ITEM_DUPLICATE'

@@ -47,7 +47,10 @@ export async function quickAdd(_previous: ActionState, form: FormData): Promise<
   revalidatePath('/inventory', 'layout');
   redirect(`/inventory/${v.location}/${data}?saved=1`);
 }
-export async function saveNeed(_previous: ActionState, form: FormData): Promise<ActionState> {
+export async function saveNeed(
+  _previous: ActionState,
+  form: FormData,
+): Promise<ActionState & { existingNeed?: string }> {
   const p = await requireProfile();
   if (!['OWNER', 'MANAGER'].includes(p.role)) return { error: 'FORBIDDEN' };
   const result = needSchema.safeParse({
@@ -71,18 +74,31 @@ export async function saveNeed(_previous: ActionState, form: FormData): Promise<
     p_request: v.requestId,
     p_id: v.id,
     p_version: v.version,
-    p_confirm_duplicate: v.product_id && v.location_id ? false : v.confirmDuplicate,
+    p_confirm_duplicate: v.product_id ? false : v.confirmDuplicate,
     p_values: {
       name: v.name,
       product_id: v.product_id,
-      location_id: v.location_id,
+      location_id: '',
       country: v.country,
       status: v.status,
       product_url: v.product_url,
       comment: v.comment,
     },
   });
-  if (error) return { error: errorKey(error.message) };
+  if (error) {
+    if (error.message.includes('DUPLICATE_NEED') && v.product_id) {
+      const { data: existing } = await db
+        .from('purchase_needs')
+        .select('id')
+        .eq('product_id', v.product_id)
+        .eq('archived', false)
+        .in('status', ['PENDING', 'ORDERED'])
+        .neq('id', v.id)
+        .limit(1);
+      return { error: 'DUPLICATE_NEED', existingNeed: existing?.[0]?.id };
+    }
+    return { error: errorKey(error.message) };
+  }
   if (bytes) {
     const hash = createHash('sha256').update(bytes).digest('hex');
     const reserved = await db.rpc('reserve_need_photo', {
@@ -111,6 +127,7 @@ export async function saveNeed(_previous: ActionState, form: FormData): Promise<
     if (complete.error) return { error: 'needPhotoRetry' };
   }
   revalidatePath('/needs', 'layout');
+  revalidatePath('/inventory', 'layout');
   redirect(`/needs/${v.id}`);
 }
 
@@ -142,5 +159,6 @@ export async function advanceNeed(_previous: ActionState, form: FormData): Promi
   });
   if (saveError) return { error: errorKey(saveError.message) };
   revalidatePath('/needs', 'layout');
+  revalidatePath('/inventory', 'layout');
   return {};
 }

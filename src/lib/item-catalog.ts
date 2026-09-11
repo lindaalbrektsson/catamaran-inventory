@@ -10,3 +10,27 @@ export async function itemCatalog() {
   ]);
   return { categories, locations, products };
 }
+export async function needCatalog() {
+  const db = await supabase();
+  const [catalog, balances, needs] = await Promise.all([
+    itemCatalog(),
+    collect((a, b) =>
+      db
+        .from('inventory_balances')
+        .select('*')
+        .order('location_id')
+        .order('product_id')
+        .range(a, b),
+    ),
+    collect((a, b) =>
+      db
+        .from('purchase_needs')
+        .select('id,product_id,status')
+        .eq('archived', false)
+        .in('status', ['PENDING', 'ORDERED'])
+        .order('id')
+        .range(a, b),
+    ),
+  ]);
+  return { ...catalog, balances, needs };
+}

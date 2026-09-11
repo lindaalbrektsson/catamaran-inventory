@@ -95,7 +95,9 @@ export default async function Needs({
         {needs.map((n) => (
           <article key={n.id} className="rounded-xl border bg-card p-5">
             <Link href={`/needs/${n.id}`} className="block min-h-12">
-              <h2 className="font-semibold">{n.name}</h2>
+              <h2 className="font-semibold">
+                {catalog.products.find((p) => p.id === n.product_id)?.name ?? n.name}
+              </h2>
               <p className="mt-2">
                 {t[n.country]} · {n.status === 'PENDING' ? t.needPending : t[n.status]}
               </p>

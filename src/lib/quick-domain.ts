@@ -23,7 +23,7 @@ export const needSchema = z.object({
   version: z.coerce.number().int().min(0),
   name: z.string().trim().min(1).max(150),
   product_id: z.uuid().or(z.literal('')),
-  location_id: z.uuid().or(z.literal('')),
+  location_id: z.uuid().or(z.literal('')).default(''),
   country: z.enum(['BELIZE', 'USA']),
   status: z.enum(['PENDING', 'ORDERED', 'DONE']),
   product_url: z
