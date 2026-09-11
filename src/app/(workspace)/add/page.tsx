@@ -4,6 +4,7 @@ import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
 import { itemCatalog } from '@/lib/item-catalog';
 import { QuickAdd } from '@/components/quick-add';
+import { scanConfigured } from '@/lib/scan-ai';
 export default async function Add({
   searchParams,
 }: {
@@ -22,6 +23,7 @@ export default async function Add({
             ['/add?inventory=1', t.addInventory],
             ['/expenses/capture?type=FUEL', t.addFuelReceipt],
             ['/expenses/capture?type=STORE', t.addStoreReceipt],
+            ...(scanConfigured() ? [['/scan', t.smartScan]] : []),
           ].map(([href, label]) => (
             <Link
               key={href}
