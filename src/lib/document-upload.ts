@@ -33,9 +33,13 @@ export async function uploadDocument(
       sha256: hash,
     };
   }
+  const values = Object.fromEntries(form);
+  // Only metadata crosses the Server Action boundary. Original bytes go
+  // directly to authenticated Storage, including files above Vercel's limit.
+  delete values.file;
   const prepared = await prepareDocument(
     {
-      ...Object.fromEntries(form),
+      ...values,
       favorite: form.get('favorite') === 'on',
       archived: form.get('archived') === 'on',
       selected_users: form.getAll('selected_users'),
