@@ -1,7 +1,15 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { House, Package, Plus, ReceiptText, Ellipsis, ShoppingBag } from 'lucide-react';
+import {
+  ClipboardCheck,
+  House,
+  Package,
+  Plus,
+  ReceiptText,
+  Ellipsis,
+  ShoppingBag,
+} from 'lucide-react';
 import { dictionary, type Locale } from '@/lib/i18n';
 export function Navigation({ locale }: { locale: Locale }) {
   const t = dictionary(locale),
@@ -12,6 +20,7 @@ export function Navigation({ locale }: { locale: Locale }) {
     { href: '/add', label: t.add, icon: Plus },
     { href: '/needs', label: t.needNav, icon: ShoppingBag, desktop: true },
     { href: '/expenses', label: t.receipts, icon: ReceiptText, desktop: true },
+    { href: '/tasks', label: t.tasksTitle, icon: ClipboardCheck, desktop: true },
     { href: '/more', label: t.more, icon: Ellipsis },
   ];
   return (

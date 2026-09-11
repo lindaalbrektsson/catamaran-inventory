@@ -1,5 +1,40 @@
 import type { Role, Unit, MovementType } from './domain';
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+export type TaskStatus = 'NEED_REVIEW' | 'IN_PROGRESS' | 'DONE';
+export type Task = {
+  id: string;
+  title: string;
+  description: string;
+  type_code: string;
+  status: TaskStatus;
+  assignee_id: string | null;
+  due_date: string | null;
+  remind_at: string | null;
+  product_id: string | null;
+  need_id: string | null;
+  receipt_id: string | null;
+  location_id: string | null;
+  related_task_id: string | null;
+  archived: boolean;
+  version: number;
+  created_by: string;
+  created_at: string;
+  updated_by: string;
+  updated_at: string;
+};
+export type TaskSubtask = {
+  id: string;
+  task_id: string;
+  title: string;
+  completed: boolean;
+  completed_by: string | null;
+  completed_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_by: string;
+  updated_at: string;
+};
+export type TaskType = { code: string; name_en: string; name_es: string; active: boolean };
 export type PurchaseNeed = {
   id: string;
   name: string;
@@ -114,6 +149,9 @@ type Table<Row, Insert = Partial<Row>> = {
 export type Database = {
   public: {
     Tables: {
+      tasks: Table<Task>;
+      task_subtasks: Table<TaskSubtask>;
+      task_types: Table<TaskType>;
       purchase_needs: Table<PurchaseNeed>;
       receipt_intake: Table<{
         content_type: string;
@@ -157,6 +195,24 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      manage_task: {
+        Args: {
+          p_request: string;
+          p_id: string;
+          p_version: number;
+          p_action: string;
+          p_values: Json;
+        };
+        Returns: string;
+      };
+      task_people: {
+        Args: Record<string, never>;
+        Returns: { id: string; display_name: string; active: boolean }[];
+      };
+      task_history: {
+        Args: { p_id: string };
+        Returns: Database['public']['Tables']['audit_events']['Row'][];
+      };
       manage_staff: {
         Args: { p_id: string; p_name: string; p_role: Role; p_language: string; p_active: boolean };
         Returns: undefined;

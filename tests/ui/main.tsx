@@ -1,4 +1,5 @@
 import { MovementHistory } from '@/components/movement-history';
+import { TasksFixture } from './tasks';
 import { AccountForm } from '@/components/account-form';
 import { PasswordChangeForm } from '@/components/password-change-form';
 import { QuickMove } from '@/components/quick-move';
@@ -113,7 +114,9 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.get('view') === 'account' ? (
+        {params.get('view')?.startsWith('task-') ? (
+          <TasksFixture locale={locale} view={params.get('view')!} />
+        ) : params.get('view') === 'account' ? (
           <AccountForm locale={locale} configured={!params.has('unconfigured')} />
         ) : params.get('view') === 'password' ? (
           <PasswordChangeForm locale={locale} />
