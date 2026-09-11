@@ -30,6 +30,9 @@ isolated transports; they do not send SMS or update live credentials.
 
 - Fixed long unbroken item names causing horizontal scrolling in Add suggestions
   at 320px. Operational page content now permits wrapping within long words.
+- Corrected the Documents search label in English and Spanish. Increased inverse
+  branding/login-panel text opacity: the checked solid-background contrast rises
+  from 4.04:1 / 4.38:1 to 5.14:1.
 - Standard location, stock, Need, Tasks and Documents layouts fit the requested
   sizes. Desktop Owner document administration remains intentionally unavailable
   on mobile; the mobile boundary gives a return action.

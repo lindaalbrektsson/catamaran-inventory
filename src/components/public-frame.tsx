@@ -14,9 +14,9 @@ export function PublicFrame({ locale, children }: { locale: Locale; children: Re
           <h1 className="max-w-lg text-5xl font-medium leading-tight tracking-tight">
             {t.inventoryIntro}
           </h1>
-          <p className="mt-6 max-w-sm text-base leading-7 text-white/75">{t.homeIntro}</p>
+          <p className="mt-6 max-w-sm text-base leading-7 text-white/85">{t.homeIntro}</p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-white/75">
+        <div className="flex items-center gap-2 text-xs text-white/85">
           <ShieldCheck className="size-4" aria-hidden="true" />
           {t.inventoryFoundation}
         </div>
