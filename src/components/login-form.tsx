@@ -103,6 +103,9 @@ export function LoginForm({ locale }: { locale: Locale }) {
       >
         {pending ? t.signingIn : t.signIn}
       </Button>
+      <a href="/forgot-password" className="min-h-12 py-3 text-center underline">
+        {t.forgotPassword}
+      </a>
     </form>
   );
 }

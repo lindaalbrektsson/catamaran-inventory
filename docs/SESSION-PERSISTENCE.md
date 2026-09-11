@@ -41,5 +41,6 @@ not create production users or test physical Android/iOS installation.
 
 Current rollout dependency: phone login and forced-password-change account work
 remain in the local branch pending the separate secure account-admin rollout.
-Vercel deployment is also blocked by CLI authorization. Do not report those flows
-as live until the required account setup and deployment have been verified.
+Vercel access is available again, but the required production account-admin and
+SMS settings are missing. Do not report those flows as live until the required
+account setup and deployment have been verified. See [SMS rollout](SMS-RECOVERY.md).

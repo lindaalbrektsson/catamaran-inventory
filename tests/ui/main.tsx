@@ -3,6 +3,7 @@ import { TasksFixture } from './tasks';
 import { DocumentsFixture } from './documents';
 import { AccountForm } from '@/components/account-form';
 import { PasswordChangeForm } from '@/components/password-change-form';
+import { RecoveryForm } from '@/components/recovery-form';
 import { QuickMove } from '@/components/quick-move';
 import { QuickAdd } from '@/components/quick-add';
 import { NeedForm } from '@/components/need-form';
@@ -125,6 +126,8 @@ createRoot(document.getElementById('root')!).render(
           <TasksFixture locale={locale} view={params.get('view')!} />
         ) : params.get('view') === 'account' ? (
           <AccountForm locale={locale} configured={!params.has('unconfigured')} />
+        ) : params.get('view') === 'recovery' ? (
+          <RecoveryForm locale={locale} />
         ) : params.get('view') === 'password' ? (
           <PasswordChangeForm locale={locale} />
         ) : params.get('view') === 'history' ? (

@@ -1,5 +1,17 @@
 export type Locale = 'en' | 'es';
 export const en = {
+  forgotPassword: 'Forgot password?',
+  recoverySend: 'Send SMS code',
+  recoveryVerify: 'Verify code',
+  recoveryCode: 'Verification code',
+  recoverySent:
+    'If this number can receive account recovery messages, a code has been sent. It may take a moment to arrive.',
+  recoveryCodeError: 'The code could not be verified. Check it or request a new code.',
+  recoveryExpired: 'Recovery has expired. Please request a new code.',
+  recoveryUnavailable: 'SMS recovery is not available yet. Contact Linda for account recovery.',
+  recoveryLinda: 'Lost your phone or SIM, or no longer have access to your number? Contact Linda.',
+  recoveryRestart: 'Change number or request another code',
+  recoverySignIn: 'Your password was changed. Please sign in with your new password.',
   documents: 'Documents',
   docHome: 'Favorites / Documents',
   docTitle: 'Title',
@@ -568,6 +580,20 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const es: Record<Key, string> = {
+  forgotPassword: '¿Olvidaste tu contraseña?',
+  recoverySend: 'Enviar código por SMS',
+  recoveryVerify: 'Verificar código',
+  recoveryCode: 'Código de verificación',
+  recoverySent:
+    'Si este número puede recibir mensajes de recuperación, se ha enviado un código. Puede tardar un momento en llegar.',
+  recoveryCodeError: 'No se pudo verificar el código. Revísalo o solicita otro.',
+  recoveryExpired: 'La recuperación ha caducado. Solicita un nuevo código.',
+  recoveryUnavailable:
+    'La recuperación por SMS todavía no está disponible. Contacta a Linda para recuperar tu cuenta.',
+  recoveryLinda:
+    '¿Perdiste tu teléfono o SIM, o ya no tienes acceso a tu número? Contacta a Linda.',
+  recoveryRestart: 'Cambiar número o solicitar otro código',
+  recoverySignIn: 'Tu contraseña se ha cambiado. Inicia sesión con tu nueva contraseña.',
   documents: 'Documentos',
   docHome: 'Favoritos / Documentos',
   docTitle: 'Título',
