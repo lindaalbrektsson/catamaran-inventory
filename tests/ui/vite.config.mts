@@ -7,6 +7,11 @@ export default defineConfig({
   plugins: [tailwindcss()],
   resolve: {
     alias: [
+      {
+        find: '@/lib/account-actions',
+        replacement: path.join(root, 'tests/ui/account-actions.ts'),
+      },
+      { find: '@/lib/staff-actions', replacement: path.join(root, 'tests/ui/staff-actions.ts') },
       { find: '@/lib/quick-actions', replacement: path.join(root, 'tests/ui/quick-actions.ts') },
       {
         find: '@/lib/original-upload',

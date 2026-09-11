@@ -7,6 +7,7 @@ import { signOut } from '@/lib/actions';
 export default async function Pending() {
   const profile = await getProfile();
   if (!profile) redirect('/login');
+  if (profile.must_change_password && !profile.credential_pending) redirect('/change-password');
   if (profile.active) redirect('/');
   const locale = await getLocale(),
     t = dictionary(locale);

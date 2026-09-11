@@ -7,7 +7,7 @@ import { isConfigured } from './supabase/config';
 import { requireProfile } from './auth';
 import { can, movementType, stockSchema, transferSchema } from './domain';
 import type { Key } from './i18n';
-import { z } from 'zod';
+import { loginCredentials } from './auth-domain';
 export type ActionState = {
   error?: Key;
   fields?: Partial<Record<'quantity' | 'reason' | 'notes', Key>>;
@@ -35,19 +35,18 @@ export async function setLanguage(form: FormData) {
 }
 export async function signIn(_previous: ActionState, form: FormData): Promise<ActionState> {
   if (!isConfigured()) redirect('/setup');
-  const result = z
-    .object({ email: z.email().max(254), password: z.string().min(1).max(1024) })
-    .safeParse(Object.fromEntries(form));
-  if (!result.success) return { error: 'authError' };
+  const credentials = loginCredentials(form);
+  if (!credentials) return { error: 'authError' };
   const db = await supabase();
-  const { data, error } = await db.auth.signInWithPassword(result.data);
+  const { data, error } = await db.auth.signInWithPassword(credentials);
   if (error) return { error: 'authError' };
   const { data: profile } = await db
     .from('profiles')
-    .select('language')
+    .select('language,must_change_password')
     .eq('id', data.user.id)
     .maybeSingle();
   if (profile) (await cookies()).set('coral-language', profile.language, cookieOptions);
+  if (profile?.must_change_password) redirect('/change-password');
   redirect('/');
 }
 export async function signOut() {

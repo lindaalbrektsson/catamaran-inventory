@@ -38,6 +38,14 @@ export default async function More() {
       <Link href="/expenses" className="mt-5 flex min-h-14 items-center rounded-xl border p-4">
         {t.receipts}
       </Link>
+      {profile.account_admin && (
+        <Link
+          href="/staff"
+          className="mt-5 hidden min-h-14 items-center rounded-xl border p-4 md:flex"
+        >
+          {t.staffManagement}
+        </Link>
+      )}
       <InstallControls locale={locale} keepInstructions />
     </div>
   );

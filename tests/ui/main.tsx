@@ -1,4 +1,6 @@
 import { MovementHistory } from '@/components/movement-history';
+import { AccountForm } from '@/components/account-form';
+import { PasswordChangeForm } from '@/components/password-change-form';
 import { QuickMove } from '@/components/quick-move';
 import { QuickAdd } from '@/components/quick-add';
 import { NeedForm } from '@/components/need-form';
@@ -111,7 +113,11 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.get('view') === 'history' ? (
+        {params.get('view') === 'account' ? (
+          <AccountForm locale={locale} configured={!params.has('unconfigured')} />
+        ) : params.get('view') === 'password' ? (
+          <PasswordChangeForm locale={locale} />
+        ) : params.get('view') === 'history' ? (
           <MovementHistory
             itemName="Water"
             locationName="Bodega"

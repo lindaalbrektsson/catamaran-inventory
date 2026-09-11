@@ -20,7 +20,7 @@ const capture = (id = crypto.randomUUID(), type = 'FUEL', payment = 'CASH') =>
   db.query('select public.capture_receipt($1,$2,$3,$4,128)', [id, type, payment, 'a'.repeat(64)]);
 beforeAll(async () => {
   db = new PGlite();
-  await db.exec(`create role anon;create role authenticated;create schema auth;create schema storage;
+  await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;create schema storage;
  create table auth.users(id uuid primary key,raw_user_meta_data jsonb default '{}');create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
  create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text,metadata jsonb,unique(bucket_id,name));alter table storage.objects enable row level security;
@@ -38,7 +38,10 @@ beforeAll(async () => {
     [crew, 'CREW'],
   ]) {
     await db.query('insert into auth.users(id) values($1)', [id]);
-    await db.query('update public.profiles set active=true,role=$1 where id=$2', [role, id]);
+    await db.query(
+      'update public.profiles set active=true,must_change_password=false,role=$1 where id=$2',
+      [role, id],
+    );
   }
 });
 beforeEach(async () => {

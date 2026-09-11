@@ -139,3 +139,5 @@ This selects `.next-qa`; leave the variable unset in Vercel, which uses the norm
 ## Quick operational Add and purchase needs
 
 See [Quick Add and Need to Purchase](docs/QUICK_ADD_AND_NEEDS.md) for the simplified entry flow, duplicate checks, private reference photos and integrity rules.
+
+Staff phone onboarding, ACCOUNT_ADMIN permissions and the required manual server setup: [Staff authentication](docs/STAFF_AUTH.md).

@@ -24,6 +24,7 @@ site_url = "http://localhost:3000"
 additional_redirect_urls = []
 enable_signup = false
 enable_anonymous_sign_ins = false
+minimum_password_length = 12
 
 [auth.email]
 enable_signup = false
@@ -32,3 +33,7 @@ enable_confirmations = true
 [storage]
 enabled = true
 file_size_limit = "10MiB"
+
+[auth.sms]
+enable_signup = false
+enable_confirmations = true
