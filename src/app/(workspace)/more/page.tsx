@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { InstallControls } from '@/components/pwa-support';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
@@ -29,6 +30,11 @@ export default async function More() {
           </form>
         </CardContent>
       </Card>
+      {['OWNER', 'MANAGER'].includes(profile.role) && (
+        <Link href="/needs" className="mt-5 flex min-h-14 items-center rounded-xl border p-4">
+          {t.needsTitle}
+        </Link>
+      )}
       <InstallControls locale={locale} keepInstructions />
     </div>
   );

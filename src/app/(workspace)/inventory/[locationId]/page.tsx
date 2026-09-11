@@ -1,3 +1,5 @@
+import { QuickAdd } from '@/components/quick-add';
+import { itemCatalog } from '@/lib/item-catalog';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
 import { getLocation, getInventory } from '@/lib/inventory';
@@ -16,11 +18,24 @@ export default async function LocationInventory({
   const { locationId } = await params,
     locale = await getLocale(),
     t = dictionary(locale);
-  const [location, items, search] = await Promise.all([
-    getLocation(locationId),
-    getInventory(locationId),
-    searchParams,
-  ]);
+  const [location, search] = await Promise.all([getLocation(locationId), searchParams]);
+  if (search.action === 'add' && ['OWNER', 'MANAGER'].includes(profile.role))
+    return (
+      <div className="page">
+        <PageHeader
+          title={`${t.addStock} · ${location.name}`}
+          back={`/inventory/${locationId}`}
+          locale={locale}
+        />
+        <QuickAdd
+          catalog={await itemCatalog()}
+          locale={locale}
+          locationId={locationId}
+          requestId={crypto.randomUUID()}
+        />
+      </div>
+    );
+  const items = await getInventory(locationId);
   return (
     <div className="page">
       <PageHeader

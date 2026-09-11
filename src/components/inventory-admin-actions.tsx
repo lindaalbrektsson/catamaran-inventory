@@ -7,7 +7,7 @@ export function InventoryAdminActions({ role, locale }: { role: string; locale: 
     <div className="mb-5 hidden md:block">
       <Link
         className="inline-flex min-h-12 items-center rounded-xl border p-3"
-        href="/inventory/items"
+        href="/add"
       >
         {t.addItem}
       </Link>

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
 import { getLocations } from '@/lib/inventory';
@@ -12,6 +13,14 @@ export default async function Inventory() {
   return (
     <div className="page">
       <PageHeader title={t.inventory} description={t.inventoryIntro} locale={locale} />
+      {['OWNER', 'MANAGER'].includes(profile.role) && (
+        <Link
+          href="/needs"
+          className="mb-4 inline-flex min-h-12 items-center rounded-xl border px-4"
+        >
+          {t.needsTitle}
+        </Link>
+      )}
       <InventoryAdminActions role={profile.role} locale={locale} />
       <div className="mb-5">
         <h2 className="section-title">{t.chooseLocation}</h2>

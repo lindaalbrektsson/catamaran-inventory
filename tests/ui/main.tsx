@@ -1,3 +1,5 @@
+import { QuickAdd } from '@/components/quick-add';
+import { NeedForm } from '@/components/need-form';
 import { createRoot } from 'react-dom/client';
 import { ReceiptReview } from '@/components/receipt-review';
 import { DesktopOnly } from '@/components/desktop-only';
@@ -107,7 +109,28 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.get('view') === 'review' ? (
+        {params.get('view') === 'quick-add' ? (
+          <QuickAdd
+            locale={locale}
+            catalog={{
+              categories: [item.category],
+              products: [
+                item.product,
+                { ...item.product, id: '30000000-0000-4000-8000-000000000099', name: 'Coca Cola' },
+              ],
+              locations,
+            }}
+            locationId={params.has('bottom') ? '' : locations[0].id}
+            requestId="90000000-0000-4000-8000-000000000001"
+          />
+        ) : params.get('view') === 'need' ? (
+          <NeedForm
+            locale={locale}
+            catalog={{ categories: [item.category], products: [item.product], locations }}
+            id="90000000-0000-4000-8000-000000000002"
+            requestId="90000000-0000-4000-8000-000000000003"
+          />
+        ) : params.get('view') === 'review' ? (
           <ReceiptReview
             id="80000000-0000-4000-8000-000000000001"
             status="NEW"

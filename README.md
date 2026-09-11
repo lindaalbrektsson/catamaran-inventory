@@ -135,3 +135,7 @@ Remove-Item Env:NEXT_QA_BUILD
 ```
 
 This selects `.next-qa`; leave the variable unset in Vercel, which uses the normal `.next` output.
+
+## Quick operational Add and purchase needs
+
+See [Quick Add and Need to Purchase](docs/QUICK_ADD_AND_NEEDS.md) for the simplified entry flow, duplicate checks, private reference photos and integrity rules.

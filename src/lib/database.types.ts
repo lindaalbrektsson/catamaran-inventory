@@ -1,5 +1,25 @@
 import type { Role, Unit, MovementType } from './domain';
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+export type PurchaseNeed = {
+  id: string;
+  name: string;
+  product_id: string | null;
+  location_id: string | null;
+  country: 'BELIZE' | 'USA';
+  product_url: string;
+  comment: string;
+  status: 'PENDING' | 'ORDERED' | 'DONE';
+  archived: boolean;
+  created_by: string;
+  created_at: string;
+  updated_by: string;
+  updated_at: string;
+  version: number;
+  photo_path: string | null;
+  photo_hash: string | null;
+  photo_size: number | null;
+  photo_ready: boolean;
+};
 export type Profile = {
   id: string;
   display_name: string;
@@ -90,6 +110,7 @@ type Table<Row, Insert = Partial<Row>> = {
 export type Database = {
   public: {
     Tables: {
+      purchase_needs: Table<PurchaseNeed>;
       receipt_intake: Table<{
         content_type: string;
         original_preserved: boolean;
@@ -132,6 +153,33 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      quick_add_stock: {
+        Args: {
+          p_request: string;
+          p_location: string;
+          p_product: string | null;
+          p_name: string;
+          p_category: string | null;
+          p_quantity: number;
+          p_confirm_duplicate: boolean;
+        };
+        Returns: string;
+      };
+      save_purchase_need: {
+        Args: {
+          p_request: string;
+          p_id: string;
+          p_values: Json;
+          p_version: number;
+          p_confirm_duplicate: boolean;
+        };
+        Returns: string;
+      };
+      reserve_need_photo: {
+        Args: { p_id: string; p_hash: string; p_size: number };
+        Returns: string;
+      };
+      complete_need_photo: { Args: { p_id: string }; Returns: undefined };
       reserve_original_receipt: {
         Args: {
           p_id: string;
