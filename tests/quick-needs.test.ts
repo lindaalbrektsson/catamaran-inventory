@@ -34,7 +34,10 @@ beforeAll(async () => {
     [crew, 'CREW'],
   ]) {
     await db.query('insert into auth.users(id) values($1)', [id]);
-    await db.query('update public.profiles set active=true,must_change_password=false,role=$1 where id=$2', [role, id]);
+    await db.query(
+      'update public.profiles set active=true,must_change_password=false,role=$1 where id=$2',
+      [role, id],
+    );
   }
 });
 
@@ -183,6 +186,7 @@ it('needs preserve creator/time while updating status and record every change', 
     status: 'ORDERED',
     version: 2,
   });
+
   expect(
     (await db.query('select * from public.audit_events where entity_id=$1', [id])).rows,
   ).toHaveLength(2);
@@ -308,4 +312,49 @@ it('failed transfer rolls a newly configured destination back', async () => {
       )
     ).rows,
   ).toHaveLength(0);
+});
+
+it('linked needs are unique across locations and countries even with override, and DONE permits another', async () => {
+  const id = crypto.randomUUID();
+  await need(id);
+  await db.exec('savepoint duplicate');
+  await expect(
+    db.query('select public.save_purchase_need($1,$2,$3,0,true)', [
+      crypto.randomUUID(),
+      crypto.randomUUID(),
+      JSON.stringify({ ...needValue, location_id: '', country: 'USA' }),
+    ]),
+  ).rejects.toThrow('DUPLICATE_NEED');
+  await db.exec('rollback to savepoint duplicate');
+  await need(id, { ...needValue, status: 'ORDERED' }, 1);
+  await db.exec('savepoint ordered');
+  await expect(need()).rejects.toThrow('DUPLICATE_NEED');
+  await db.exec('rollback to savepoint ordered');
+  await need(id, { ...needValue, status: 'DONE' }, 2);
+  await need();
+  expect(
+    (
+      await db.query('select count(*)::int as n from public.purchase_needs where product_id=$1', [
+        product,
+      ])
+    ).rows,
+  ).toEqual([{ n: 2 }]);
+});
+
+it('new needs omit location, keep product UUID through rename, and permit text-only needs', async () => {
+  const id = crypto.randomUUID();
+  await need(id);
+  await db.exec('reset role');
+  await db.query("update public.products set name='Corrected fixture name' where id=$1", [product]);
+  expect(
+    (await db.query('select product_id,location_id from public.purchase_needs where id=$1', [id]))
+      .rows,
+  ).toEqual([{ product_id: product, location_id: null }]);
+  await user(owner);
+  await need(crypto.randomUUID(), {
+    ...needValue,
+    name: 'New spare part',
+    product_id: '',
+    location_id: '',
+  });
 });

@@ -5,6 +5,7 @@ import { getLocation, getItem, getHistory } from '@/lib/inventory';
 import { PageHeader } from '@/components/page-header';
 import { ProductOverview } from '@/components/product-overview';
 import { MovementHistory } from '@/components/movement-history';
+import { LowNeedSuggestions } from '@/components/low-need-suggestions';
 export default async function ProductDetail({
   params,
   searchParams,
@@ -53,6 +54,9 @@ export default async function ProductDetail({
           basePath={basePath}
         />
       </div>
+      {['OWNER', 'MANAGER'].includes(profile.role) && (
+        <LowNeedSuggestions items={[item]} location={location} locale={locale} />
+      )}
     </div>
   );
 }

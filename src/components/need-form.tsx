@@ -7,6 +7,7 @@ import type { ItemCatalog } from '@/lib/item-domain';
 import type { PurchaseNeed } from '@/lib/database.types';
 import { usePreservedForm } from './use-preserved-form';
 import { Button } from './ui/button';
+import { NeedItemPicker } from './need-item-picker';
 export function NeedForm({
   locale,
   catalog,
@@ -20,13 +21,15 @@ export function NeedForm({
   id: string;
   requestId: string;
   initial?: PurchaseNeed;
-  suggestion?: { name: string; product_id: string; location_id: string };
+  suggestion?: { name: string; product_id: string };
 }) {
   const t = dictionary(locale),
     [state, action, pending] = useActionState(saveNeed, {}),
     [request, setRequest] = useState(requestId),
+    [productId, setProductId] = useState(initial?.product_id ?? suggestion?.product_id ?? ''),
     ref = usePreservedForm(),
     c = 'min-h-12 w-full rounded-xl border bg-background p-3';
+  const existing = catalog.needs?.find((n) => n.product_id === productId && n.id !== id);
   return (
     <form
       ref={ref}
@@ -37,18 +40,25 @@ export function NeedForm({
       <input type="hidden" name="requestId" value={request} />
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="version" value={initial?.version ?? 0} />
-      <label className="grid gap-2">
-        {t.itemName}
-        <input
-          className={c}
-          name="name"
-          required
-          maxLength={150}
-          defaultValue={initial?.name ?? suggestion?.name}
-          spellCheck
-          lang={locale}
-        />
-      </label>
+      <NeedItemPicker
+        catalog={catalog}
+        locale={locale}
+        productId={productId}
+        name={initial?.name ?? suggestion?.name ?? ''}
+        onProduct={(id) => {
+          setProductId(id);
+          setRequest(crypto.randomUUID());
+        }}
+      />
+      {existing && (
+        <Link
+          role="status"
+          className="rounded-xl border p-3 underline"
+          href={`/needs/${existing.id}`}
+        >
+          {t.needAlreadyActive} · {existing.status === 'PENDING' ? t.needPending : t.ORDERED}
+        </Link>
+      )}
       <label className="grid gap-2">
         {t.needCountry}
         <select className={c} name="country" defaultValue={initial?.country ?? 'BELIZE'}>
@@ -59,38 +69,6 @@ export function NeedForm({
       <details className="rounded-xl border p-3">
         <summary className="min-h-12 cursor-pointer py-3">{t.needOptional}</summary>
         <div className="grid gap-4">
-          <label className="grid gap-2">
-            {t.needRelated}
-            <select
-              className={c}
-              name="product_id"
-              defaultValue={initial?.product_id ?? suggestion?.product_id ?? ''}
-            >
-              <option value="">{t.notSet}</option>
-              {catalog.products
-                .filter((p) => p.active)
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label className="grid gap-2">
-            {t.needLocation}
-            <select
-              className={c}
-              name="location_id"
-              defaultValue={initial?.location_id ?? suggestion?.location_id ?? ''}
-            >
-              <option value="">{t.notSet}</option>
-              {catalog.locations.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
-          </label>
           <label className="grid gap-2">
             {t.needLink}
             <input
@@ -138,19 +116,26 @@ export function NeedForm({
       ) : (
         <input type="hidden" name="status" value="PENDING" />
       )}
-      {state.error === 'DUPLICATE_NEED' && (
+      {state.error === 'DUPLICATE_NEED' && !productId && (
         <label className="flex min-h-12 items-center gap-3">
           <input name="confirmDuplicate" type="checkbox" />
           {t.needDuplicateConfirm}
         </label>
       )}
       {state.error && <p role="alert">{t[state.error]}</p>}
+      {state.existingNeed && (
+        <Link className="min-h-12 underline" href={`/needs/${state.existingNeed}`}>
+          {t.needOpen}
+        </Link>
+      )}
       {state.error === 'needPhotoRetry' && (
         <Link href={`/needs/${id}`} className="min-h-12 underline">
           {t.needEdit}
         </Link>
       )}
-      <Button disabled={pending}>{pending ? t.saving : t.needSave}</Button>
+      <Button disabled={pending || (!!existing && initial?.status !== 'DONE')}>
+        {pending ? t.saving : t.needSave}
+      </Button>
     </form>
   );
 }

@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase/server';
-import { itemCatalog } from '@/lib/item-catalog';
+import { needCatalog } from '@/lib/item-catalog';
 import { validId } from '@/lib/inventory';
 import { NeedForm } from '@/components/need-form';
 import { LocalTime } from '@/components/local-time';
@@ -20,6 +20,7 @@ export default async function NeedDetail({ params }: { params: Promise<{ id: str
   const { data: n, error } = await db.from('purchase_needs').select('*').eq('id', id).maybeSingle();
   if (error) throw new Error('NEED_LOAD_FAILED');
   if (!n) notFound();
+  const catalog = await needCatalog();
   const { data: actors, error: actorError } = await db
     .from('profiles')
     .select('id,display_name')
@@ -27,7 +28,11 @@ export default async function NeedDetail({ params }: { params: Promise<{ id: str
   if (actorError) throw new Error('ACTORS_LOAD_FAILED');
   return (
     <div className="page">
-      <PageHeader title={n.name} back="/needs" locale={locale} />
+      <PageHeader
+        title={catalog.products.find((p) => p.id === n.product_id)?.name ?? n.name}
+        back="/needs"
+        locale={locale}
+      />
       <div className="mb-5 grid gap-2 text-sm">
         <p>
           {t.needCreated}: {actors.find((a) => a.id === n.created_by)?.display_name ?? t.notSet} ·{' '}
@@ -63,7 +68,7 @@ export default async function NeedDetail({ params }: { params: Promise<{ id: str
       <h2 className="mb-4 font-semibold">{t.needEdit}</h2>
       <NeedForm
         locale={locale}
-        catalog={await itemCatalog()}
+        catalog={catalog}
         id={n.id}
         initial={n}
         requestId={crypto.randomUUID()}
