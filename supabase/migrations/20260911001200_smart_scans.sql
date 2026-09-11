@@ -62,7 +62,7 @@ begin
  if private.can_read_scan(p_id) is not true then raise exception 'FORBIDDEN';end if;
  select * into s from public.smart_scans where id=p_id for update;
  if s.status='APPROVED' then
-  if s.approved_by<>auth.uid() or s.review<>p_review then raise exception 'REQUEST_CONFLICT';end if;return s.actions;
+  if s.approved_by<>auth.uid() or s.review is distinct from p_review then raise exception 'REQUEST_CONFLICT';end if;return s.actions;
  end if;
  if s.status<>'REVIEW' then raise exception 'SCAN_STATE';end if;
  if jsonb_typeof(p_review) is distinct from 'object' or jsonb_typeof(p_review->'rows') is distinct from 'array' or jsonb_array_length(p_review->'rows')>50 or octet_length(p_review::text)>64000
@@ -82,7 +82,7 @@ begin
    or (v_product is not null and not exists(select 1 from public.products where id=v_product and active)) then raise exception 'INVALID_INPUT';end if;
   if v_action='NEED' then
    v_need:=gen_random_uuid();
-   perform public.save_purchase_need(gen_random_uuid(),v_need,jsonb_build_object('name',v_name,'product_id',v_product,'location_id','','country',r->>'country','status','PENDING','product_url','','comment','SMART_SCAN '||p_id::text||case when v_quantity is null then '' else '; quantity='||v_quantity::text end),0,false);
+   perform public.save_purchase_need(gen_random_uuid(),v_need,jsonb_build_object('name',v_name,'product_id',v_product,'location_id','','country',r->>'country','status','PENDING','product_url','','comment',''),0,false);
    v_actions:=v_actions||jsonb_build_array(jsonb_build_object('index',v_index,'action','NEED','need_id',v_need,'product_id',v_product));
   else
    if s.scan_type='NOTE' and (v_location is null or not exists(select 1 from public.locations where id=v_location and active)) then raise exception 'INVALID_INPUT';end if;
