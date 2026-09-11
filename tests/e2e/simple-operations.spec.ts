@@ -13,6 +13,7 @@ test('new deployment notification does not reload an unfinished form', async ({ 
   );
   await page.goto('/login');
   await expect(page.getByText(/New update available/)).toBeVisible();
+  await page.getByRole('button', { name: 'Email', exact: true }).click();
   await page.getByLabel('Email address').fill('unfinished@example.test');
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
   await expect(page.getByLabel('Email address')).toHaveValue('unfinished@example.test');
@@ -81,4 +82,3 @@ test('owner overview filters quantities by location and product', async ({ page 
     .fill('no matching item');
   await expect(page.locator('tbody tr')).toHaveCount(0);
 });
-

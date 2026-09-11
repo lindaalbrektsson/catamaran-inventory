@@ -88,6 +88,10 @@ export type PurchaseNeed = {
   photo_ready: boolean;
 };
 export type Profile = {
+  must_change_password: boolean;
+  account_admin: boolean;
+  credential_pending: boolean;
+  credential_epoch: number;
   id: string;
   display_name: string;
   role: Role;
@@ -277,6 +281,20 @@ export type Database = {
         };
         Returns: string;
       };
+      manage_staff: {
+        Args: { p_id: string; p_name: string; p_role: Role; p_language: string; p_active: boolean };
+        Returns: undefined;
+      };
+      begin_account_change: {
+        Args: { p_request: string; p_target: string | null; p_kind: string };
+        Returns: Json;
+      };
+      finish_account_change: {
+        Args: { p_request: string; p_target: string; p_values: Json };
+        Returns: undefined;
+      };
+      set_account_admin: { Args: { p_target: string; p_enabled: boolean }; Returns: undefined };
+
       quick_add_stock: {
         Args: {
           p_request: string;

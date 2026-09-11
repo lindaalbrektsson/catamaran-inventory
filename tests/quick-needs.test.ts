@@ -34,7 +34,7 @@ beforeAll(async () => {
     [crew, 'CREW'],
   ]) {
     await db.query('insert into auth.users(id) values($1)', [id]);
-    await db.query('update public.profiles set active=true,role=$1 where id=$2', [role, id]);
+    await db.query('update public.profiles set active=true,must_change_password=false,role=$1 where id=$2', [role, id]);
   }
 });
 

@@ -105,6 +105,60 @@ export const en = {
   taskStatusHint: 'Need review → In progress → Done',
   taskDateZone: 'Due dates and reminder entry use Belize time.',
   taskArchiveHint: 'Archiving preserves the task, subtasks and history.',
+  accountAdminSetup:
+    'Secure account administration is not configured. Ask the project administrator to complete server setup.',
+  accountAction: 'Account action',
+  accountCompleted: 'Account updated.',
+  temporaryOnce:
+    'Send this temporary password privately with the app link. It is shown only now and disappears when you leave or hide this page.',
+  temporaryDismiss: 'Done — hide password',
+  resetStaffPassword: 'Issue new temporary password',
+  changeStaffPhone: 'Change login phone',
+  phoneVerified: 'I have verified that this number belongs to this staff member.',
+  accountChangeFailed:
+    'The account change could not be confirmed. Contact the project administrator before trying again. Incomplete credential changes keep access blocked.',
+  accountAdminProtected:
+    'Remove the account administrator permission before changing this role or deactivating this user. Keep at least one active account administrator.',
+  accountAlreadyCompleted:
+    'This operation already completed. The temporary password cannot be retrieved. Issue a new password if needed.',
+  accountPermissionFailed:
+    'The capability could not be changed. Keep at least one active account administrator.',
+
+  loginPhone: 'Phone',
+  loginEmail: 'Email',
+  phoneCountry: 'Country code',
+  phoneNumber: 'Phone number',
+  phoneHint: 'Enter the national number without the country code or leading zero.',
+  country501: 'Belize +501',
+  country57: 'Colombia +57',
+  country46: 'Sweden +46',
+  newPasswordTitle: 'Create your new password',
+  newPasswordHint: 'Replace your temporary password before opening the workspace.',
+  confirmPassword: 'Confirm new password',
+  passwordRules: 'Use 12–128 characters and enter the same new password twice.',
+  passwordChangeFailed:
+    'The password could not be changed. Try a different password or contact your owner.',
+  savePassword: 'Save new password',
+  staffManagement: 'Staff accounts',
+  staffName: 'Display name',
+  staffRole: 'Role',
+  staffSaved: 'Staff profile saved.',
+  staffSave: 'Save staff profile',
+  lastOwner: 'Keep at least one active owner with a completed password setup.',
+  passwordPending: 'New password required',
+  staffProvision: 'Create a staff account',
+  staffAdminBoundary:
+    'Creating an Auth account requires a secure administrator connection that is not configured. Use the Supabase administrator workflow below. No password is collected or stored by this page.',
+  staffProvisionSteps:
+    'In Supabase Auth, create the phone or email account with a unique temporary password. Phone accounts do not require email. Then find the same user ID below and set the display name, role, language and active status. New accounts must change their password before accessing the app.',
+  staffPhoneBoundary:
+    'To change a phone number, an authorized Supabase administrator must update this existing Auth user ID and verify the new number. Never create a replacement user. The app audit records masked phone changes automatically.',
+  staffPasswordBoundary:
+    'Enter the temporary password only in the secure Auth administrator tool. Share it privately with the staff member; never put it in notes, metadata, audit records or chat.',
+  staffManualDocs: 'Detailed administrator instructions',
+  staffIdentity: 'Permanent user ID',
+  staffContact: 'Login identity and recovery',
+
   quickSearch: 'Type an item name',
   quickCreate: 'Create as a new item',
   quickSelected: 'Selected item',
@@ -626,6 +680,60 @@ export const es: Record<Key, string> = {
   taskStatusHint: 'Por revisar → En curso → Terminada',
   taskDateZone: 'Las fechas límite y los recordatorios usan la hora de Belice.',
   taskArchiveHint: 'Archivar conserva la tarea, las subtareas y su historial.',
+  accountAdminSetup:
+    'La administración segura de cuentas no está configurada. Pide al administrador del proyecto que complete la configuración del servidor.',
+  accountAction: 'Acción de cuenta',
+  accountCompleted: 'Cuenta actualizada.',
+  temporaryOnce:
+    'Envía esta contraseña temporal en privado junto con el enlace de la app. Solo se muestra ahora y desaparece al salir u ocultar esta página.',
+  temporaryDismiss: 'Listo — ocultar contraseña',
+  resetStaffPassword: 'Generar nueva contraseña temporal',
+  changeStaffPhone: 'Cambiar teléfono de acceso',
+  phoneVerified: 'He verificado que este número pertenece a esta persona.',
+  accountChangeFailed:
+    'No se pudo confirmar el cambio. Contacta al administrador del proyecto antes de reintentar. El acceso permanece bloqueado si el cambio de credenciales está incompleto.',
+  accountAdminProtected:
+    'Quita el permiso de administrador de cuentas antes de cambiar el rol o desactivar a esta persona. Mantén al menos un administrador de cuentas activo.',
+  accountAlreadyCompleted:
+    'Esta operación ya se completó. No se puede recuperar la contraseña temporal. Genera otra si es necesario.',
+  accountPermissionFailed:
+    'No se pudo cambiar el permiso. Conserva al menos un administrador de cuentas activo.',
+
+  loginPhone: 'Teléfono',
+  loginEmail: 'Correo',
+  phoneCountry: 'Código de país',
+  phoneNumber: 'Número de teléfono',
+  phoneHint: 'Ingresa el número nacional sin código de país ni cero inicial.',
+  country501: 'Belice +501',
+  country57: 'Colombia +57',
+  country46: 'Suecia +46',
+  newPasswordTitle: 'Crea tu nueva contraseña',
+  newPasswordHint: 'Cambia tu contraseña temporal antes de abrir la aplicación.',
+  confirmPassword: 'Confirma la nueva contraseña',
+  passwordRules: 'Usa entre 12 y 128 caracteres e ingresa la misma contraseña nueva dos veces.',
+  passwordChangeFailed:
+    'No se pudo cambiar la contraseña. Prueba otra contraseña o contacta a tu propietario.',
+  savePassword: 'Guardar nueva contraseña',
+  staffManagement: 'Cuentas del personal',
+  staffName: 'Nombre',
+  staffRole: 'Rol',
+  staffSaved: 'Perfil guardado.',
+  staffSave: 'Guardar perfil',
+  lastOwner: 'Debe quedar al menos un propietario activo que haya completado su contraseña.',
+  passwordPending: 'Debe crear una nueva contraseña',
+  staffProvision: 'Crear una cuenta del personal',
+  staffAdminBoundary:
+    'Crear una cuenta de Auth requiere una conexión administrativa segura que aún no está configurada. Sigue las instrucciones de Supabase abajo. Esta página no solicita ni guarda contraseñas.',
+  staffProvisionSteps:
+    'En Supabase Auth, crea la cuenta con teléfono o correo y una contraseña temporal única. Las cuentas con teléfono no requieren correo. Luego busca el mismo ID abajo y configura nombre, rol, idioma y estado activo. Las cuentas nuevas deben cambiar su contraseña antes de acceder.',
+  staffPhoneBoundary:
+    'Para cambiar un teléfono, un administrador autorizado de Supabase debe actualizar este mismo ID de usuario de Auth y verificar el nuevo número. Nunca crees un usuario de reemplazo. La auditoría registra el cambio con números ocultos parcialmente.',
+  staffPasswordBoundary:
+    'Ingresa la contraseña temporal solo en la herramienta administrativa segura de Auth. Compártela en privado con la persona; nunca la pongas en notas, metadatos, auditorías ni chats.',
+  staffManualDocs: 'Instrucciones para el administrador',
+  staffIdentity: 'ID permanente de usuario',
+  staffContact: 'Acceso y recuperación de cuenta',
+
   quickSearch: 'Escribe el nombre del artículo',
   quickCreate: 'Crear como artículo nuevo',
   quickSelected: 'Artículo seleccionado',

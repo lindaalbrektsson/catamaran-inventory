@@ -12,6 +12,11 @@ export default defineConfig({
         replacement: path.join(root, 'tests/ui/document-upload.ts'),
       },
       { find: '@/lib/task-actions', replacement: path.join(root, 'tests/ui/task-actions.ts') },
+      {
+        find: '@/lib/account-actions',
+        replacement: path.join(root, 'tests/ui/account-actions.ts'),
+      },
+      { find: '@/lib/staff-actions', replacement: path.join(root, 'tests/ui/staff-actions.ts') },
       { find: '@/lib/quick-actions', replacement: path.join(root, 'tests/ui/quick-actions.ts') },
       {
         find: '@/lib/original-upload',
