@@ -63,7 +63,12 @@ test('production PWA metadata, icons and safe public cache', async ({ page, requ
 test('offline navigation is translated, never queues mutations and recovers', async ({
   page,
   context,
+  browserName,
 }) => {
+  test.skip(
+    browserName === 'webkit',
+    'Windows WebKit setOffline navigation returns an internal engine error; compatibility suite tests actual network loss with the production worker.',
+  );
   await page.goto('/');
   await page.getByRole('button', { name: 'Language', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'es');

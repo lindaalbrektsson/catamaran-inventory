@@ -87,6 +87,8 @@
 }
 .page {
   @apply mx-auto w-full max-w-6xl px-5 py-7 md:px-10 md:py-10;
+  /* User-entered names/links must not widen mobile grids or suggestion lists. */
+  overflow-wrap: anywhere;
 }
 .eyebrow {
   @apply text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground;

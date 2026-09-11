@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/e2e',
+  testIgnore: /mobile-compatibility\.spec\.ts/,
   fullyParallel: true,
   use: { baseURL: 'http://localhost:3100', trace: 'retain-on-failure' },
   projects: [
