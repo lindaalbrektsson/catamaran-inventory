@@ -48,7 +48,12 @@ export default async function Receipts({
       {p.role === 'OWNER' && (
         <div className="mb-6 hidden flex-wrap gap-3 md:flex">
           {(['NEW', 'REVIEWED', 'ARCHIVED'] as const).map((s) => (
-            <Link className="rounded-xl border p-3" key={s} href={`/expenses?status=${s}`}>
+            <Link
+              aria-current={status === s ? 'page' : undefined}
+              className={`rounded-xl border p-3 ${status === s ? 'bg-primary text-primary-foreground' : ''}`}
+              key={s}
+              href={`/expenses?status=${s}`}
+            >
               {s === 'NEW' ? t.needsReview : t[s]}
             </Link>
           ))}

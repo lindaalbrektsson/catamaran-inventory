@@ -382,3 +382,68 @@ it('denies manager category creation through RLS', async () => {
     db.query("insert into public.categories(name_en,name_es) values('Invalid','Invalid')"),
   ).rejects.toThrow();
 });
+
+it('runs the complete manager stock flow with immutable history and atomic corrections', async () => {
+  const before = (
+    await db.query('select * from public.inventory_transactions where id=$1', [original])
+  ).rows[0];
+  await db.query("select public.change_stock($1,$2,$3,6,'ADD','other','')", [
+    crypto.randomUUID(),
+    product,
+    storage,
+  ]);
+  await db.query("select public.change_stock($1,$2,$3,3,'ADD','other','')", [
+    crypto.randomUUID(),
+    product,
+    boat,
+  ]);
+  await db.query("select public.change_stock($1,$2,$3,2,'REMOVE','other','')", [
+    crypto.randomUUID(),
+    product,
+    boat,
+  ]);
+  const transferId = crypto.randomUUID();
+  await db.query("select public.transfer_stock($1,$2,$3,$4,4,'')", [
+    transferId,
+    product,
+    storage,
+    boat,
+  ]);
+  await db.query("select public.transfer_stock($1,$2,$3,$4,5,'')", [
+    crypto.randomUUID(),
+    product,
+    boat,
+    storage,
+  ]);
+  const leg = (
+    await db.query<{ id: string }>(
+      "select id from public.inventory_transactions where transfer_id=$1 and transaction_type='TRANSFER_OUT'",
+      [transferId],
+    )
+  ).rows[0].id;
+  await reverse(leg);
+  const balances = (
+    await db.query<{ location_id: string; quantity: string }>(
+      'select location_id,quantity from public.inventory_balances order by location_id',
+    )
+  ).rows;
+  expect(balances).toEqual([
+    { location_id: boat, quantity: '6.000' },
+    { location_id: storage, quantity: '11.000' },
+  ]);
+  expect(
+    (await db.query('select * from public.inventory_transactions where id=$1', [original])).rows[0],
+  ).toEqual(before);
+  await user(owner);
+  expect(
+    (
+      await db.query(
+        'select * from public.inventory_transactions where performed_by_user_id<>$1 or created_at is null',
+        [manager],
+      )
+    ).rows,
+  ).toHaveLength(0);
+  expect(
+    (await db.query("select * from public.audit_events where action='REVERSAL'")).rows.length,
+  ).toBeGreaterThan(0);
+});

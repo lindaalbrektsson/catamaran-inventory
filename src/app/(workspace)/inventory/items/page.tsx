@@ -1,3 +1,4 @@
+import { DesktopOnly } from '@/components/desktop-only';
 import { requireProfile, getLocale } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { getItem } from '@/lib/inventory';
@@ -36,8 +37,8 @@ export default async function Items({
         mode: 'update',
       }
     : undefined;
-  return (
-    <div className={importing ? 'page hidden md:block' : 'page'}>
+  const content = (
+    <div className="page">
       <h1 className="mb-5 text-2xl font-semibold">
         {importing ? t.importItems : item ? t.editItem : t.addItem}
       </h1>
@@ -51,4 +52,5 @@ export default async function Items({
       />
     </div>
   );
+  return importing ? <DesktopOnly locale={locale}>{content}</DesktopOnly> : content;
 }

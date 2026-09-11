@@ -5,6 +5,7 @@ import { dictionary, type Locale } from '@/lib/i18n';
 import { units } from '@/lib/domain';
 import {
   validateItems,
+  validateItemEdit,
   type ItemCatalog,
   type ItemInput,
   type PreviewRow,
@@ -192,8 +193,11 @@ export function ItemManager({
           className="grid max-w-lg gap-4"
           onSubmit={(e) => {
             e.preventDefault();
-            if (validateItems([value], catalog)[0].errors.length) {
-              setError(validateItems([value], catalog)[0].errors[0]);
+            const errors = productId
+              ? validateItemEdit(value, productId, catalog)
+              : validateItems([value], catalog)[0].errors;
+            if (errors.length) {
+              setError(errors[0]);
               return;
             }
             start(() => save([value]));

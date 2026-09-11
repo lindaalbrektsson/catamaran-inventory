@@ -36,6 +36,7 @@ export function ReceiptReview({
           {t[key]}
           <input
             className="mt-1 min-h-12 w-full rounded-xl border bg-background px-3"
+            inputMode={key === 'amount' ? 'decimal' : undefined}
             name={key}
             defaultValue={details[key] ?? ''}
             maxLength={key === 'notes' ? 1000 : 200}

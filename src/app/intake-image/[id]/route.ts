@@ -1,3 +1,4 @@
+import { receiptImagePolicy } from '@/lib/receipt-response';
 import { getProfile } from '@/lib/auth';
 import { supabase } from '@/lib/supabase/server';
 import sharp from 'sharp';
@@ -49,7 +50,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       ...headers,
       'Content-Type': r.data.content_type,
       'Content-Disposition': `${url.searchParams.has('download') ? 'attachment' : 'inline'}; filename="receipt-${id}.${ext}"`,
-      'Content-Security-Policy': "default-src 'none'; sandbox",
+      'Content-Security-Policy': receiptImagePolicy,
     },
   });
 }

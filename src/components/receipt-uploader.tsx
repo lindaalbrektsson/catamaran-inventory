@@ -104,7 +104,7 @@ export function ReceiptUploader({
         type="file"
         accept="image/jpeg,image/png,image/webp"
         capture="environment"
-        className="sr-only"
+        className="hidden"
         disabled={pending || processing}
         onChange={(event) => {
           void choose(event.target.files?.[0]);
@@ -116,7 +116,7 @@ export function ReceiptUploader({
         aria-label={t.uploadImage}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        className="sr-only"
+        className="hidden"
         disabled={pending || processing}
         onChange={(event) => {
           void choose(event.target.files?.[0]);

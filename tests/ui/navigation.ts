@@ -2,3 +2,7 @@
 export function usePathname() {
   return '/inventory';
 }
+
+export function useRouter() {
+  return { refresh: () => sessionStorage.setItem('refreshed-fixture', 'yes') };
+}

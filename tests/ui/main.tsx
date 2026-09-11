@@ -1,4 +1,7 @@
 import { createRoot } from 'react-dom/client';
+import { ReceiptReview } from '@/components/receipt-review';
+import { DesktopOnly } from '@/components/desktop-only';
+import { UndoStock } from '@/components/undo-stock';
 import { OwnerInventory } from '@/components/owner-inventory';
 import { LocalTime } from '../../src/components/local-time';
 import { InventoryAdminActions } from '../../src/components/inventory-admin-actions';
@@ -104,7 +107,20 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.get('view') === 'overview' ? (
+        {params.get('view') === 'review' ? (
+          <ReceiptReview
+            id="80000000-0000-4000-8000-000000000001"
+            status="NEW"
+            details={{}}
+            locale={locale}
+          />
+        ) : params.get('view') === 'undo' ? (
+          <UndoStock id="50000000-0000-4000-8000-000000000001" locale={locale} />
+        ) : params.get('view') === 'desktop-only' ? (
+          <DesktopOnly locale={locale}>
+            <InventoryAdminActions role="OWNER" locale={locale} />
+          </DesktopOnly>
+        ) : params.get('view') === 'overview' ? (
           <OwnerInventory
             items={[...items, { ...item, location_id: locations[1].id, quantity: 8 }]}
             locations={locations}
@@ -123,7 +139,30 @@ createRoot(document.getElementById('root')!).render(
             locale={locale}
             importing={false}
             requestId="50000000-0000-4000-8000-000000000001"
-            catalog={{ categories: [item.category!], locations, products: [] }}
+            productId={params.has('edit') ? item.product_id : undefined}
+            initial={
+              params.has('edit')
+                ? {
+                    name: item.product.name,
+                    category: item.category.id,
+                    unit: item.product.unit,
+                    location: item.location_id,
+                    minimum: '',
+                    target: '',
+                    cost: '',
+                    currency: 'BZD',
+                    quantity: '',
+                    notes: '',
+                    active: true,
+                    mode: 'update',
+                  }
+                : undefined
+            }
+            catalog={{
+              categories: [item.category!],
+              locations,
+              products: params.has('edit') ? [item.product] : [],
+            }}
           />
         ) : params.get('view') === 'receipt' || params.get('view') === 'intake' ? (
           <ReceiptUploader

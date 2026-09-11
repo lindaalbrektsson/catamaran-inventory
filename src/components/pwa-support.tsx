@@ -146,7 +146,7 @@ export function PwaProvider({
           <Button
             disabled={!online}
             onClick={async () => {
-              const registration = await navigator.serviceWorker?.getRegistration();
+              const registration = await navigator.serviceWorker?.getRegistration().catch(() => undefined);
               if (registration?.waiting) {
                 navigator.serviceWorker.addEventListener(
                   'controllerchange',

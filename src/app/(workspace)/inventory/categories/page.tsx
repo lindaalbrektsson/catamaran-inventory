@@ -1,3 +1,4 @@
+import { DesktopOnly } from '@/components/desktop-only';
 import { redirect } from 'next/navigation';
 import { requireProfile, getLocale } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
@@ -14,17 +15,19 @@ export default async function Categories() {
     db.from('categories').select('*').order('name_en').range(a, b),
   );
   return (
-    <div className="page hidden md:block">
-      <h1 className="mb-5 text-2xl font-semibold">{t.configureCategories}</h1>
-      <div className="grid gap-4 lg:grid-cols-2">
-        {categories.map((category) => (
-          <CategoryEditor key={category.id} category={category} locale={locale} />
-        ))}
-        <CategoryEditor
-          category={{ id: crypto.randomUUID(), name_en: '', name_es: '', active: true }}
-          locale={locale}
-        />
+    <DesktopOnly locale={locale}>
+      <div className="page">
+        <h1 className="mb-5 text-2xl font-semibold">{t.configureCategories}</h1>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {categories.map((category) => (
+            <CategoryEditor key={category.id} category={category} locale={locale} />
+          ))}
+          <CategoryEditor
+            category={{ id: crypto.randomUUID(), name_en: '', name_es: '', active: true }}
+            locale={locale}
+          />
+        </div>
       </div>
-    </div>
+    </DesktopOnly>
   );
 }

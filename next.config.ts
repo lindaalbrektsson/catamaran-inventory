@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Optional isolated QA output when OneDrive locks a previous generated build.
+  distDir: process.env.NEXT_QA_BUILD === '1' ? '.next-qa' : '.next',
   experimental: { serverActions: { bodySizeLimit: '4mb' } },
   turbopack: { root: process.cwd() },
   poweredByHeader: false,

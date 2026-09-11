@@ -62,3 +62,24 @@ export function validateItems(values: ItemInput[], catalog: ItemCatalog): Previe
     return { row: value.sourceRow ?? index + 2, value, errors, duplicate: matches.length > 0 };
   });
 }
+
+// Editing is identified by the stable product ID, not by its previous name.
+// Historical-unit validation remains authoritative in the configure_item RPC.
+export function validateItemEdit(value: ItemInput, id: string, catalog: ItemCatalog): ItemError[] {
+  if (
+    !itemSchema.safeParse(value).success ||
+    Number(value.quantity) ||
+    value.mode !== 'update' ||
+    !catalog.products.some((p) => p.id === id) ||
+    !catalog.categories.some((c) => c.id === value.category && c.active) ||
+    !catalog.locations.some((l) => l.id === value.location && l.active)
+  )
+    return ['ITEM_INVALID'];
+  if (
+    catalog.products.some(
+      (p) => p.id !== id && p.name.trim().toLowerCase() === value.name.trim().toLowerCase(),
+    )
+  )
+    return ['ITEM_DUPLICATE'];
+  return [];
+}

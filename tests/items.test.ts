@@ -4,6 +4,7 @@ import { beforeAll, afterAll, beforeEach, afterEach, it, expect } from 'vitest';
 import {
   itemSchema,
   validateItems,
+  validateItemEdit,
   type ItemInput,
   type ItemCatalog,
 } from '../src/lib/item-domain';
@@ -173,4 +174,24 @@ it('flags formulas and unknown categories instead of using cached results', asyn
   ]);
   const rows = await parseItems(Buffer.from(await book.xlsx.writeBuffer()), catalog);
   expect(validateItems(rows, catalog)[0].errors).toContain('ITEM_INVALID');
+});
+
+it('validates edits by ID, allowing a rename and leaving unit-history checks to the RPC', () => {
+  const product = catalog.products[0];
+  const input = {
+    ...value,
+    name: 'Renamed fixture',
+    mode: 'update' as const,
+    unit: 'box' as const,
+  };
+  expect(validateItemEdit(input, product.id, catalog)).toEqual([]);
+  expect(validateItemEdit({ ...input, quantity: '2' }, product.id, catalog)).toEqual([
+    'ITEM_INVALID',
+  ]);
+});
+it('rejects an edit that collides with another product name', () => {
+  const [product, other] = catalog.products;
+  expect(
+    validateItemEdit({ ...value, name: other.name, mode: 'update' }, product.id, catalog),
+  ).toEqual(['ITEM_DUPLICATE']);
 });

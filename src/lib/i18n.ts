@@ -1,5 +1,11 @@
 export type Locale = 'en' | 'es';
 export const en = {
+  auditHistory: 'Audit history',
+  auditBefore: 'Before',
+  auditAfter: 'After',
+  auditRecord: 'Record',
+  desktopOnly: 'Open this owner tool on a desktop or tablet.',
+  backInventory: 'Back to inventory',
   remove: 'Remove',
   searchHistory: 'Search history by item, person or action',
   inactive: 'Inactive',
@@ -336,6 +342,12 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const es: Record<Key, string> = {
+  auditHistory: 'Historial de auditoría',
+  auditBefore: 'Antes',
+  auditAfter: 'Después',
+  auditRecord: 'Registro',
+  desktopOnly: 'Abre esta herramienta de propietario en una computadora o tableta.',
+  backInventory: 'Volver al inventario',
   remove: 'Retirar',
   searchHistory: 'Buscar historial por artículo, persona o acción',
   inactive: 'Inactivo',

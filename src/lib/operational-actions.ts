@@ -94,7 +94,11 @@ export async function reviewReceipt(_previous: ActionState, form: FormData): Pro
       id: z.uuid(),
       status: z.enum(['NEW', 'REVIEWED', 'ARCHIVED']),
       supplier: z.string().trim().max(200),
-      amount: z.string().regex(/^(?:\d{1,12}(?:\.\d{1,2})?)?$/),
+      amount: z
+        .string()
+        .trim()
+        .transform((v) => v.replace(',', '.'))
+        .pipe(z.string().regex(/^(?:\d{1,12}(?:\.\d{1,2})?)?$/)),
       currency: z.enum(['BZD', 'USD']),
       category: z.string().max(200),
       notes: z.string().max(1000),

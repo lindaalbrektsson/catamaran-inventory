@@ -38,7 +38,7 @@ Use the project URL and publishable key from Supabase Project Settings > API. Ne
 Follow [the reviewed hosted-deployment procedure](docs/SUPABASE_DEPLOYMENT.md) first. It includes a read-only preflight, CLI dry run and version-history checks. Do not paste schema migrations directly into the hosted SQL Editor or apply an initial migration over an existing schema.
 
 1. Apply `supabase/migrations/20260909000100_inventory.sql` through the Supabase CLI after the documented preflight.
-2. Optionally run `supabase/seed.sql`. This creates catalog entries and zero balances only. It contains no credentials or user accounts.
+2. Optionally run `supabase/seed.sql`. This creates safe catalog entries only, without invented operational quantities. It contains no credentials or user accounts.
 3. Create a confirmed user through the Supabase Auth dashboard. Set the user's display name in their profile. New profiles are inactive CREW regardless of user metadata; users cannot self-promote.
 4. Bootstrap the first owner in the SQL editor, replacing the UUID with the actual Auth user ID:
 
@@ -95,10 +95,10 @@ This starts the real Next.js app and a separate isolated component harness on po
 
 ## GitHub
 
-Create an empty GitHub repository (do not add a README, license or gitignore there), then replace YOUR-ACCOUNT:
+The existing repository is linked to GitHub. For a new checkout without origin:
 
 ```powershell
-git remote add origin https://github.com/YOUR-ACCOUNT/coral-tours-operations.git
+git remote add origin https://github.com/lindaalbrektsson/catamaran-inventory.git
 git push -u origin main
 ```
 
@@ -106,13 +106,13 @@ If origin is already configured, inspect it with `git remote -v`; use `git remot
 
 ## Vercel
 
-Import the GitHub repository, select Next.js and keep Root Directory at the repository root. Set both public Supabase environment variables for the appropriate Preview/Production environments. Use a separate Supabase project for testing. No deployment or cloud resource has been created by this local setup.
+Import the GitHub repository, select Next.js and keep Root Directory at the repository root. Set both public Supabase environment variables for the appropriate Preview/Production environments. Use a separate Supabase project for testing. Production is https://catamaran-inventory.vercel.app and is connected to the existing Supabase project.
 
 ## Scope and integrity
 
-Current work is the foundation and the first inventory slice, not the complete financial V1. Balances are locked and updated atomically with immutable transactions/audit events. Negative stock is prohibited. Request UUIDs prevent duplicate writes on retry. OWNER/MANAGER have broad operational access; CAPTAIN/CREW can see assigned locations and record tour consumption only. No frontend role check substitutes for RLS/RPC authorization.
+Current V1 includes inventory, transfers, corrections, receipt capture and owner review. Balances are locked and updated atomically with immutable transactions/audit events. Negative stock is prohibited. Request UUIDs prevent duplicate writes on retry. OWNER has administrative access; MANAGER has operational stock/receipt access; CAPTAIN/CREW can see assigned locations and record tour consumption only. No frontend role check substitutes for RLS/RPC authorization.
 
-Future purchases, transfers, stock counts, receipts and reimbursements will be implemented module by module. Money must use PostgreSQL numeric and integer minor-unit calculations. No offline synchronization or private-data service-worker caching is implemented.
+Full purchasing, accounting and detailed fuel management remain out of scope. Money must use PostgreSQL numeric and integer minor-unit calculations. No offline synchronization or private-data service-worker caching is implemented.
 
 References: [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/creating-a-client), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [database functions](https://supabase.com/docs/guides/database/functions).
 
@@ -121,4 +121,17 @@ References: [Supabase SSR](https://supabase.com/docs/guides/auth/server-side/cre
 See [PWA setup and testing](docs/PWA_SETUP_AND_TESTING.md) for the public-only caching policy, production-mode local checks, and iPhone/Android installation instructions. Run npm run build before npm run test:e2e. No deployment is required for desktop localhost checks.
 # Catamaran Belize customization
 
-See [Inventory, receipts and Fuel setup](docs/CORAL_TOURS_SETUP.md) for pending migrations, safe catalog setup, permissions and live acceptance checks.
+See [Inventory, receipts and Fuel setup](docs/CORAL_TOURS_SETUP.md) for historical rollout context; use the simplified operations guide and final QA report for current behavior.
+
+## Final QA and local build output
+
+See [Final QA report](docs/FINAL_QA.md) for tested behavior and outstanding real-device acceptance. If OneDrive locks the existing Next.js build output, use an isolated ignored directory without deleting files:
+
+```powershell
+$env:NEXT_QA_BUILD = "1"
+npm run build
+npm run test:e2e
+Remove-Item Env:NEXT_QA_BUILD
+```
+
+This selects `.next-qa`; leave the variable unset in Vercel, which uses the normal `.next` output.
