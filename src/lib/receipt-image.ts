@@ -17,3 +17,21 @@ export async function normalizeReceipt(input: Uint8Array): Promise<Buffer> {
   if (result.length > MAX_RECEIPT_BYTES) throw new Error('RECEIPT_INVALID');
   return result;
 }
+
+// Validate a complete decode without changing the original bytes retained in Storage.
+export async function validateOriginalReceipt(input: Uint8Array, mime: string) {
+  if (!input.length || input.length > 20 * 1024 * 1024) throw new Error('RECEIPT_INVALID');
+  const image = sharp(input, { limitInputPixels: 40_000_000, animated: false });
+  const metadata = await image.metadata();
+  if (
+    `image/${metadata.format}` !== mime ||
+    !['jpeg', 'png', 'webp'].includes(metadata.format ?? '') ||
+    (metadata.pages ?? 1) !== 1
+  )
+    throw new Error('RECEIPT_INVALID');
+  await image
+    .rotate()
+    .resize({ width: 2400, height: 4000, fit: 'inside', withoutEnlargement: true })
+    .jpeg()
+    .toBuffer();
+}

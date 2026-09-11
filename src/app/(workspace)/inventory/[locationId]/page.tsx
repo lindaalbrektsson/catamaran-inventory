@@ -2,6 +2,8 @@ import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
 import { getLocation, getInventory } from '@/lib/inventory';
 import { PageHeader } from '@/components/page-header';
+import Link from 'next/link';
+import { ReceiptActions } from '@/components/receipt-actions';
 import { InventoryList } from '@/components/inventory-list';
 export default async function LocationInventory({
   params,
@@ -23,16 +25,36 @@ export default async function LocationInventory({
     <div className="page">
       <PageHeader
         title={location.name}
-        description={search.action === 'add' ? t.chooseItem : t.inventoryIntro}
+        description={search.action ? t.chooseStockItem : t.inventoryIntro}
         back="/inventory"
         locale={locale}
       />
+      {['OWNER', 'MANAGER'].includes(profile.role) && (
+        <>
+          <div className="mb-5 grid grid-cols-3 gap-2">
+            {(['add', 'remove', 'transfer'] as const).map((action) => (
+              <Link
+                key={action}
+                href={`/inventory/${locationId}?action=${action}`}
+                aria-current={search.action === action ? 'page' : undefined}
+                className={`flex min-h-14 items-center justify-center rounded-xl border font-medium ${search.action === action ? 'bg-primary text-primary-foreground' : ''}`}
+              >
+                {t[action]}
+              </Link>
+            ))}
+          </div>
+          {!search.action && <ReceiptActions locale={locale} />}
+        </>
+      )}
       <InventoryList
         items={items}
         locale={locale}
         initialLow={search.low === '1'}
         action={
-          search.action === 'add' && ['OWNER', 'MANAGER'].includes(profile.role) ? 'add' : undefined
+          ['add', 'remove', 'transfer'].includes(search.action ?? '') &&
+          ['OWNER', 'MANAGER'].includes(profile.role)
+            ? (search.action as 'add' | 'remove' | 'transfer')
+            : undefined
         }
       />
     </div>

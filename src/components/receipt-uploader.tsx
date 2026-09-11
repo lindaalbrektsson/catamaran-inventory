@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { uploadReceipt } from '@/lib/spending-actions';
-import { captureSimpleReceipt } from '@/lib/operational-actions';
+import { uploadOriginalReceipt } from '@/lib/original-upload';
 import { dictionary, type Locale } from '@/lib/i18n';
 import { MAX_RECEIPT_BYTES, type SpendingKind } from '@/lib/spending-domain';
 import { usePreservedForm } from './use-preserved-form';
@@ -26,7 +26,7 @@ export function ReceiptUploader({
   const camera = useRef<HTMLInputElement>(null),
     gallery = useRef<HTMLInputElement>(null);
   const [state, action, pending] = useActionState(
-    intakeType ? captureSimpleReceipt : uploadReceipt,
+    intakeType ? uploadOriginalReceipt : uploadReceipt,
     {},
   );
   const [id, setId] = useState(requestId);
@@ -55,6 +55,12 @@ export function ReceiptUploader({
         throw new Error('INVALID');
       bitmap = await createImageBitmap(selected);
       if (bitmap.width * bitmap.height > 40_000_000) throw new Error('INVALID');
+      if (intakeType) {
+        setFile(selected);
+        setPreview(URL.createObjectURL(selected));
+        setId(crypto.randomUUID());
+        return;
+      }
       const scale = Math.min(1, 2400 / bitmap.width, 4000 / bitmap.height);
       const canvas = document.createElement('canvas');
       canvas.width = Math.round(bitmap.width * scale);
@@ -135,7 +141,9 @@ export function ReceiptUploader({
           {t.uploadImage}
         </Button>
       </div>
-      <p className="text-xs leading-5 text-muted-foreground">{t.receiptHint}</p>
+      <p className="text-xs leading-5 text-muted-foreground">
+        {intakeType ? t.originalReceiptHint : t.receiptHint}
+      </p>
       {processing && (
         <p role="status" className="text-sm">
           {t.receiptProcessing}

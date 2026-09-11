@@ -73,11 +73,12 @@ test('quick mobile stock entry accepts decimal comma and preserves entered data 
     expect((await element.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   }
 });
-test('transfer requires a destination and preserves request identity after failure', async ({
+test('transfer infers the only destination and preserves request identity after failure', async ({
   page,
 }) => {
   await page.goto(`${fixture}?view=transfer&lang=es`);
-  await page.getByLabel('Ubicación de destino').selectOption({ label: 'Bodega / Storage' });
+  await expect(page.getByRole('combobox')).toHaveCount(0);
+  await expect(page.getByText('Bodega / Storage', { exact: true })).toBeVisible();
   await page
     .getByRole('group', { name: 'Cantidad rápida' })
     .getByRole('button', { name: '12', exact: true })
@@ -85,7 +86,7 @@ test('transfer requires a destination and preserves request identity after failu
   await page.getByRole('button', { name: 'Transferencia', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('No hay suficientes existencias');
   await expect(page.getByLabel('Cantidad', { exact: true })).toHaveValue('12');
-  await expect(page.getByLabel('Ubicación de destino')).toHaveValue(
+  await expect(page.locator('input[name="destinationId"]')).toHaveValue(
     '10000000-0000-4000-8000-000000000003',
   );
   await expect(page.locator('input[name="requestId"]')).toHaveValue(

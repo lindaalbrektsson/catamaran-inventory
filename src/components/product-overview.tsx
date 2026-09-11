@@ -69,7 +69,7 @@ export function ProductOverview({
         </CardContent>
       </Card>
       <div className="stock-actions grid gap-3 rounded-xl p-3 sm:grid-cols-2">
-        {can(role, 'inventory.add') && (
+        {item.product.active && can(role, 'inventory.add') && (
           <Button asChild>
             <Link href={`${basePath}/change?mode=add`}>
               <Plus aria-hidden="true" />
@@ -77,15 +77,15 @@ export function ProductOverview({
             </Link>
           </Button>
         )}
-        {can(role, 'inventory.consume') && (
+        {item.product.active && can(role, 'inventory.consume') && (
           <Button variant="outline" asChild>
             <Link href={`${basePath}/change?mode=remove`}>
               <Minus aria-hidden="true" />
-              {can(role, 'inventory.remove') ? t.removeStock : t.consume}
+              {item.product.active && can(role, 'inventory.remove') ? t.removeStock : t.consume}
             </Link>
           </Button>
         )}
-        {can(role, 'inventory.transfer') && (
+        {item.product.active && can(role, 'inventory.transfer') && (
           <Button variant="outline" className="sm:col-span-2" asChild>
             <Link href={`${basePath}/transfer`}>{t.transfer}</Link>
           </Button>

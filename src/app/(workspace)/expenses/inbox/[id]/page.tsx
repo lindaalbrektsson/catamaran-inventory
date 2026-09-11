@@ -41,6 +41,24 @@ export default async function IntakeDetail({ params }: { params: Promise<{ id: s
         className="mb-6 max-h-[65vh] w-full object-contain"
       />
       {p.role === 'OWNER' && (
+        <div className="mb-6 flex flex-wrap gap-3">
+          <a
+            className="rounded-xl border p-3"
+            href={`/intake-image/${id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {t.openOriginal}
+          </a>
+          <a className="rounded-xl border p-3" href={`/intake-image/${id}?download=1`}>
+            {t.downloadReceipt}
+          </a>
+          {!r.original_preserved && (
+            <p className="w-full text-sm text-muted-foreground">{t.processedReceipt}</p>
+          )}
+        </div>
+      )}
+      {p.role === 'OWNER' && (
         <ReceiptReview
           id={id}
           status={r.status}

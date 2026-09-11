@@ -44,3 +44,40 @@ test('camera-first capture has only image and payment radio choices', async ({ p
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: 'artifacts/simple-receipt.png', fullPage: true });
 });
+
+test('location actions open the item chooser in the chosen mode', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4174/?view=locations');
+  const card = page.locator('article').filter({ hasText: 'Cas Cat' });
+  for (const [label, mode] of [
+    ['Add', 'add'],
+    ['Remove', 'remove'],
+    ['Transfer', 'transfer'],
+  ]) {
+    await expect(card.getByRole('link', { name: label, exact: true })).toHaveAttribute(
+      'href',
+      new RegExp(`action=${mode}$`),
+    );
+  }
+  for (const mode of ['add', 'remove', 'transfer']) {
+    await page.goto(`http://127.0.0.1:4174/?action=${mode}`);
+    const link = page.getByRole('link').filter({ hasText: 'Water' });
+    await expect(link).toHaveAttribute(
+      'href',
+      new RegExp(mode === 'transfer' ? '/transfer$' : `/change\\?mode=${mode}$`),
+    );
+  }
+});
+test('owner overview filters quantities by location and product', async ({ page }, info) => {
+  test.skip(info.project.name === 'mobile', 'Desktop workspace');
+  await page.goto('http://127.0.0.1:4174/?view=overview');
+  await expect(page.locator('tbody tr')).toHaveCount(4);
+  await page
+    .getByRole('combobox', { name: 'Location', exact: true })
+    .selectOption({ label: 'Bodega / Storage' });
+  await expect(page.locator('tbody tr')).toHaveCount(1);
+  await expect(page.locator('tbody tr')).toContainText('8');
+  await page
+    .getByRole('searchbox', { name: 'Search products', exact: true })
+    .fill('no matching item');
+  await expect(page.locator('tbody tr')).toHaveCount(0);
+});

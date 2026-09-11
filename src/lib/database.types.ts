@@ -85,12 +85,14 @@ type Table<Row, Insert = Partial<Row>> = {
   Update: Partial<Row>;
   Relationships: [];
 };
-// Maintained against migrations through 20260910000700. Regenerate using the
+// Maintained against migrations through 20260911000200. Regenerate using the
 // Supabase CLI after applying migrations, then review the generated diff.
 export type Database = {
   public: {
     Tables: {
       receipt_intake: Table<{
+        content_type: string;
+        original_preserved: boolean;
         id: string;
         uploaded_by: string;
         created_at: string;
@@ -130,6 +132,18 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      reserve_original_receipt: {
+        Args: {
+          p_id: string;
+          p_type: string;
+          p_payment: string;
+          p_hash: string;
+          p_size: number;
+          p_mime: string;
+        };
+        Returns: string;
+      };
+      configure_item: { Args: { p_id: string; p_values: Json }; Returns: undefined };
       reverse_stock: { Args: { p_request: string; p_original: string }; Returns: string };
       capture_receipt: {
         Args: { p_id: string; p_type: string; p_payment: string; p_hash: string; p_size: number };

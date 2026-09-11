@@ -8,6 +8,14 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: '@/lib/original-upload',
+        replacement: path.join(root, 'tests/ui/original-upload.ts'),
+      },
+      {
+        find: '@/lib/catalog-actions',
+        replacement: path.join(root, 'tests/ui/catalog-actions.ts'),
+      },
+      {
         find: '@/lib/operational-actions',
         replacement: path.join(root, 'tests/ui/operational-actions.ts'),
       },

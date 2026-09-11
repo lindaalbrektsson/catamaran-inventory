@@ -26,7 +26,9 @@ export function TransferForm({
   const [state, action, pending] = useActionState(transferStock, {});
   const [stableRequestId] = useState(requestId);
   const [quantity, setQuantity] = useState('');
-  const [destination, setDestination] = useState('');
+  const [destination, setDestination] = useState(
+    destinations.length === 1 ? destinations[0].id : '',
+  );
   const [notes, setNotes] = useState('');
   const formRef = usePreservedForm();
   return (
@@ -34,26 +36,34 @@ export function TransferForm({
       <input type="hidden" name="requestId" value={stableRequestId} />
       <input type="hidden" name="productId" value={productId} />
       <input type="hidden" name="sourceId" value={sourceId} />
-      <div className="field">
-        <Label htmlFor="destination">{t.destination}</Label>
-        <select
-          id="destination"
-          name="destinationId"
-          value={destination}
-          disabled={pending}
-          required
-          onChange={(event) => setDestination(event.target.value)}
-        >
-          <option value="" disabled>
-            {t.chooseDestination}
-          </option>
-          {destinations.map((location) => (
-            <option key={location.id} value={location.id}>
-              {location.name}
+      {destinations.length === 1 ? (
+        <div className="rounded-xl bg-secondary p-4">
+          <span className="text-sm">{t.destination}</span>
+          <p className="font-semibold">{destinations[0].name}</p>
+          <input type="hidden" name="destinationId" value={destination} />
+        </div>
+      ) : (
+        <div className="field">
+          <Label htmlFor="destination">{t.destination}</Label>
+          <select
+            id="destination"
+            name="destinationId"
+            value={destination}
+            disabled={pending}
+            required
+            onChange={(event) => setDestination(event.target.value)}
+          >
+            <option value="" disabled>
+              {t.chooseDestination}
             </option>
-          ))}
-        </select>
-      </div>
+            {destinations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <QuantityField locale={locale} value={quantity} onChange={setQuantity} disabled={pending} />
       <details className="rounded-xl border p-3">
         <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">{t.addNotes}</summary>
@@ -70,7 +80,7 @@ export function TransferForm({
           maxLength={1000}
         />
       </details>
-      <p className="text-sm leading-6 text-muted-foreground">{t.transferHint}</p>
+
       {state.error && (
         <p role="alert" className="rounded-xl bg-destructive/5 p-4 text-sm text-destructive">
           {t[state.error]}

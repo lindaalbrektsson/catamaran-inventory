@@ -24,9 +24,7 @@ export async function collect<T>(
 const getCatalog = cache(async () => {
   const db = await supabase();
   const [products, categories] = await Promise.all([
-    collect((from, to) =>
-      db.from('products').select('*').eq('active', true).order('id').range(from, to),
-    ),
+    collect((from, to) => db.from('products').select('*').order('id').range(from, to)),
     collect((from, to) => db.from('categories').select('*').order('id').range(from, to)),
   ]);
   return { products, categories };
@@ -51,30 +49,34 @@ export async function getLocation(id: string) {
   if (!data) notFound();
   return data;
 }
-export const getInventory = cache(async (locationId: string): Promise<InventoryItem[]> => {
-  validId(locationId);
-  const db = await supabase();
-  const [balances, { products, categories }] = await Promise.all([
-    collect((from, to) =>
-      db
-        .from('inventory_balances')
-        .select('*')
-        .eq('location_id', locationId)
-        .order('product_id')
-        .range(from, to),
-    ),
-    getCatalog(),
-  ]);
-  const catalog = new Map(products.map((p) => [p.id, p]));
-  const groups = new Map(categories.map((c) => [c.id, c]));
-  return balances
-    .flatMap((b) => {
-      const product = catalog.get(b.product_id);
-      const category = product ? groups.get(product.category_id) : undefined;
-      return product && category ? [{ ...b, product, category }] : [];
-    })
-    .sort((a, b) => a.product.name.localeCompare(b.product.name));
-});
+export const getInventory = cache(
+  async (locationId: string, includeInactive = false): Promise<InventoryItem[]> => {
+    validId(locationId);
+    const db = await supabase();
+    const [balances, { products, categories }] = await Promise.all([
+      collect((from, to) =>
+        db
+          .from('inventory_balances')
+          .select('*')
+          .eq('location_id', locationId)
+          .order('product_id')
+          .range(from, to),
+      ),
+      getCatalog(),
+    ]);
+    const catalog = new Map(products.map((p) => [p.id, p]));
+    const groups = new Map(categories.map((c) => [c.id, c]));
+    return balances
+      .flatMap((b) => {
+        const product = catalog.get(b.product_id);
+        const category = product ? groups.get(product.category_id) : undefined;
+        return product && category && (includeInactive || product.active)
+          ? [{ ...b, product, category }]
+          : [];
+      })
+      .sort((a, b) => a.product.name.localeCompare(b.product.name));
+  },
+);
 
 export type LocationSummary = Location & {
   activeItems: number;
@@ -126,7 +128,7 @@ export async function getTransferDestinations(productId: string, sourceId: strin
   const configured = new Set(balances.map((balance) => balance.location_id));
   return locations.filter((location) => location.id !== sourceId && configured.has(location.id));
 }
-export async function getItem(locationId: string, productId: string) {
+export async function getItem(locationId: string, productId: string, includeInactive = false) {
   validId(locationId);
   validId(productId);
   const db = await supabase();
@@ -137,10 +139,10 @@ export async function getItem(locationId: string, productId: string) {
       .eq('location_id', locationId)
       .eq('product_id', productId)
       .maybeSingle(),
-    db.from('products').select('*').eq('id', productId).eq('active', true).maybeSingle(),
+    db.from('products').select('*').eq('id', productId).maybeSingle(),
   ]);
   if (balance.error || product.error) throw new Error('ITEM_LOAD_FAILED');
-  if (!balance.data || !product.data) notFound();
+  if (!balance.data || !product.data || (!includeInactive && !product.data.active)) notFound();
   const category = await db
     .from('categories')
     .select('*')

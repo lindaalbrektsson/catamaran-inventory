@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
@@ -29,6 +30,12 @@ export default async function Receipts({
   if (p.role === 'OWNER') query = query.eq('status', status);
   const { data, error } = await query;
   if (error) throw new Error('RECEIPT_QUEUE_FAILED');
+  const ids = [...new Set(data.map((r) => r.uploaded_by))];
+  const actors = ids.length
+    ? await (await supabase()).from('profiles').select('id,display_name').in('id', ids)
+    : { data: [], error: null };
+  if (actors.error) throw new Error('ACTORS_LOAD_FAILED');
+  const names = new Map(actors.data?.map((a) => [a.id, a.display_name]));
   return (
     <div className="page">
       <h1 className="text-2xl font-semibold">{t.receipts}</h1>
@@ -42,7 +49,7 @@ export default async function Receipts({
         <div className="mb-6 hidden flex-wrap gap-3 md:flex">
           {(['NEW', 'REVIEWED', 'ARCHIVED'] as const).map((s) => (
             <Link className="rounded-xl border p-3" key={s} href={`/expenses?status=${s}`}>
-              {t[s]}
+              {s === 'NEW' ? t.needsReview : t[s]}
             </Link>
           ))}
           <Link className="rounded-xl border p-3" href="/expenses/records">
@@ -58,9 +65,20 @@ export default async function Receipts({
             key={r.id}
             href={`/expenses/inbox/${r.id}`}
           >
+            <Image
+              unoptimized
+              src={`/intake-image/${r.id}?thumb=1`}
+              alt={t.receipt}
+              width={120}
+              height={160}
+              className="mb-3 h-40 w-28 rounded-lg border object-contain"
+            />
             <h2 className="font-semibold">{t[r.receipt_type]}</h2>
             <p className="my-2">
               {t[r.payment_method]} · {t[r.status]}
+            </p>
+            <p className="mb-2 text-sm">
+              {t.uploadedBy}: {names.get(r.uploaded_by) ?? r.uploaded_by}
             </p>
             <LocalTime value={r.created_at} locale={locale} />
           </Link>

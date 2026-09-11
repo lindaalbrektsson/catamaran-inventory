@@ -19,7 +19,7 @@ export function InventoryList({
   items: InventoryItem[];
   locale: Locale;
   initialLow?: boolean;
-  action?: 'add';
+  action?: 'add' | 'remove' | 'transfer';
 }) {
   const [query, setQuery] = useState(''),
     [category, setCategory] = useState(''),
@@ -102,7 +102,7 @@ export function InventoryList({
             return (
               <Link
                 key={item.product_id}
-                href={`/inventory/${item.location_id}/${item.product_id}${action ? '/change?mode=add' : ''}`}
+                href={`/inventory/${item.location_id}/${item.product_id}${action === 'transfer' ? '/transfer' : action ? `/change?mode=${action}` : ''}`}
                 className="group rounded-xl"
               >
                 <Card className="h-full shadow-none transition-colors group-hover:border-primary/50">

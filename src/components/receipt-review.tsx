@@ -35,6 +35,7 @@ export function ReceiptReview({
         <label key={key}>
           {t[key]}
           <input
+            className="mt-1 min-h-12 w-full rounded-xl border bg-background px-3"
             name={key}
             defaultValue={details[key] ?? ''}
             maxLength={key === 'notes' ? 1000 : 200}

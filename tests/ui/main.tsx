@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client';
+import { OwnerInventory } from '@/components/owner-inventory';
 import { LocalTime } from '../../src/components/local-time';
 import { InventoryAdminActions } from '../../src/components/inventory-admin-actions';
 import { ItemManager } from '../../src/components/item-manager';
@@ -103,7 +104,14 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.get('view') === 'time' ? (
+        {params.get('view') === 'overview' ? (
+          <OwnerInventory
+            items={[...items, { ...item, location_id: locations[1].id, quantity: 8 }]}
+            locations={locations}
+            movements={[]}
+            locale={locale}
+          />
+        ) : params.get('view') === 'time' ? (
           <LocalTime value="2026-09-09T14:00:00Z" locale={locale} />
         ) : params.get('view') === 'admin' ? (
           <InventoryAdminActions
@@ -156,7 +164,11 @@ createRoot(document.getElementById('root')!).render(
             />
           </div>
         ) : (
-          <InventoryList items={items} locale={locale} />
+          <InventoryList
+            items={items}
+            locale={locale}
+            action={params.get('action') as 'add' | 'remove' | 'transfer' | undefined}
+          />
         )}
       </main>
     </div>

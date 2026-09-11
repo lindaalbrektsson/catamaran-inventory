@@ -4,7 +4,7 @@ export function InventoryAdminActions({ role, locale }: { role: string; locale: 
   if (role !== 'OWNER') return null;
   const t = dictionary(locale);
   return (
-    <div className="mb-5">
+    <div className="mb-5 hidden md:block">
       <Link
         className="inline-flex min-h-12 items-center rounded-xl border p-3"
         href="/inventory/items"
@@ -12,6 +12,12 @@ export function InventoryAdminActions({ role, locale }: { role: string; locale: 
         {t.addItem}
       </Link>
       <div className="mt-3 hidden flex-wrap gap-3 md:flex">
+        <Link className="rounded-xl border p-3" href="/inventory/overview">
+          {t.ownerWorkspace}
+        </Link>
+        <Link className="rounded-xl border p-3" href="/inventory/categories">
+          {t.configureCategories}
+        </Link>
         <a className="rounded-xl border p-3" href="/inventory-excel">
           {t.downloadTemplate}
         </a>

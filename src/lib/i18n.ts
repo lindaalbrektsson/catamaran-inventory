@@ -1,5 +1,26 @@
 export type Locale = 'en' | 'es';
 export const en = {
+  remove: 'Remove',
+  searchHistory: 'Search history by item, person or action',
+  inactive: 'Inactive',
+  categorySaved: 'Category saved.',
+  uploadedBy: 'Uploaded by',
+  editItem: 'Edit item',
+  chooseStockItem: 'Choose or search an item.',
+  ownerWorkspace: 'Owner workspace',
+  allLocations: 'All locations',
+  needsReview: 'Needs Review',
+  openOriginal: 'Open original image',
+  downloadReceipt: 'Download receipt',
+  processedReceipt:
+    'This older receipt is the saved processed image; its original was not retained.',
+  configureItems: 'Configure items',
+  configureCategories: 'Configure categories',
+  nameEnglish: 'English name',
+  nameSpanish: 'Spanish name',
+  unitHistoryHint: 'Units cannot change after stock movements have been recorded.',
+  originalReceiptHint: 'JPEG, PNG or WebP, up to 20 MB. The original file is preserved privately.',
+
   addFuelReceipt: 'Add fuel receipt',
   addStoreReceipt: 'Add store receipt',
   chooseItem: 'Choose an item to add stock.',
@@ -315,6 +336,28 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const es: Record<Key, string> = {
+  remove: 'Retirar',
+  searchHistory: 'Buscar historial por artículo, persona o acción',
+  inactive: 'Inactivo',
+  categorySaved: 'Categoría guardada.',
+  uploadedBy: 'Subido por',
+  editItem: 'Editar artículo',
+  chooseStockItem: 'Elige o busca un artículo.',
+  ownerWorkspace: 'Espacio de propietarios',
+  allLocations: 'Todas las ubicaciones',
+  needsReview: 'Pendiente de revisión',
+  openOriginal: 'Abrir imagen original',
+  downloadReceipt: 'Descargar recibo',
+  processedReceipt:
+    'Este recibo anterior es la imagen procesada guardada; no se conservó el original.',
+  configureItems: 'Configurar artículos',
+  configureCategories: 'Configurar categorías',
+  nameEnglish: 'Nombre en inglés',
+  nameSpanish: 'Nombre en español',
+  unitHistoryHint: 'No se puede cambiar la unidad después de registrar movimientos.',
+  originalReceiptHint:
+    'JPEG, PNG o WebP, hasta 20 MB. El archivo original se conserva de forma privada.',
+
   addFuelReceipt: 'Agregar recibo de combustible',
   addStoreReceipt: 'Agregar recibo de tienda',
   chooseItem: 'Elige un artículo para agregar inventario.',

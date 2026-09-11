@@ -10,6 +10,7 @@ import {
   type PreviewRow,
   type ItemError,
 } from '@/lib/item-domain';
+import { updateCatalogItem } from '@/lib/catalog-actions';
 import { saveItems, uploadItemPreview } from '@/lib/item-actions';
 import { Button } from './ui/button';
 export function ItemManager({
@@ -17,11 +18,15 @@ export function ItemManager({
   locale,
   importing,
   requestId,
+  initial,
+  productId,
 }: {
   catalog: ItemCatalog;
   locale: Locale;
   importing: boolean;
   requestId: string;
+  initial?: ItemInput;
+  productId?: string;
 }) {
   const t = dictionary(locale),
     [pending, start] = useTransition(),
@@ -29,20 +34,22 @@ export function ItemManager({
     [saved, setSaved] = useState(false);
   const [rows, setRows] = useState<PreviewRow[]>([]),
     [id, setId] = useState(requestId);
-  const [value, setValue] = useState<ItemInput>({
-    name: '',
-    category: '',
-    unit: 'piece',
-    location: '',
-    minimum: '',
-    target: '',
-    cost: '',
-    currency: 'BZD',
-    quantity: '',
-    notes: '',
-    active: true,
-    mode: 'create',
-  });
+  const [value, setValue] = useState<ItemInput>(
+    initial ?? {
+      name: '',
+      category: '',
+      unit: 'piece',
+      location: '',
+      minimum: '',
+      target: '',
+      cost: '',
+      currency: 'BZD',
+      quantity: '',
+      notes: '',
+      active: true,
+      mode: 'create',
+    },
+  );
   const update = (key: keyof ItemInput, v: string | boolean) => {
     setValue((old) => ({ ...old, [key]: v }));
     setId(crypto.randomUUID());
@@ -50,7 +57,9 @@ export function ItemManager({
   async function save(values: ItemInput[]) {
     setError(undefined);
     try {
-      const result = await saveItems(id, values);
+      const result = productId
+        ? await updateCatalogItem(productId, values[0])
+        : await saveItems(id, values);
       setError(result.error);
       if (result.success) setSaved(true);
     } catch {
@@ -233,6 +242,7 @@ export function ItemManager({
               ))}
             </select>
           </label>
+          {productId && <p className="text-sm text-muted-foreground">{t.unitHistoryHint}</p>}
           <label>
             {t.itemLocation}
             <select

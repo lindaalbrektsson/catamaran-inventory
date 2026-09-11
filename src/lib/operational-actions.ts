@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireProfile } from './auth';
 import { supabase } from './supabase/server';
-import { normalizeReceipt } from './receipt-image';
+import { validateOriginalReceipt, normalizeReceipt } from './receipt-image';
 import type { ActionState } from './actions';
 import type { Key } from './i18n';
 export async function reverseStock(request: string, original: string): Promise<ActionState> {
@@ -108,4 +108,69 @@ export async function reviewReceipt(_previous: ActionState, form: FormData): Pro
   if (error) return { error: 'UNKNOWN' };
   revalidatePath('/expenses', 'layout');
   redirect('/expenses');
+}
+
+export async function prepareOriginalReceipt(input: {
+  id: string;
+  type: string;
+  payment: string;
+  hash: string;
+  size: number;
+  mime: string;
+}) {
+  const p = await requireProfile();
+  if (!['OWNER', 'MANAGER'].includes(p.role)) return { error: 'FORBIDDEN' as const };
+  const parsed = z
+    .object({
+      id: z.uuid(),
+      type: z.enum(['FUEL', 'STORE']),
+      payment: z.enum(['CASH', 'CARD', 'CREDIT']),
+      hash: z.string().regex(/^[a-f0-9]{64}$/),
+      size: z.number().int().min(1).max(20971520),
+      mime: z.enum(['image/jpeg', 'image/png', 'image/webp']),
+    })
+    .safeParse(input);
+  if (!parsed.success) return { error: 'RECEIPT_INVALID' as const };
+  const v = parsed.data,
+    db = await supabase();
+  const reserved = await db.rpc('reserve_original_receipt', {
+    p_id: v.id,
+    p_type: v.type,
+    p_payment: v.payment,
+    p_hash: v.hash,
+    p_size: v.size,
+    p_mime: v.mime,
+  });
+  if (reserved.error || !reserved.data) return { error: 'RECEIPT_UPLOAD_INCOMPLETE' as const };
+  return { path: reserved.data };
+}
+export async function finishOriginalReceipt(id: string): Promise<ActionState> {
+  const p = await requireProfile();
+  if (!['OWNER', 'MANAGER'].includes(p.role) || !z.uuid().safeParse(id).success)
+    return { error: 'FORBIDDEN' };
+  const db = await supabase();
+  const { data: r } = await db
+    .from('receipt_intake')
+    .select('*')
+    .eq('id', id)
+    .eq('uploaded_by', p.id)
+    .single();
+  if (!r || !r.original_preserved) return { error: 'RECEIPT_INVALID' };
+  const file = await db.storage.from('receipts').download(r.object_path);
+  if (file.error || !file.data) return { error: 'RECEIPT_UPLOAD_INCOMPLETE' };
+  const bytes = new Uint8Array(await file.data.arrayBuffer());
+  if (
+    bytes.length !== r.byte_size ||
+    createHash('sha256').update(bytes).digest('hex') !== r.content_sha256
+  )
+    return { error: 'RECEIPT_INVALID' };
+  try {
+    await validateOriginalReceipt(bytes, r.content_type);
+  } catch {
+    return { error: 'RECEIPT_INVALID' };
+  }
+  const done = await db.rpc('complete_intake', { p_id: id });
+  if (done.error) return { error: 'RECEIPT_UPLOAD_INCOMPLETE' };
+  revalidatePath('/expenses', 'layout');
+  redirect('/expenses?saved=1');
 }

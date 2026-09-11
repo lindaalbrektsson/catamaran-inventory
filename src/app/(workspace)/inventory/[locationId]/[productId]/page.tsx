@@ -20,7 +20,7 @@ export default async function ProductDetail({
   const page = /^[1-9]\d{0,4}$/.test(search.page ?? '') ? Number(search.page) : 1;
   const [location, item, history] = await Promise.all([
     getLocation(locationId),
-    getItem(locationId, productId),
+    getItem(locationId, productId, profile.role === 'OWNER'),
     getHistory(locationId, productId, page),
   ]);
   const basePath = `/inventory/${locationId}/${productId}`;

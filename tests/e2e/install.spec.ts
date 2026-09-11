@@ -13,6 +13,10 @@ test('native install accepted/dismissed/error feedback and installed state', asy
     testInfo.project.name === 'mobile',
   );
   await page.goto('/login');
+  // Wait for hydration before dispatching a synthetic browser event.
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('coral-pwa-language')))
+    .toBe('en');
   for (const outcome of ['dismissed', 'error', 'accepted']) {
     await page.evaluate((outcome) => {
       const event = new Event('beforeinstallprompt', { cancelable: true });
@@ -50,7 +54,9 @@ test('standalone mode hides installation controls', async ({ page }) => {
     Object.defineProperty(navigator, 'standalone', { get: () => true }),
   );
   await page.goto('/login');
-  await expect(page.getByRole('heading', { name: 'Catamaran Belize on your phone' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Catamaran Belize on your phone' })).toHaveCount(
+    0,
+  );
 });
 test('iPad desktop mode uses visible Spanish instructions', async ({ page, context }) => {
   await context.addCookies([

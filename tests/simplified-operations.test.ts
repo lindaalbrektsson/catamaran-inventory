@@ -152,14 +152,47 @@ it('insufficient stock rolls back a reversal without any history changes', async
     ).rows,
   ).toHaveLength(0);
 });
-it('rolls back the first transfer reversal leg when the second leg has insufficient stock',async()=>{
- const transfer=crypto.randomUUID();await db.query("select public.transfer_stock($1,$2,$3,$4,4,'')",[transfer,product,boat,storage]);
- await db.query("select public.change_stock($1,$2,$3,2,'REMOVE','other','')",[crypto.randomUUID(),product,storage]);
- const id=(await db.query<{id:string}>("select id from public.inventory_transactions where transfer_id=$1 and transaction_type='TRANSFER_OUT'",[transfer])).rows[0].id;
- const before=(await db.query('select location_id,quantity from public.inventory_balances order by location_id')).rows;
- await db.exec('savepoint bad');await expect(reverse(id)).rejects.toThrow('INSUFFICIENT_STOCK');await db.exec('rollback to savepoint bad');
- expect((await db.query('select location_id,quantity from public.inventory_balances order by location_id')).rows).toEqual(before);
- expect((await db.query('select * from public.inventory_transactions where reverses_transaction_id is not null')).rows).toHaveLength(0);
+it('rolls back the first transfer reversal leg when the second leg has insufficient stock', async () => {
+  const transfer = crypto.randomUUID();
+  await db.query("select public.transfer_stock($1,$2,$3,$4,4,'')", [
+    transfer,
+    product,
+    boat,
+    storage,
+  ]);
+  await db.query("select public.change_stock($1,$2,$3,2,'REMOVE','other','')", [
+    crypto.randomUUID(),
+    product,
+    storage,
+  ]);
+  const id = (
+    await db.query<{ id: string }>(
+      "select id from public.inventory_transactions where transfer_id=$1 and transaction_type='TRANSFER_OUT'",
+      [transfer],
+    )
+  ).rows[0].id;
+  const before = (
+    await db.query(
+      'select location_id,quantity from public.inventory_balances order by location_id',
+    )
+  ).rows;
+  await db.exec('savepoint bad');
+  await expect(reverse(id)).rejects.toThrow('INSUFFICIENT_STOCK');
+  await db.exec('rollback to savepoint bad');
+  expect(
+    (
+      await db.query(
+        'select location_id,quantity from public.inventory_balances order by location_id',
+      )
+    ).rows,
+  ).toEqual(before);
+  expect(
+    (
+      await db.query(
+        'select * from public.inventory_transactions where reverses_transaction_id is not null',
+      )
+    ).rows,
+  ).toHaveLength(0);
 });
 it('capture needs no financial fields and records immutable server metadata', async () => {
   const id = crypto.randomUUID();
@@ -215,4 +248,137 @@ it('private upload, completion and owner review preserve original data and restr
 it('crew cannot capture and anonymous objects stay private', async () => {
   await user(crew);
   await expect(capture()).rejects.toThrow('FORBIDDEN');
+});
+
+it('preserves original receipt metadata and bytes path, retries exactly and denies other uploaders', async () => {
+  const id = crypto.randomUUID();
+  const args = [id, 'STORE', 'CREDIT', 'b'.repeat(64), 5000000, 'image/png'];
+  const first = await db.query<{ reserve_original_receipt: string }>(
+    'select public.reserve_original_receipt($1,$2,$3,$4,$5,$6)',
+    args,
+  );
+  expect(first.rows[0].reserve_original_receipt).toBe(`intake/${id}/original.png`);
+  await db.query('select public.reserve_original_receipt($1,$2,$3,$4,$5,$6)', args);
+  const row = (
+    await db.query<{ original_preserved: boolean; byte_size: number }>(
+      'select original_preserved,byte_size from public.receipt_intake where id=$1',
+      [id],
+    )
+  ).rows[0];
+  expect(row).toEqual({ original_preserved: true, byte_size: 5000000 });
+  await db.query("insert into storage.objects(bucket_id,name,metadata) values('receipts',$1,$2)", [
+    first.rows[0].reserve_original_receipt,
+    JSON.stringify({ mimetype: 'image/png', size: 5000000 }),
+  ]);
+  await db.query('select public.complete_intake($1)', [id]);
+  await user(other);
+  expect(
+    (await db.query('select * from public.receipt_intake where id=$1', [id])).rows,
+  ).toHaveLength(0);
+  expect(
+    (
+      await db.query('select * from storage.objects where name=$1', [
+        first.rows[0].reserve_original_receipt,
+      ])
+    ).rows,
+  ).toHaveLength(0);
+  await user(owner);
+  expect(
+    (
+      await db.query('select * from storage.objects where name=$1', [
+        first.rows[0].reserve_original_receipt,
+      ])
+    ).rows,
+  ).toHaveLength(1);
+});
+it('rejects unsupported original formats and oversized uploads', async () => {
+  await expect(
+    db.query("select public.reserve_original_receipt($1,'FUEL','CASH',$2,20971521,'image/png')", [
+      crypto.randomUUID(),
+      'a'.repeat(64),
+    ]),
+  ).rejects.toThrow('RECEIPT_INVALID');
+});
+it('denies original receipt capture to crew', async () => {
+  await user(crew);
+  await expect(
+    db.query("select public.reserve_original_receipt($1,'FUEL','CASH',$2,20,'image/png')", [
+      crypto.randomUUID(),
+      'a'.repeat(64),
+    ]),
+  ).rejects.toThrow('FORBIDDEN');
+});
+it('allows owner metadata and thresholds without changing quantities', async () => {
+  await user(owner);
+  const values = {
+    name: 'Updated test product',
+    category: '20000000-0000-4000-8000-000000000001',
+    unit: 'bottle',
+    location: boat,
+    minimum: '3',
+    target: '12',
+    cost: '2.25',
+    currency: 'BZD',
+    quantity: '',
+    notes: 'Metadata only',
+    active: true,
+  };
+  await db.query('select public.configure_item($1,$2)', [product, JSON.stringify(values)]);
+  expect(
+    (
+      await db.query<{ quantity: string }>(
+        'select quantity from public.inventory_balances where product_id=$1 and location_id=$2',
+        [product, boat],
+      )
+    ).rows[0].quantity,
+  ).toBe('10.000');
+  expect((await db.query('select * from public.inventory_transactions')).rows).toHaveLength(1);
+});
+it('prevents unit changes after history even for an owner', async () => {
+  await user(owner);
+  await expect(
+    db.query("update public.products set unit='liter' where id=$1", [product]),
+  ).rejects.toThrow('ITEM_UNIT_CONFLICT');
+});
+it('denies manager item configuration', async () => {
+  await expect(db.query('select public.configure_item($1,$2)', [product, '{}'])).rejects.toThrow(
+    'FORBIDDEN',
+  );
+});
+
+it('keeps original receipt uploader, time, hash and MIME immutable', async () => {
+  const id = crypto.randomUUID();
+  await db.query("select public.reserve_original_receipt($1,'FUEL','CASH',$2,20,'image/png')", [
+    id,
+    'a'.repeat(64),
+  ]);
+  await db.exec('reset role');
+  await expect(
+    db.query("update public.receipt_intake set content_type='image/webp' where id=$1", [id]),
+  ).rejects.toThrow('IMMUTABLE_HISTORY');
+});
+it('permits unit choice for unused products and audits the change', async () => {
+  await user(owner);
+  const id = crypto.randomUUID();
+  await db.query(
+    "insert into public.products(id,name,category_id,unit) values($1,'Unused test item','20000000-0000-4000-8000-000000000001','piece')",
+    [id],
+  );
+  await db.query("update public.products set unit='box' where id=$1", [id]);
+  expect(
+    (await db.query<{ unit: string }>('select unit from public.products where id=$1', [id])).rows[0]
+      .unit,
+  ).toBe('box');
+  expect(
+    (
+      await db.query("select * from public.audit_events where entity_id=$1 and action='UPDATE'", [
+        id,
+      ])
+    ).rows,
+  ).toHaveLength(1);
+});
+it('denies manager category creation through RLS', async () => {
+  await expect(
+    db.query("insert into public.categories(name_en,name_es) values('Invalid','Invalid')"),
+  ).rejects.toThrow();
 });
