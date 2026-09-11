@@ -1,5 +1,37 @@
 import type { Role, Unit, MovementType } from './domain';
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+export type OperationalDocument = {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  expiry_date: string | null;
+  favorite: boolean;
+  archived: boolean;
+  access_level: 'OWNERS' | 'MANAGERS' | 'STAFF' | 'SELECTED';
+  selected_users: string[];
+  current_file_id: string | null;
+  version: number;
+  created_by: string;
+  created_at: string;
+  uploaded_by: string | null;
+  uploaded_at: string | null;
+  updated_by: string;
+  updated_at: string;
+};
+export type DocumentFile = {
+  id: string;
+  document_id: string;
+  object_path: string;
+  content_type: string;
+  byte_size: number;
+  sha256: string;
+  ready: boolean;
+  base_version: number;
+  uploaded_by: string;
+  created_at: string;
+  uploaded_at: string | null;
+};
 export type TaskStatus = 'NEED_REVIEW' | 'IN_PROGRESS' | 'DONE';
 export type Task = {
   id: string;
@@ -145,6 +177,8 @@ type Table<Row, Insert = Partial<Row>> = {
 export type Database = {
   public: {
     Tables: {
+      documents: Table<OperationalDocument>;
+      document_files: Table<DocumentFile>;
       tasks: Table<Task>;
       task_subtasks: Table<TaskSubtask>;
       task_types: Table<TaskType>;
@@ -191,6 +225,25 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      save_document: {
+        Args: {
+          p_request: string;
+          p_id: string;
+          p_version: number;
+          p_values: Json;
+          p_file: Json | null;
+        };
+        Returns: Json;
+      };
+      complete_document_file: { Args: { p_file: string }; Returns: string };
+      document_people: {
+        Args: Record<string, never>;
+        Returns: { id: string; display_name: string; active: boolean }[];
+      };
+      document_history: {
+        Args: { p_id: string };
+        Returns: Database['public']['Tables']['audit_events']['Row'][];
+      };
       manage_task: {
         Args: {
           p_request: string;

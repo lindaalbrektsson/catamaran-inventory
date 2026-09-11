@@ -21,6 +21,7 @@ export function Navigation({ locale }: { locale: Locale }) {
     { href: '/needs', label: t.needNav, icon: ShoppingBag, desktop: true },
     { href: '/expenses', label: t.receipts, icon: ReceiptText, desktop: true },
     { href: '/tasks', label: t.tasksTitle, icon: ClipboardCheck, desktop: true },
+    { href: '/documents', label: t.documents, icon: ClipboardCheck, desktop: true },
     { href: '/more', label: t.more, icon: Ellipsis },
   ];
   return (
