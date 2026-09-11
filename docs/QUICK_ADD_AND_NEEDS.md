@@ -22,7 +22,7 @@ Automated QA uses isolated records. No operational production stock, purchase ne
 
 ## Mobile navigation update
 
-Mobile navigation is Home, Add, Need, More. Home has Bodega and Cas Cat cards with direct Add/Remove/Transfer actions. Add opens exactly inventory, fuel receipt and store receipt choices. Remove and Transfer choose the item inline; a single other active location is inferred. More retains receipt history. Desktop keeps Inventory and Receipts navigation and existing Owner tools.
+Mobile navigation is Home, Add, More. Home shows Need to Purchase directly below the location cards, with exact RLS-scoped Pending/Ordered counts and View needs/Add need links. Need remains in the desktop sidebar. Home has Bodega and Cas Cat cards with direct Add/Remove/Transfer actions. Add opens exactly inventory, fuel receipt and store receipt choices. Remove and Transfer choose the item inline; a single other active location is inferred. More retains receipt history. Desktop keeps Inventory and Receipts navigation and existing Owner tools.
 
 New Needs start Pending, with optional details collapsed. The list defaults Pending and offers one-button Ordered/Done progression through the existing version-checked audited RPC. Low-stock inventory suggestions require a saved confirmation; existing open needs are linked instead of automatically duplicated.
 

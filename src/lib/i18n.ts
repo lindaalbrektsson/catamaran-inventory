@@ -10,6 +10,7 @@ export const en = {
   SIMILAR_ITEM:
     'A similar item exists. Review the matches and confirm only if this is a different item.',
   needNav: 'Need',
+  viewNeeds: 'View needs',
   applyFilters: 'Apply filters',
   addInventory: 'Add inventory',
   addToNeed: 'Add to Need',
@@ -412,6 +413,7 @@ export const es: Record<Key, string> = {
   SIMILAR_ITEM:
     'Existe un artículo similar. Revisa las coincidencias y confirma solo si es diferente.',
   needNav: 'Necesitamos',
+  viewNeeds: 'Ver necesidades',
   applyFilters: 'Aplicar filtros',
   addInventory: 'Añadir inventario',
   addToNeed: 'Añadir a Necesitamos',

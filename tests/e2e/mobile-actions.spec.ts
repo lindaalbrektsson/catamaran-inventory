@@ -17,13 +17,13 @@ for (const mode of ['remove', 'transfer'])
       true,
     );
   });
-test('mobile has only Home Add Need More while desktop retains owner navigation', async ({
+test('mobile has only Home Add More while desktop retains owner navigation', async ({
   page,
 }, info) => {
   await page.goto(`${base}?view=locations`);
   const nav = page.locator('nav:visible');
   if (info.project.name === 'mobile')
-    await expect(nav.getByRole('link')).toHaveText(['Home', 'Add', 'Need', 'More']);
+    await expect(nav.getByRole('link')).toHaveText(['Home', 'Add', 'More']);
   else {
     await expect(nav.getByRole('link', { name: 'Inventory', exact: true })).toBeVisible();
     await expect(nav.getByRole('link', { name: 'Receipts', exact: true })).toBeVisible();

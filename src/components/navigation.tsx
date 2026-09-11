@@ -10,14 +10,14 @@ export function Navigation({ locale }: { locale: Locale }) {
     { href: '/', label: t.home, icon: House },
     { href: '/inventory', label: t.inventory, icon: Package, desktop: true },
     { href: '/add', label: t.add, icon: Plus },
-    { href: '/needs', label: t.needNav, icon: ShoppingBag },
+    { href: '/needs', label: t.needNav, icon: ShoppingBag, desktop: true },
     { href: '/expenses', label: t.receipts, icon: ReceiptText, desktop: true },
     { href: '/more', label: t.more, icon: Ellipsis },
   ];
   return (
     <nav
       aria-label={t.workspace}
-      className="safe-bottom fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t bg-card px-2 pt-2 md:static md:flex md:flex-col md:gap-2 md:border-0 md:bg-transparent md:p-0"
+      className="safe-bottom fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t bg-card px-2 pt-2 md:static md:flex md:flex-col md:gap-2 md:border-0 md:bg-transparent md:p-0"
     >
       {links.map(({ href, label, icon: Icon, desktop }) => {
         const active = href === '/' ? path === '/' : path.startsWith(href);
