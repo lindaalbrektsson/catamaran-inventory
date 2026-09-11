@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase/server';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, ReceiptText } from 'lucide-react';
 import Link from 'next/link';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
@@ -70,6 +70,22 @@ export default async function Home() {
               + {t.needNew}
             </Link>
           </div>
+        </section>
+      )}
+      {can(profile.role, 'receipts.upload') && (
+        <section className="mt-4 rounded-2xl border bg-card p-5" aria-labelledby="home-receipts">
+          <div className="flex min-h-14 items-center gap-4">
+            <ReceiptText aria-hidden="true" className="size-7 text-primary" />
+            <h2 id="home-receipts" className="text-xl font-semibold">
+              {t.receipts}
+            </h2>
+          </div>
+          <Link
+            href="/expenses/capture"
+            className="mt-4 flex min-h-14 items-center justify-center rounded-xl bg-primary px-3 font-semibold text-primary-foreground"
+          >
+            {t.addReceipt}
+          </Link>
         </section>
       )}
     </div>

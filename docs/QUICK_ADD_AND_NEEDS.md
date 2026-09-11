@@ -27,3 +27,5 @@ Mobile navigation is Home, Add, More. Home shows Need to Purchase directly below
 New Needs start Pending, with optional details collapsed. The list defaults Pending and offers one-button Ordered/Done progression through the existing version-checked audited RPC. Low-stock inventory suggestions require a saved confirmation; existing open needs are linked instead of automatically duplicated.
 
 Migration 20260911000600_transfer_destination_configuration.sql creates a missing zero destination within the atomic transfer, recording configuration and both movement audit events. Failed transfers roll the configuration back.
+
+Home also includes a Receipts card after Need to Purchase. Add receipt opens only Store/Fuel choices, then the existing original image capture and Cash/Card/Credit radio flow. Uploader, server timestamp, type, payment and private object path are recorded by the existing protected receipt RPCs. Owner completion fields remain off the capture form.
