@@ -10,8 +10,6 @@ export const columns = [
   en.itemLocation,
   en.itemMinimum,
   en.itemTarget,
-  en.itemCost,
-  en.currency,
   en.itemInitialQuantity,
   en.itemNotes,
 ] as const;
@@ -43,7 +41,8 @@ export async function parseItems(bytes: Buffer, catalog: ItemCatalog): Promise<I
   const book = new ExcelJS.Workbook();
   await book.xlsx.load(bytes as unknown as ExcelJS.Buffer);
   const sheet = book.worksheets[0];
-  if (!sheet || sheet.rowCount > 201 || sheet.columnCount > 10) throw new Error('ITEM_FILE');
+  if (!sheet || sheet.rowCount > 201 || sheet.columnCount > columns.length)
+    throw new Error('ITEM_FILE');
   if (columns.some((c, i) => sheet.getCell(1, i + 1).value !== c)) throw new Error('ITEM_FILE');
   const text = (row: number, col: number) => {
     const value = sheet.getCell(row, col).value;
@@ -59,6 +58,10 @@ export async function parseItems(bytes: Buffer, catalog: ItemCatalog): Promise<I
       [c.name_en.toLowerCase(), c.name_es.toLowerCase()].includes(v[1].toLowerCase()),
     );
     const location = catalog.locations.filter((l) => l.name.toLowerCase() === v[3].toLowerCase());
+    // Cost fields are retained only for compatibility with existing stored metadata.
+    const existing = catalog.products.find(
+      (p) => p.name.trim().toLowerCase() === v[0].toLowerCase(),
+    );
     result.push({
       sourceRow: r,
       name: v[0],
@@ -67,10 +70,10 @@ export async function parseItems(bytes: Buffer, catalog: ItemCatalog): Promise<I
       location: location.length === 1 ? location[0].id : '',
       minimum: v[4],
       target: v[5],
-      cost: v[6],
-      currency: v[7] as ItemInput['currency'],
-      quantity: v[8],
-      notes: v[9],
+      cost: existing?.estimated_unit_cost?.toString() ?? '',
+      currency: existing?.cost_currency ?? 'BZD',
+      quantity: v[6],
+      notes: v[7],
       active: true,
       mode: 'create',
     });
@@ -82,10 +85,10 @@ export async function itemWorkbook(catalog: ItemCatalog, locale: Locale, rows?: 
   const t = dictionary(locale),
     book = new ExcelJS.Workbook();
   const sheet = book.addWorksheet(t.itemSheet);
-  sheet.addRow(rows ? [...columns.slice(0, 8), t.currentQuantity, columns[9]] : [...columns]);
+  sheet.addRow(rows ? [...columns.slice(0, 6), t.currentQuantity, columns[7]] : [...columns]);
   sheet.views = [{ state: 'frozen', ySplit: 1 }];
   sheet.columns.forEach((c, i) => {
-    c.width = i === 0 || i === 9 ? 32 : 23;
+    c.width = i === 0 || i === 7 ? 32 : 23;
   });
   sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
   sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF176B5B' } };
@@ -100,6 +103,5 @@ export async function itemWorkbook(catalog: ItemCatalog, locale: Locale, rows?: 
   ]);
   instructions.addRow([t.itemUnit, ...units]);
   instructions.addRow([t.itemLocation, ...catalog.locations.map((l) => l.name)]);
-  instructions.addRow([t.currency, 'BZD', 'USD']);
   return Buffer.from(await book.xlsx.writeBuffer());
 }

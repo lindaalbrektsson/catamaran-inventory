@@ -152,7 +152,9 @@ it('generates and parses a real xlsx template with instructions and current loca
   const book = new ExcelJS.Workbook();
   await book.xlsx.load(bytes as unknown as ExcelJS.Buffer);
   expect(book.worksheets).toHaveLength(2);
-  book.worksheets[0].addRow(['New item', 'Bar', 'piece', 'Cas Cat', 2, 5, 1.25, 'BZD', 3, '']);
+  expect(book.worksheets[0].columnCount).toBe(8);
+  expect(JSON.stringify(book.worksheets[0].getRow(1).values)).not.toMatch(/cost|currency/i);
+  book.worksheets[0].addRow(['New item', 'Bar', 'piece', 'Cas Cat', 2, 5, 3, '']);
   const values = await parseItems(Buffer.from(await book.xlsx.writeBuffer()), catalog);
   expect(validateItems(values, catalog)[0].errors).toEqual([]);
   expect(values[0].quantity).toBe('3');
@@ -168,8 +170,6 @@ it('flags formulas and unknown categories instead of using cached results', asyn
     0,
     0,
     { formula: '1+1', result: 2 },
-    'BZD',
-    0,
     '',
   ]);
   const rows = await parseItems(Buffer.from(await book.xlsx.writeBuffer()), catalog);
@@ -194,4 +194,32 @@ it('rejects an edit that collides with another product name', () => {
   expect(
     validateItemEdit({ ...value, name: other.name, mode: 'update' }, product.id, catalog),
   ).toEqual(['ITEM_DUPLICATE']);
+});
+
+it('inventory workbook preserves existing cost metadata while updating stock-only columns', async () => {
+  const product = {
+    ...catalog.products[0],
+    estimated_unit_cost: 12.5,
+    cost_currency: 'USD' as const,
+  };
+  const existingCatalog = { ...catalog, products: [product] };
+  const book = new ExcelJS.Workbook();
+  await book.xlsx.load((await itemWorkbook(existingCatalog, 'en')) as unknown as ExcelJS.Buffer);
+  book.worksheets[0].addRow([
+    product.name,
+    'Bar',
+    product.unit,
+    'Cas Cat',
+    2,
+    5,
+    0,
+    'Updated notes',
+  ]);
+  const [row] = await parseItems(Buffer.from(await book.xlsx.writeBuffer()), existingCatalog);
+  expect(row).toMatchObject({
+    cost: '12.5',
+    currency: 'USD',
+    quantity: '0',
+    notes: 'Updated notes',
+  });
 });

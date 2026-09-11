@@ -123,7 +123,10 @@ export function ItemManager({
               </h2>
               <dl className="my-3 grid gap-1 text-sm md:grid-cols-2">
                 {Object.entries(row.value)
-                  .filter(([k]) => !['mode', 'active', 'name', 'sourceRow'].includes(k))
+                  .filter(
+                    ([k]) =>
+                      !['mode', 'active', 'name', 'sourceRow', 'cost', 'currency'].includes(k),
+                  )
                   .map(([key, v]) => {
                     const labels: Record<string, string> = {
                       category: t.category,
@@ -131,8 +134,6 @@ export function ItemManager({
                       location: t.itemLocation,
                       minimum: t.itemMinimum,
                       target: t.itemTarget,
-                      cost: t.itemCost,
-                      currency: t.currency,
                       quantity: t.quantity,
                       notes: t.itemNotes,
                     };
@@ -264,9 +265,9 @@ export function ItemManager({
               ))}
             </select>
           </label>
-          {(['minimum', 'target', 'cost'] as const).map((key) => (
+          {(['minimum', 'target'] as const).map((key) => (
             <label key={key}>
-              {{ minimum: t.itemMinimum, target: t.itemTarget, cost: t.itemCost }[key]}
+              {{ minimum: t.itemMinimum, target: t.itemTarget }[key]}
               <input
                 className={control}
                 inputMode="decimal"
@@ -276,21 +277,6 @@ export function ItemManager({
               />
             </label>
           ))}
-          <label>
-            {t.currency}
-            <select
-              className={control}
-              value={value.currency}
-              disabled={pending}
-              onChange={(e) => update('currency', e.target.value)}
-            >
-              {(['BZD', 'USD'] as const).map((currency) => (
-                <option key={currency} value={currency}>
-                  {t[currency]}
-                </option>
-              ))}
-            </select>
-          </label>
           <label>
             {t.itemNotes}
             <textarea

@@ -37,7 +37,7 @@ test('detail exposes permitted stock actions and thresholds', async ({ page }) =
     /\/transfer$/,
   );
   await expect(page.getByText('Inventario objetivo', { exact: true })).toBeVisible();
-  await expect(page.getByText('Costo unitario estimado', { exact: true })).toBeVisible();
+  await expect(page.getByText('Costo unitario estimado', { exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({
     path: `artifacts/coral-detail-${test.info().project.name}.png`,

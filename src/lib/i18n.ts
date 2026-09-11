@@ -85,7 +85,7 @@ export const en = {
   itemInstructions: 'Instructions',
   currentQuantity: 'Current quantity (read-only)',
   itemExcelHint:
-    'Use the first sheet, keep English column headers, and enter values only (no formulas). Maximum 200 rows / 1 MB. Use categories, units and locations listed below. Stock: up to 3 decimal places; costs: up to 2. Blank or zero initial quantity creates no movement. Duplicate rows must be resolved before confirmation.',
+    'Use the first sheet, keep English column headers, and enter values only (no formulas). Maximum 200 rows / 1 MB. Use categories, units and locations listed below. Stock: up to 3 decimal places. Blank or zero initial quantity creates no movement. Duplicate rows must be resolved before confirmation.',
   itemExportHint:
     'Exports are read-only snapshots, not import files. Metadata updates apply to the shared product; existing units cannot change. Existing products cannot receive initial stock from an import. Inactive items are hidden from operational lists.',
   ITEM_INVALID:
@@ -429,7 +429,7 @@ export const es: Record<Key, string> = {
   itemInstructions: 'Instrucciones',
   currentQuantity: 'Cantidad actual (solo lectura)',
   itemExcelHint:
-    'Use la primera hoja y conserve los encabezados en inglés. Ingrese valores, sin fórmulas. Máximo 200 filas / 1 MB. Use las categorías, unidades y ubicaciones indicadas abajo. Inventario: hasta 3 decimales; costos: hasta 2. Una cantidad inicial vacía o cero no crea movimientos. Resuelva los duplicados antes de confirmar.',
+    'Use la primera hoja y conserve los encabezados en inglés. Ingrese valores, sin fórmulas. Máximo 200 filas / 1 MB. Use las categorías, unidades y ubicaciones indicadas abajo. Inventario: hasta 3 decimales. Una cantidad inicial vacía o cero no crea movimientos. Resuelva los duplicados antes de confirmar.',
   itemExportHint:
     'Las exportaciones son consultas, no archivos para importar. Los cambios de datos afectan al producto compartido; no se puede cambiar su unidad. No se puede agregar inventario inicial a productos existentes mediante importación. Los artículos inactivos no aparecen en las listas operativas.',
   ITEM_INVALID:

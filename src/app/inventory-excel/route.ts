@@ -34,8 +34,6 @@ export async function GET(request: Request) {
           l.name,
           b.minimum_stock,
           b.target_stock,
-          p.estimated_unit_cost,
-          p.cost_currency,
           b.quantity,
           p.description,
         ],

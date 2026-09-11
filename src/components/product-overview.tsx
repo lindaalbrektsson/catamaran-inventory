@@ -48,18 +48,6 @@ export function ProductOverview({
                 {item.target_stock === null ? t.notSet : number(item.target_stock, locale)}
               </dd>
             </div>
-            <div className="col-span-2">
-              <dt className="text-xs text-muted-foreground">{t.unitCost}</dt>
-              <dd className="mt-1 text-sm">
-                {item.product.estimated_unit_cost === null
-                  ? t.notSet
-                  : new Intl.NumberFormat(locale, {
-                      style: 'currency',
-                      currency: item.product.cost_currency,
-                      currencyDisplay: 'code',
-                    }).format(item.product.estimated_unit_cost)}
-              </dd>
-            </div>
           </dl>
           {item.product.description && (
             <p className="mt-5 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">

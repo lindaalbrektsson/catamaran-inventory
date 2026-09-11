@@ -47,3 +47,7 @@ Applied to the linked production database on 2026-09-11: `20260911000100_receipt
 
 
 The naming migration `20260911000300_bodega_name.sql` was applied on 2026-09-11. The only active V1 locations are **Cas Cat** and **Bodega**. It renames the existing location ID in place without modifying balances or transactions. Earlier migration files are retained as deployment history; the location type model still supports future locations.
+
+## Inventory without cost tracking
+
+Inventory forms, product details and Excel template/export show stock information only. Costs and currency are no longer requested or displayed. Existing database metadata is retained for compatibility; importing an update preserves it. Download a fresh eight-column template before importing; older templates containing cost/currency columns are rejected rather than misinterpreted. Receipt capture remains available.

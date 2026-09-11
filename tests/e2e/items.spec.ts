@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 test('manual item form is mobile friendly and submits validated fields', async ({ page }) => {
   await page.goto('http://127.0.0.1:4174/?view=items');
+  await expect(page.getByLabel('Estimated unit cost', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Currency', exact: true })).toHaveCount(0);
   await page.getByLabel('Name', { exact: true }).fill('Test fixture item');
   await page
     .getByRole('combobox', { name: 'Category', exact: true })
