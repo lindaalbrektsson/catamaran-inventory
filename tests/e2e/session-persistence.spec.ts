@@ -1,9 +1,11 @@
-import { test, expect, chromium, type Page } from '@playwright/test';
+import { test, expect, chromium, webkit, type Page } from '@playwright/test';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-test('persistent browser profile restores session after close and respects logout', async ({}, info) => {
+test('persistent browser profile restores session after close and respects logout', async ({
+  browserName,
+}, info) => {
   // Three full process launches need more time when the complete suite runs concurrently.
   test.setTimeout(60_000);
   const profile = await mkdtemp(path.join(tmpdir(), 'catamaran-session-qa-'));
@@ -14,7 +16,10 @@ test('persistent browser profile restores session after close and respects logou
     userAgent: info.project.use.userAgent,
   };
   const open = async () => {
-    const context = await chromium.launchPersistentContext(profile, options);
+    const context = await (browserName === 'webkit' ? webkit : chromium).launchPersistentContext(
+      profile,
+      options,
+    );
     const page = context.pages()[0];
     await page.goto('http://127.0.0.1:4174/session.html');
     await page.waitForFunction(() => 'sessionTest' in window);
