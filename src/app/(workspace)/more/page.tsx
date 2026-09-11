@@ -38,7 +38,11 @@ export default async function More() {
       <Link href="/expenses" className="mt-5 flex min-h-14 items-center rounded-xl border p-4">
         {t.receipts}
       </Link>
+      <Link href="/tasks" className="mt-5 flex min-h-14 items-center rounded-xl border p-4">
+        {t.tasksTitle}
+      </Link>
       <InstallControls locale={locale} keepInstructions />
     </div>
   );
 }
+

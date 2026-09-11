@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [tailwindcss()],
   resolve: {
     alias: [
+      { find: '@/lib/task-actions', replacement: path.join(root, 'tests/ui/task-actions.ts') },
       { find: '@/lib/quick-actions', replacement: path.join(root, 'tests/ui/quick-actions.ts') },
       {
         find: '@/lib/original-upload',
@@ -34,3 +35,4 @@ export default defineConfig({
   },
   server: { host: '127.0.0.1', port: 4174, strictPort: true },
 });
+

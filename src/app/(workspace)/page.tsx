@@ -1,3 +1,5 @@
+import { taskSummary } from '@/lib/tasks';
+import { TaskList } from '@/components/task-list';
 import { supabase } from '@/lib/supabase/server';
 import { ShoppingBag, ReceiptText } from 'lucide-react';
 import Link from 'next/link';
@@ -88,6 +90,14 @@ export default async function Home() {
           </Link>
         </section>
       )}
+      <TaskList
+        {...await taskSummary()}
+        locale={locale}
+        actorId={profile.id}
+        now={new Date().toISOString()}
+        home
+        canManage={canUseNeeds}
+      />{' '}
     </div>
   );
 }

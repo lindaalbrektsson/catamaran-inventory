@@ -1,4 +1,5 @@
 import { MovementHistory } from '@/components/movement-history';
+import { TasksFixture } from './tasks';
 import { QuickMove } from '@/components/quick-move';
 import { QuickAdd } from '@/components/quick-add';
 import { NeedForm } from '@/components/need-form';
@@ -111,7 +112,9 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.get('view') === 'history' ? (
+        {params.get('view')?.startsWith('task-') ? (
+          <TasksFixture locale={locale} view={params.get('view')!} />
+        ) : params.get('view') === 'history' ? (
           <MovementHistory
             itemName="Water"
             locationName="Bodega"
@@ -298,3 +301,4 @@ createRoot(document.getElementById('root')!).render(
     </div>
   </div>,
 );
+
