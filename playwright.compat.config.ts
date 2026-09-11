@@ -4,7 +4,7 @@ export default defineConfig({
   ...base,
   testIgnore: [],
   testMatch:
-    /(mobile-compatibility|session-persistence|receipts|quick-add|inventory-needs|tasks|pwa|staff-auth|recovery)\.spec\.ts/,
+    /(mobile-compatibility|session-persistence|receipts|quick-add|inventory-needs|tasks|pwa|pwa-update|staff-auth|recovery)\.spec\.ts/,
   timeout: 120_000,
   workers: 4,
   projects: [
