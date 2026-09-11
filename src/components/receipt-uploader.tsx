@@ -141,9 +141,7 @@ export function ReceiptUploader({
           {t.uploadImage}
         </Button>
       </div>
-      <p className="text-xs leading-5 text-muted-foreground">
-        {intakeType ? t.originalReceiptHint : t.receiptHint}
-      </p>
+      {!intakeType && <p className="text-xs leading-5 text-muted-foreground">{t.receiptHint}</p>}
       {processing && (
         <p role="status" className="text-sm">
           {t.receiptProcessing}
@@ -184,7 +182,7 @@ export function ReceiptUploader({
       <Button type="submit" disabled={!file || pending || processing}>
         {pending ? t.saving : t.uploadReceipt}
       </Button>
-      <p className="text-xs text-muted-foreground">{t.receiptPrivate}</p>
+      {!intakeType && <p className="text-xs text-muted-foreground">{t.receiptPrivate}</p>}
     </form>
   );
 }
