@@ -81,11 +81,11 @@ test('transfer infers the only destination and preserves request identity after 
   await expect(page.getByText('Bodega', { exact: true })).toBeVisible();
   await page
     .getByRole('group', { name: 'Cantidad rápida' })
-    .getByRole('button', { name: '12', exact: true })
+    .getByRole('button', { name: '2', exact: true })
     .click();
   await page.getByRole('button', { name: 'Transferencia', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('No hay suficientes existencias');
-  await expect(page.getByLabel('Cantidad', { exact: true })).toHaveValue('12');
+  await expect(page.getByLabel('Cantidad', { exact: true })).toHaveValue('2');
   await expect(page.locator('input[name="destinationId"]')).toHaveValue(
     '10000000-0000-4000-8000-000000000003',
   );

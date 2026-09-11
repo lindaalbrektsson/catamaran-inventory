@@ -29,3 +29,5 @@ New Needs start Pending, with optional details collapsed. The list defaults Pend
 Migration 20260911000600_transfer_destination_configuration.sql creates a missing zero destination within the atomic transfer, recording configuration and both movement audit events. Failed transfers roll the configuration back.
 
 Home also includes a Receipts card after Need to Purchase. Add receipt opens only Store/Fuel choices, then the existing original image capture and Cash/Card/Credit radio flow. Uploader, server timestamp, type, payment and private object path are recorded by the existing protected receipt RPCs. Owner completion fields remain off the capture form.
+
+Activity cards show item, signed quantity, translated action, actor, timestamp and location. Before/after and correction detail remain expandable; internal quick-add markers and default Other reasons are omitted from the presentation. Transfer uses 1/2/3/4 shortcuts and 24px note/action separation; validation hints appear only for invalid input. Audit rows and RPCs are unchanged.

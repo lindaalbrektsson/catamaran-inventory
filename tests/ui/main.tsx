@@ -1,3 +1,4 @@
+import { MovementHistory } from '@/components/movement-history';
 import { QuickMove } from '@/components/quick-move';
 import { QuickAdd } from '@/components/quick-add';
 import { NeedForm } from '@/components/need-form';
@@ -110,7 +111,36 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.get('view') === 'quick-move' ? (
+        {params.get('view') === 'history' ? (
+          <MovementHistory
+            itemName="Water"
+            locationName="Bodega"
+            locale={locale}
+            page={1}
+            hasNext={false}
+            basePath="/inventory/fixture"
+            viewer={{ id: 'owner', role: 'OWNER' }}
+            movements={[
+              {
+                id: '50000000-0000-4000-8000-000000000001',
+                request_id: '50000000-0000-4000-8000-000000000002',
+                product_id: item.product_id,
+                location_id: item.location_id,
+                transaction_type: 'ADD',
+                quantity: 2,
+                previous_quantity: 0,
+                resulting_quantity: 2,
+                reason: 'other',
+                notes: 'QUICK_ADD',
+                performed_by_user_id: 'owner',
+                created_at: '2026-09-11T12:23:00Z',
+                actor: 'Linda',
+                transfer_id: null,
+                related_location_id: null,
+              },
+            ]}
+          />
+        ) : params.get('view') === 'quick-move' ? (
           <QuickMove
             items={items}
             location={locations[0]}

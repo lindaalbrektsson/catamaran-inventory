@@ -32,7 +32,7 @@ export function TransferForm({
   const [notes, setNotes] = useState('');
   const formRef = usePreservedForm();
   return (
-    <form ref={formRef} action={action} className="grid gap-5">
+    <form ref={formRef} action={action} className="grid gap-6">
       <input type="hidden" name="requestId" value={stableRequestId} />
       <input type="hidden" name="productId" value={productId} />
       <input type="hidden" name="sourceId" value={sourceId} />
@@ -64,7 +64,15 @@ export function TransferForm({
           </select>
         </div>
       )}
-      <QuantityField locale={locale} value={quantity} onChange={setQuantity} disabled={pending} />
+      <QuantityField
+        shortcuts={[1, 2, 3, 4]}
+        showHint={false}
+        invalid={state.error === 'INVALID_INPUT'}
+        locale={locale}
+        value={quantity}
+        onChange={setQuantity}
+        disabled={pending}
+      />
       <details className="rounded-xl border p-3">
         <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">{t.addNotes}</summary>
         <Label htmlFor="notes">
@@ -86,7 +94,7 @@ export function TransferForm({
           {t[state.error]}
         </p>
       )}
-      <div className="stock-actions grid grid-cols-[1fr_2fr] gap-3">
+      <div className="grid grid-cols-[1fr_2fr] gap-3">
         <Button variant="outline" asChild>
           <Link href={`/inventory/${sourceId}/${productId}`}>{t.cancel}</Link>
         </Button>

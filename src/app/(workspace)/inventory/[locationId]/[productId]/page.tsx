@@ -45,6 +45,8 @@ export default async function ProductDetail({
         <ProductOverview item={item} role={profile.role} locale={locale} basePath={basePath} />
         <MovementHistory
           {...history}
+          itemName={item.product.name}
+          locationName={location.name}
           viewer={profile}
           locale={locale}
           page={page}

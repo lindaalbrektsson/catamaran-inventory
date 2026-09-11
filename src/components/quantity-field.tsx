@@ -10,12 +10,16 @@ export function QuantityField({
   onChange,
   invalid,
   disabled,
+  shortcuts = [1, 6, 12, 24],
+  showHint = true,
 }: {
   locale: Locale;
   value: string;
   onChange: (value: string) => void;
   invalid?: boolean;
   disabled?: boolean;
+  shortcuts?: number[];
+  showHint?: boolean;
 }) {
   const t = dictionary(locale);
   return (
@@ -35,10 +39,10 @@ export function QuantityField({
         autoComplete="off"
         className="h-16 text-3xl! font-semibold tabular-nums"
         aria-invalid={invalid}
-        aria-describedby="quantity-hint"
+        aria-describedby={showHint || invalid ? 'quantity-hint' : undefined}
       />
       <div role="group" aria-label={t.quickQuantity} className="grid grid-cols-4 gap-2">
-        {[1, 6, 12, 24].map((amount) => (
+        {shortcuts.map((amount) => (
           <Button
             type="button"
             variant="outline"
@@ -51,12 +55,14 @@ export function QuantityField({
           </Button>
         ))}
       </div>
-      <p
-        id="quantity-hint"
-        className={`text-xs ${invalid ? 'text-destructive' : 'text-muted-foreground'}`}
-      >
-        {t.fieldQuantity}
-      </p>
+      {(showHint || invalid) && (
+        <p
+          id="quantity-hint"
+          className={`text-xs ${invalid ? 'text-destructive' : 'text-muted-foreground'}`}
+        >
+          {t.fieldQuantity}
+        </p>
+      )}
     </div>
   );
 }
