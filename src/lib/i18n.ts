@@ -960,4 +960,3 @@ export function dateTime(value: string, locale: Locale) {
     timeZone: 'America/Belize',
   }).format(new Date(value));
 }
-

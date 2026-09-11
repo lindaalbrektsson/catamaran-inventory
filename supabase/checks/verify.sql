@@ -49,4 +49,3 @@ select table_name,column_name,is_nullable,data_type,udt_name,column_default
 from information_schema.columns where table_schema='public'
 and table_name in ('profiles','locations','location_assignments','categories','products','inventory_balances','inventory_transactions','audit_events','expense_categories','expenses','purchases','receipts','receipt_intake','purchase_needs','tasks','task_subtasks','task_types')
 order by table_name,ordinal_position;
-

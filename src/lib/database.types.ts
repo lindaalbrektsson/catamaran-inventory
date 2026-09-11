@@ -328,4 +328,3 @@ export type Database = {
     CompositeTypes: Record<string, never>;
   };
 };
-
