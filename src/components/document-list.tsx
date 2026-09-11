@@ -55,7 +55,7 @@ export function DocumentList({
       {!home && (
         <div className="mb-5 grid gap-3 sm:grid-cols-2">
           <label className="grid gap-2">
-            {t.search}
+            {t.docSearch}
             <input
               type="search"
               className={c}

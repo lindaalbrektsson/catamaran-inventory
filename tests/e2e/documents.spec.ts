@@ -34,7 +34,7 @@ test('document list filters active, archived, category and search', async ({ pag
   await expect(page.getByText('Archived fixture')).toBeVisible();
   await expect(page.getByText('Fixture tour checklist')).toHaveCount(0);
   await page.getByRole('combobox', { name: 'Category', exact: true }).selectOption('Operations');
-  await page.getByRole('searchbox').fill('no match');
+  await page.getByRole('searchbox', { name: 'Search documents' }).fill('no match');
   await expect(page.getByText('No matching documents.')).toBeVisible();
 });
 test('owner upload preserves title, access, favorite and file on retry', async ({ page }, info) => {

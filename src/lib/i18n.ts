@@ -1,6 +1,7 @@
 export type Locale = 'en' | 'es';
 export const en = {
   documents: 'Documents',
+  docSearch: 'Search documents',
   docHome: 'Favorites / Documents',
   docTitle: 'Title',
   docDescription: 'Description (optional)',
@@ -515,6 +516,7 @@ export const en = {
 export type Key = keyof typeof en;
 export const es: Record<Key, string> = {
   documents: 'Documentos',
+  docSearch: 'Buscar documentos',
   docHome: 'Favoritos / Documentos',
   docTitle: 'Título',
   docDescription: 'Descripción (opcional)',
