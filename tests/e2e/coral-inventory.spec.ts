@@ -5,11 +5,11 @@ test('Catamaran Belize location summaries fit mobile and show an honest empty st
   page,
 }) => {
   await page.goto(`${fixture}?view=locations&lang=es`);
-  for (const name of ['Cas Cat', 'Bodega / Storage'])
+  for (const name of ['Cas Cat', 'Bodega'])
     await expect(page.getByRole('heading', { name, exact: true }).last()).toBeVisible();
   const storage = page
     .locator('article')
-    .filter({ has: page.getByRole('heading', { name: 'Bodega / Storage' }) });
+    .filter({ has: page.getByRole('heading', { name: 'Bodega' }) });
   await expect(storage.getByRole('link', { name: 'Agregar', exact: true })).toHaveAttribute(
     'href',
     /action=add$/,
@@ -78,7 +78,7 @@ test('transfer infers the only destination and preserves request identity after 
 }) => {
   await page.goto(`${fixture}?view=transfer&lang=es`);
   await expect(page.getByRole('combobox')).toHaveCount(0);
-  await expect(page.getByText('Bodega / Storage', { exact: true })).toBeVisible();
+  await expect(page.getByText('Bodega', { exact: true })).toBeVisible();
   await page
     .getByRole('group', { name: 'Cantidad rápida' })
     .getByRole('button', { name: '12', exact: true })

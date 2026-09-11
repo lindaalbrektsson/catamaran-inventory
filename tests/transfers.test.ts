@@ -54,7 +54,7 @@ beforeAll(async () => {
   expect((await db.query('select * from auth.users')).rows).toHaveLength(0);
   expect((await db.query('select * from public.categories')).rows).toHaveLength(8);
   expect((await db.query('select name from public.locations order by name')).rows).toEqual([
-    { name: 'Bodega / Storage' },
+    { name: 'Bodega' },
     { name: 'Cas Cat' },
   ]);
   for (const [id, role, active] of [
@@ -243,7 +243,10 @@ it('retires the legacy catalog location while preserving balances and future loc
   const before = await state();
   await db.exec(migration);
   await db.exec(migration);
+  const rename = await readFile('supabase/migrations/20260911000300_bodega_name.sql', 'utf8');
+  await db.exec(rename);
+  await db.exec(rename);
   expect(await state()).toEqual(before);
   expect((await db.query("select active from public.locations where id='10000000-0000-4000-8000-000000000002'")).rows).toEqual([{ active: false }]);
-  expect((await db.query("select name from public.locations where active order by name")).rows).toEqual([{name:'Bodega / Storage'},{name:'Cas Cat'},{name:'Future fixture'}]);
+  expect((await db.query("select name from public.locations where active order by name")).rows).toEqual([{name:'Bodega'},{name:'Cas Cat'},{name:'Future fixture'}]);
 });

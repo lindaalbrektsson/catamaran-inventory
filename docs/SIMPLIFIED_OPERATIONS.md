@@ -1,6 +1,6 @@
 # Catamaran Belize — simplified daily operations
 
-The visible brand is Catamaran Belize. Existing technical identifiers, repository name, database objects and Supabase project remain unchanged. Cas Cat and Bodega / Storage are the only current locations.
+The visible brand is Catamaran Belize. Existing technical identifiers, repository name, database objects and Supabase project remain unchanged. Cas Cat and Bodega are the only current locations.
 
 ## Operational mobile flow
 
@@ -44,3 +44,6 @@ Home links owners to `/inventory/overview` on desktop/tablet. The workspace comb
 Receipt queue cards include private thumbnails, uploader, original server timestamp, payment method and status; NEW is labeled Needs Review. Owners can open/download an individual receipt from its detail screen. New minimal receipts preserve the selected JPEG/PNG/WebP bytes (maximum 20 MB, 40 megapixels) through authenticated direct Storage upload. Server completion verifies hash, size, MIME and image decoding. Thumbnail derivatives are generated on demand, never written over the original. Original paths, hash, uploader and timestamp are immutable; Storage overwrites/deletes remain prohibited. Older processed receipts are explicitly labeled because their original source bytes cannot be recovered. HEIC is not currently accepted; phone capture must provide JPEG, PNG or WebP.
 
 Applied to the linked production database on 2026-09-11: `20260911000100_receipt_originals.sql` and `20260911000200_catalog_configuration.sql`. Migration history now contains ten entries. These contain no operational seeds and do not replace old image objects or stock records.
+
+
+The naming migration `20260911000300_bodega_name.sql` was applied on 2026-09-11. The only active V1 locations are **Cas Cat** and **Bodega**. It renames the existing location ID in place without modifying balances or transactions. Earlier migration files are retained as deployment history; the location type model still supports future locations.

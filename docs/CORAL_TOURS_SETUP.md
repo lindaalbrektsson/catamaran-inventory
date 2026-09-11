@@ -6,7 +6,7 @@ Implemented locally on September 10, 2026. All three migrations below were appli
 
 ## Catalog and people
 
-`supabase/seed.sql` contains Cas Cat and Bodega / Storage; Bar, Food, Cleaning, Boat Supplies, Snorkeling, Maintenance, Spare Parts and Tools. It inserts only catalog examples, with no stock balances, movements, costs, expenses or Auth users. Existing matching IDs are preserved. Review the catalog before applying it, especially if your database already has independently created locations or categories.
+`supabase/seed.sql` contains Cas Cat and Bodega; Bar, Food, Cleaning, Boat Supplies, Snorkeling, Maintenance, Spare Parts and Tools. It inserts only catalog examples, with no stock balances, movements, costs, expenses or Auth users. Existing matching IDs are preserved. Review the catalog before applying it, especially if your database already has independently created locations or categories.
 
 Reference onboarding list only:
 
@@ -60,8 +60,8 @@ Local PostgreSQL tests exercise RLS, atomic transfers, append-only financial rec
 
 ## Current V1 locations
 
-Cas Cat is the onboard catamaran inventory. Bodega / Storage is the main land-based storage. Transfers operate in both directions between them. The corrective location migration deactivates the retired seed ID without deleting balances, transactions or audit history, and standardizes the storage name. Apply it to existing databases before using the corrected active catalog. Future locations remain database-configurable; there is no two-location limit in the schema or UI.
+Cas Cat is the onboard catamaran inventory. Bodega is the main land-based storage. Transfers operate in both directions between them. The corrective location migration deactivates the retired seed ID without deleting balances, transactions or audit history, and standardizes the storage name. Apply it to existing databases before using the corrected active catalog. Future locations remain database-configurable; there is no two-location limit in the schema or UI.
 
 ## Live rollout status
 
-All four migrations are recorded and verified on the linked Supabase project. Cas Cat and Bodega / Storage are the only active locations. No production products, stock quantities, expenses or receipts have been invented. One active OWNER exists. Authenticated operational acceptance tests require real product/transaction details and an owner browser login. Vercel project `catamaran-inventory` is linked to the GitHub repository. Production public Supabase configuration was compared with the local configuration without displaying values and matches. Preview environment variables are not configured.
+All four migrations are recorded and verified on the linked Supabase project. Cas Cat and Bodega are the only active locations. No production products, stock quantities, expenses or receipts have been invented. One active OWNER exists. Authenticated operational acceptance tests require real product/transaction details and an owner browser login. Vercel project `catamaran-inventory` is linked to the GitHub repository. Production public Supabase configuration was compared with the local configuration without displaying values and matches. Preview environment variables are not configured.

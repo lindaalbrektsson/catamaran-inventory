@@ -75,7 +75,7 @@ const items = [
   },
 ];
 // Isolated visual fixtures only; none are sent to Supabase or the Next.js app.
-const locations: LocationSummary[] = ['Cas Cat', 'Bodega / Storage'].map((name, index) => ({
+const locations: LocationSummary[] = ['Cas Cat', 'Bodega'].map((name, index) => ({
   id: `10000000-0000-4000-8000-00000000000${index === 0 ? 1 : 3}`,
   name,
   type: index === 1 ? 'STORAGE' : 'BOAT',

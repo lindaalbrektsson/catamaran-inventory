@@ -85,7 +85,7 @@ type Table<Row, Insert = Partial<Row>> = {
   Update: Partial<Row>;
   Relationships: [];
 };
-// Maintained against migrations through 20260911000200. Regenerate using the
+// Maintained against migrations through 20260911000300. Regenerate using the
 // Supabase CLI after applying migrations, then review the generated diff.
 export type Database = {
   public: {

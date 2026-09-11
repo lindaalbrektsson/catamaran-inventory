@@ -73,7 +73,7 @@ test('owner overview filters quantities by location and product', async ({ page 
   await expect(page.locator('tbody tr')).toHaveCount(4);
   await page
     .getByRole('combobox', { name: 'Location', exact: true })
-    .selectOption({ label: 'Bodega / Storage' });
+    .selectOption({ label: 'Bodega' });
   await expect(page.locator('tbody tr')).toHaveCount(1);
   await expect(page.locator('tbody tr')).toContainText('8');
   await page

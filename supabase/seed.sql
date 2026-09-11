@@ -1,7 +1,7 @@
 -- Optional catalog only. No users, passwords, or fictitious stock balances.
 insert into public.locations(id,name,type) values
 ('10000000-0000-4000-8000-000000000001','Cas Cat','BOAT'),
-('10000000-0000-4000-8000-000000000003','Bodega / Storage','STORAGE') on conflict do nothing;
+('10000000-0000-4000-8000-000000000003','Bodega','STORAGE') on conflict do nothing;
 insert into public.categories(id,name_en,name_es) values
 ('20000000-0000-4000-8000-000000000001','Bar','Bar'),
 ('20000000-0000-4000-8000-000000000002','Food','Comida'),

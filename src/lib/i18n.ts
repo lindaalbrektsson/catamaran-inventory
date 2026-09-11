@@ -272,7 +272,7 @@ export const en = {
   CAPTAIN: 'Captain',
   CREW: 'Crew',
   BOAT: 'Boat',
-  STORAGE: 'Storage',
+  STORAGE: 'Bodega',
   OFFICE: 'Office',
   OTHER: 'Other',
   returned: 'Returned',
