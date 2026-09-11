@@ -1,4 +1,6 @@
 import { taskSummary } from '@/lib/tasks';
+import { getDocuments } from '@/lib/documents';
+import { DocumentList } from '@/components/document-list';
 import { TaskList } from '@/components/task-list';
 import { supabase } from '@/lib/supabase/server';
 import { ShoppingBag, ReceiptText } from 'lucide-react';
@@ -97,7 +99,14 @@ export default async function Home() {
         now={new Date().toISOString()}
         home
         canManage={canUseNeeds}
-      />{' '}
+      />
+      <DocumentList
+        documents={await getDocuments()}
+        locale={locale}
+        owner={profile.role === 'OWNER'}
+        home
+        now={new Date().toISOString()}
+      />
     </div>
   );
 }
