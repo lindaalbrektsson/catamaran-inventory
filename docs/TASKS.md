@@ -28,3 +28,5 @@ Apply `supabase/migrations/20260911001000_tasks.sql` before deploying the Tasks 
 Tests cover database permissions, immutable audit fields, atomic writes, stale edits, retry identity, assignment, status and subtasks; domain tests cover Belize date boundaries and reminders. Browser fixtures run locally and never write production data.
 
 For OneDrive build locks, use a fresh ignored QA output: set `NEXT_QA_BUILD=1` and a lowercase `NEXT_QA_RUN` such as `tasks`. Use the same variables for typecheck/build/browser tests. Production builds omit both variables.
+
+Release checks, 11 September 2026: lint, typecheck and production build passed; 216 tests and 96 browser checks passed, with two desktop-only checks intentionally skipped on mobile. The live OWNER RPC smoke test verified create, assignment, due/reminder values, idempotent retry, status, subtask completion, archive and audit inside a rolled-back transaction. MANAGER and assigned/unassigned staff permissions were tested in isolated PostgreSQL; no real staff roles or Auth accounts were changed. The separate account-administration rollout remains pending and is excluded from this release.
