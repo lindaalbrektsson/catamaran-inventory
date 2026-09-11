@@ -19,3 +19,11 @@ Photos use a separate private `need-photos` bucket. A creator can attach one val
 Apply only `20260911000500_quick_add_and_purchase_needs.sql` after dry-run review, then run `scripts/verify-hosted-supabase.mjs` before deploying the matching commit. The pending phone-auth work on `codex/staff-auth` is not part of this rollout. Its unapplied migration must be renumbered after this migration before a future merge to avoid out-of-order history.
 
 Automated QA uses isolated records. No operational production stock, purchase needs or photos are invented to test a deployment. Live acceptance of saved stock and uploaded photos uses the next genuine item/purchase need authorized by an owner.
+
+## Mobile navigation update
+
+Mobile navigation is Home, Add, Need, More. Home has Bodega and Cas Cat cards with direct Add/Remove/Transfer actions. Add opens exactly inventory, fuel receipt and store receipt choices. Remove and Transfer choose the item inline; a single other active location is inferred. More retains receipt history. Desktop keeps Inventory and Receipts navigation and existing Owner tools.
+
+New Needs start Pending, with optional details collapsed. The list defaults Pending and offers one-button Ordered/Done progression through the existing version-checked audited RPC. Low-stock inventory suggestions require a saved confirmation; existing open needs are linked instead of automatically duplicated.
+
+Migration 20260911000600_transfer_destination_configuration.sql creates a missing zero destination within the atomic transfer, recording configuration and both movement audit events. Failed transfers roll the configuration back.

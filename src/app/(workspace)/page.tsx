@@ -3,7 +3,6 @@ import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
 import { getLocations } from '@/lib/inventory';
 import { LocationCards } from '@/components/location-cards';
-import { ReceiptActions } from '@/components/receipt-actions';
 import { can } from '@/lib/domain';
 export default async function Home() {
   const profile = await requireProfile(),
@@ -25,7 +24,6 @@ export default async function Home() {
         locale={locale}
         canAdd={can(profile.role, 'inventory.add')}
       />
-      {can(profile.role, 'receipts.upload') && <ReceiptActions locale={locale} />}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { QuickMove } from '@/components/quick-move';
 import { QuickAdd } from '@/components/quick-add';
 import { NeedForm } from '@/components/need-form';
 import { createRoot } from 'react-dom/client';
@@ -109,7 +110,16 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.get('view') === 'quick-add' ? (
+        {params.get('view') === 'quick-move' ? (
+          <QuickMove
+            items={items}
+            location={locations[0]}
+            destinations={[locations[1]]}
+            mode={params.get('mode') === 'transfer' ? 'transfer' : 'remove'}
+            locale={locale}
+            role="MANAGER"
+          />
+        ) : params.get('view') === 'quick-add' ? (
           <QuickAdd
             locale={locale}
             catalog={{

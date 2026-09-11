@@ -15,6 +15,7 @@ export function StockForm({
   mode,
   requestId,
   role,
+  simple = false,
 }: {
   locale: Locale;
   productId: string;
@@ -22,6 +23,7 @@ export function StockForm({
   mode: 'add' | 'remove';
   requestId: string;
   role: Role;
+  simple?: boolean;
 }) {
   const [state, action, pending] = useActionState(changeStock, {}),
     t = dictionary(locale);
@@ -49,7 +51,7 @@ export function StockForm({
         invalid={Boolean(state.fields?.quantity)}
         disabled={pending}
       />
-      {mode === 'add' ? (
+      {mode === 'add' || simple ? (
         <input type="hidden" name="reason" value="other" />
       ) : (
         <div className="field">

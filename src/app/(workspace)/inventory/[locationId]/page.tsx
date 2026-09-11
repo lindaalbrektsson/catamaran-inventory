@@ -1,3 +1,6 @@
+import { QuickMove } from '@/components/quick-move';
+import { LowNeedSuggestions } from '@/components/low-need-suggestions';
+import { getLocations } from '@/lib/inventory';
 import { QuickAdd } from '@/components/quick-add';
 import { itemCatalog } from '@/lib/item-catalog';
 import { getLocale, requireProfile } from '@/lib/auth';
@@ -36,6 +39,27 @@ export default async function LocationInventory({
       </div>
     );
   const items = await getInventory(locationId);
+  if (
+    ['remove', 'transfer'].includes(search.action ?? '') &&
+    ['OWNER', 'MANAGER'].includes(profile.role)
+  )
+    return (
+      <div className="page">
+        <PageHeader
+          title={`${t[search.action as 'remove' | 'transfer']} · ${location.name}`}
+          back="/"
+          locale={locale}
+        />
+        <QuickMove
+          items={items}
+          location={location}
+          destinations={(await getLocations()).filter((l) => l.id !== locationId)}
+          mode={search.action as 'remove' | 'transfer'}
+          locale={locale}
+          role={profile.role}
+        />
+      </div>
+    );
   return (
     <div className="page">
       <PageHeader
@@ -60,6 +84,9 @@ export default async function LocationInventory({
           </div>
           {!search.action && <ReceiptActions locale={locale} />}
         </>
+      )}
+      {['OWNER', 'MANAGER'].includes(profile.role) && (
+        <LowNeedSuggestions items={items} location={location} locale={locale} />
       )}
       <InventoryList
         items={items}

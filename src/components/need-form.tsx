@@ -13,12 +13,14 @@ export function NeedForm({
   id,
   requestId,
   initial,
+  suggestion,
 }: {
   locale: Locale;
   catalog: ItemCatalog;
   id: string;
   requestId: string;
   initial?: PurchaseNeed;
+  suggestion?: { name: string; product_id: string; location_id: string };
 }) {
   const t = dictionary(locale),
     [state, action, pending] = useActionState(saveNeed, {}),
@@ -42,7 +44,7 @@ export function NeedForm({
           name="name"
           required
           maxLength={150}
-          defaultValue={initial?.name}
+          defaultValue={initial?.name ?? suggestion?.name}
           spellCheck
           lang={locale}
         />
@@ -54,66 +56,88 @@ export function NeedForm({
           <option value="USA">{t.USA}</option>
         </select>
       </label>
-      <label className="grid gap-2">
-        {t.needRelated}
-        <select className={c} name="product_id" defaultValue={initial?.product_id ?? ''}>
-          <option value="">{t.notSet}</option>
-          {catalog.products
-            .filter((p) => p.active)
-            .map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-        </select>
-      </label>
-      <label className="grid gap-2">
-        {t.needLocation}
-        <select className={c} name="location_id" defaultValue={initial?.location_id ?? ''}>
-          <option value="">{t.notSet}</option>
-          {catalog.locations.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="grid gap-2">
-        {t.needLink}
-        <input
-          className={c}
-          name="product_url"
-          type="url"
-          maxLength={2000}
-          defaultValue={initial?.product_url}
-        />
-      </label>
-      <label className="grid gap-2">
-        {t.needComment}
-        <textarea
-          className={c}
-          name="comment"
-          maxLength={2000}
-          defaultValue={initial?.comment}
-          spellCheck
-          lang={locale}
-        />
-      </label>
-      {!initial?.photo_ready && (
+      <details className="rounded-xl border p-3">
+        <summary className="min-h-12 cursor-pointer py-3">{t.needOptional}</summary>
+        <div className="grid gap-4">
+          <label className="grid gap-2">
+            {t.needRelated}
+            <select
+              className={c}
+              name="product_id"
+              defaultValue={initial?.product_id ?? suggestion?.product_id ?? ''}
+            >
+              <option value="">{t.notSet}</option>
+              {catalog.products
+                .filter((p) => p.active)
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label className="grid gap-2">
+            {t.needLocation}
+            <select
+              className={c}
+              name="location_id"
+              defaultValue={initial?.location_id ?? suggestion?.location_id ?? ''}
+            >
+              <option value="">{t.notSet}</option>
+              {catalog.locations.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-2">
+            {t.needLink}
+            <input
+              className={c}
+              name="product_url"
+              type="url"
+              maxLength={2000}
+              defaultValue={initial?.product_url}
+            />
+          </label>
+          <label className="grid gap-2">
+            {t.needComment}
+            <textarea
+              className={c}
+              name="comment"
+              maxLength={2000}
+              defaultValue={initial?.comment}
+              spellCheck
+              lang={locale}
+            />
+          </label>
+          {!initial?.photo_ready && (
+            <label className="grid gap-2">
+              {t.needPhoto}
+              <input
+                className={c}
+                type="file"
+                name="photo"
+                accept="image/jpeg,image/png,image/webp"
+              />
+              <span className="text-sm">{t.needPhotoHint}</span>
+            </label>
+          )}
+        </div>
+      </details>
+      {initial ? (
         <label className="grid gap-2">
-          {t.needPhoto}
-          <input className={c} type="file" name="photo" accept="image/jpeg,image/png,image/webp" />
-          <span className="text-sm">{t.needPhotoHint}</span>
+          {t.needStatus}
+          <select className={c} name="status" defaultValue={initial?.status ?? 'PENDING'}>
+            <option value="PENDING">{t.needPending}</option>
+            <option value="ORDERED">{t.ORDERED}</option>
+            <option value="DONE">{t.DONE}</option>
+          </select>
         </label>
+      ) : (
+        <input type="hidden" name="status" value="PENDING" />
       )}
-      <label className="grid gap-2">
-        {t.needStatus}
-        <select className={c} name="status" defaultValue={initial?.status ?? 'PENDING'}>
-          <option value="PENDING">{t.needPending}</option>
-          <option value="ORDERED">{t.ORDERED}</option>
-          <option value="DONE">{t.DONE}</option>
-        </select>
-      </label>
       {state.error === 'DUPLICATE_NEED' && (
         <label className="flex min-h-12 items-center gap-3">
           <input name="confirmDuplicate" type="checkbox" />

@@ -242,3 +242,70 @@ it('creator and timestamp are immutable even on accidental privileged updates', 
     ),
   ).rejects.toThrow('IMMUTABLE_HISTORY');
 });
+
+it('transfer creates a missing zero destination atomically, audits it and retries once', async () => {
+  const id = (await quick()).rows[0].id;
+  await db.exec('reset role');
+  await db.query('delete from public.inventory_balances where product_id=$1 and location_id=$2', [
+    id,
+    storage,
+  ]);
+  await user(manager);
+  const request = crypto.randomUUID();
+  await db.query("select public.transfer_stock($1,$2,$3,$4,1,'')", [request, id, boat, storage]);
+  await db.query("select public.transfer_stock($1,$2,$3,$4,1,'')", [request, id, boat, storage]);
+  expect(
+    (
+      await db.query(
+        'select quantity from public.inventory_balances where product_id=$1 order by location_id',
+        [id],
+      )
+    ).rows,
+  ).toEqual([{ quantity: '2.000' }, { quantity: '1.000' }]);
+  await user(owner);
+  expect(
+    (
+      await db.query(
+        "select actor_id from public.audit_events where action='TRANSFER_CONFIGURATION' and entity_id=$1",
+        [id],
+      )
+    ).rows,
+  ).toEqual([{ actor_id: manager }]);
+});
+
+it('failed transfer rolls a newly configured destination back', async () => {
+  const id = (await quick()).rows[0].id;
+  await db.exec('reset role');
+  await db.query('delete from public.inventory_balances where product_id=$1 and location_id=$2', [
+    id,
+    storage,
+  ]);
+  await user(manager);
+  await db.exec('savepoint failed_move');
+  await expect(
+    db.query("select public.transfer_stock($1,$2,$3,$4,99,'')", [
+      crypto.randomUUID(),
+      id,
+      boat,
+      storage,
+    ]),
+  ).rejects.toThrow('INSUFFICIENT_STOCK');
+  await db.exec('rollback to savepoint failed_move');
+  expect(
+    (
+      await db.query(
+        'select * from public.inventory_balances where product_id=$1 and location_id=$2',
+        [id, storage],
+      )
+    ).rows,
+  ).toHaveLength(0);
+  await user(owner);
+  expect(
+    (
+      await db.query(
+        "select * from public.audit_events where entity_id=$1 and action='TRANSFER_CONFIGURATION'",
+        [id],
+      )
+    ).rows,
+  ).toHaveLength(0);
+});

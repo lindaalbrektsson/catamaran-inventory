@@ -1,3 +1,4 @@
+import { NeedProgress } from '@/components/need-progress';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getLocale, requireProfile } from '@/lib/auth';
@@ -15,7 +16,8 @@ export default async function Needs({
   if (!['OWNER', 'MANAGER'].includes(p.role)) redirect('/inventory');
   const locale = await getLocale(),
     t = dictionary(locale),
-    q = await searchParams,
+    raw = await searchParams,
+    q = { ...raw, status: raw.status ?? 'PENDING' },
     db = await supabase(),
     catalog = await itemCatalog();
   const needs = await collect((a, b) => {
@@ -65,7 +67,7 @@ export default async function Needs({
             <option value="DONE">{t.DONE}</option>
           </select>
         </label>
-        <label className="grid gap-2">
+        <label className="hidden gap-2 md:grid">
           {t.itemLocation}
           <select className={control} name="location" defaultValue={q.location ?? ''}>
             <option value="">{t.needAll}</option>
@@ -76,7 +78,7 @@ export default async function Needs({
             ))}
           </select>
         </label>
-        <label className="grid gap-2">
+        <label className="hidden gap-2 md:grid">
           {t.itemName}
           <select className={control} name="product" defaultValue={q.product ?? ''}>
             <option value="">{t.needAll}</option>
@@ -91,14 +93,23 @@ export default async function Needs({
       </form>
       <div className="grid gap-4 sm:grid-cols-2">
         {needs.map((n) => (
-          <Link href={`/needs/${n.id}`} key={n.id} className="rounded-xl border bg-card p-5">
-            <h2 className="font-semibold">{n.name}</h2>
-            <p className="mt-2">
-              {t[n.country]} · {n.status === 'PENDING' ? t.needPending : t[n.status]}
-            </p>
-            <p>{catalog.locations.find((l) => l.id === n.location_id)?.name}</p>
-            <LocalTime value={n.created_at} locale={locale} />
-          </Link>
+          <article key={n.id} className="rounded-xl border bg-card p-5">
+            <Link href={`/needs/${n.id}`} className="block min-h-12">
+              <h2 className="font-semibold">{n.name}</h2>
+              <p className="mt-2">
+                {t[n.country]} · {n.status === 'PENDING' ? t.needPending : t[n.status]}
+              </p>
+              <p>{catalog.locations.find((l) => l.id === n.location_id)?.name}</p>
+              <LocalTime value={n.created_at} locale={locale} />
+            </Link>
+            <NeedProgress
+              key={n.version}
+              id={n.id}
+              version={n.version}
+              status={n.status}
+              locale={locale}
+            />
+          </article>
         ))}
       </div>
       {!needs.length && <p>{t.needEmpty}</p>}

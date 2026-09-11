@@ -25,12 +25,12 @@ export function LocationCards({
               <h2 className="text-xl font-semibold">{location.name}</h2>
             </Link>
             {canAdd && (
-              <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="mt-4 grid grid-cols-3 gap-2">
                 {(['add', 'remove', 'transfer'] as const).map((action) => (
                   <Link
                     key={action}
                     href={`/inventory/${location.id}?action=${action}`}
-                    className={`flex min-h-14 items-center justify-center rounded-xl border px-2 font-semibold ${action === 'add' ? 'col-span-2 bg-primary text-primary-foreground' : ''}`}
+                    className={`flex min-h-14 items-center justify-center rounded-xl border px-2 font-semibold ${action === 'add' ? 'bg-primary text-primary-foreground' : ''}`}
                   >
                     {t[action]}
                   </Link>

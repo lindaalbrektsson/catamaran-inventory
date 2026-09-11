@@ -71,7 +71,7 @@ export async function saveNeed(_previous: ActionState, form: FormData): Promise<
     p_request: v.requestId,
     p_id: v.id,
     p_version: v.version,
-    p_confirm_duplicate: v.confirmDuplicate,
+    p_confirm_duplicate: v.product_id && v.location_id ? false : v.confirmDuplicate,
     p_values: {
       name: v.name,
       product_id: v.product_id,
@@ -91,13 +91,11 @@ export async function saveNeed(_previous: ActionState, form: FormData): Promise<
       p_size: bytes.length,
     });
     if (reserved.error || !reserved.data) return { error: 'needPhotoRetry' };
-    const upload = await db.storage
-      .from('need-photos')
-      .upload(reserved.data, bytes, {
-        contentType: 'image/jpeg',
-        cacheControl: '0',
-        upsert: false,
-      });
+    const upload = await db.storage.from('need-photos').upload(reserved.data, bytes, {
+      contentType: 'image/jpeg',
+      cacheControl: '0',
+      upsert: false,
+    });
     if (upload.error) {
       const existing = await db.storage.from('need-photos').download(reserved.data);
       if (
@@ -114,4 +112,35 @@ export async function saveNeed(_previous: ActionState, form: FormData): Promise<
   }
   revalidatePath('/needs', 'layout');
   redirect(`/needs/${v.id}`);
+}
+
+export async function advanceNeed(_previous: ActionState, form: FormData): Promise<ActionState> {
+  const p = await requireProfile();
+  if (!['OWNER', 'MANAGER'].includes(p.role)) return { error: 'FORBIDDEN' };
+  const id = String(form.get('id') ?? ''),
+    version = Number(form.get('version'));
+  if (!/^[0-9a-f-]{36}$/i.test(id) || !Number.isInteger(version)) return { error: 'INVALID_INPUT' };
+  const db = await supabase();
+  const { data: n, error } = await db.from('purchase_needs').select('*').eq('id', id).single();
+  if (error || !n) return { error: 'FORBIDDEN' };
+  if (n.version !== version) return { error: 'STALE_NEED' };
+  if (n.status === 'DONE') return { error: 'INVALID_INPUT' };
+  const { error: saveError } = await db.rpc('save_purchase_need', {
+    p_request: String(form.get('requestId')),
+    p_id: id,
+    p_version: version,
+    p_confirm_duplicate: false,
+    p_values: {
+      name: n.name,
+      product_id: n.product_id,
+      location_id: n.location_id,
+      country: n.country,
+      status: n.status === 'PENDING' ? 'ORDERED' : 'DONE',
+      product_url: n.product_url,
+      comment: n.comment,
+    },
+  });
+  if (saveError) return { error: errorKey(saveError.message) };
+  revalidatePath('/needs', 'layout');
+  return {};
 }

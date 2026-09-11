@@ -68,15 +68,15 @@ test('bottom Add chooses location on the same form and Spanish uses spellcheck',
   ).toHaveAttribute('lang', 'es');
   await expect(page.getByRole('combobox', { name: 'Ubicación', exact: true })).toBeVisible();
 });
-test('purchase need keeps fields after failure and offers all statuses', async ({ page }) => {
+test('purchase need starts Pending and keeps fields after failure', async ({ page }) => {
   await page.goto(base + '?view=need');
   await page.getByLabel('Name', { exact: true }).fill('Fixture need');
   await page.getByRole('combobox', { name: 'Purchase country', exact: true }).selectOption('USA');
-  await page.getByRole('combobox', { name: 'Status', exact: true }).selectOption('ORDERED');
+  await expect(page.getByRole('combobox', { name: 'Status', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Save purchase need', exact: true }).click();
   await expect(page.getByRole('alert')).toBeVisible();
   await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Fixture need');
   expect(
     JSON.parse((await page.evaluate(() => sessionStorage.getItem('need-fixture')))!),
-  ).toMatchObject({ country: 'USA', status: 'ORDERED' });
+  ).toMatchObject({ country: 'USA', status: 'PENDING' });
 });
