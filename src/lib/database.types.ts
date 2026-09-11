@@ -1,5 +1,23 @@
 import type { Role, Unit, MovementType } from './domain';
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+export type SmartScan = {
+  id: string;
+  scan_type: 'NOTE' | 'RECEIPT';
+  created_by: string;
+  created_at: string;
+  object_path: string;
+  sha256: string;
+  byte_size: number;
+  content_type: string;
+  status: 'UPLOADING' | 'PROCESSING' | 'REVIEW' | 'FAILED' | 'APPROVED';
+  original_result: Json | null;
+  model: string | null;
+  analyzed_at: string | null;
+  review: Json | null;
+  actions: Json | null;
+  approved_by: string | null;
+  approved_at: string | null;
+};
 export type OperationalDocument = {
   id: string;
   title: string;
@@ -181,6 +199,7 @@ type Table<Row, Insert = Partial<Row>> = {
 export type Database = {
   public: {
     Tables: {
+      smart_scans: Table<SmartScan>;
       documents: Table<OperationalDocument>;
       document_files: Table<DocumentFile>;
       tasks: Table<Task>;
@@ -229,6 +248,16 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      reserve_scan: {
+        Args: { p_id: string; p_type: string; p_hash: string; p_size: number; p_mime: string };
+        Returns: string;
+      };
+      claim_scan: { Args: { p_id: string }; Returns: boolean };
+      finish_scan: {
+        Args: { p_id: string; p_result: Json | null; p_model: string };
+        Returns: undefined;
+      };
+      approve_scan: { Args: { p_id: string; p_review: Json }; Returns: Json };
       save_document: {
         Args: {
           p_request: string;

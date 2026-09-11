@@ -7,6 +7,8 @@ export default defineConfig({
   plugins: [tailwindcss()],
   resolve: {
     alias: [
+      { find: '@/lib/scan-actions', replacement: path.join(root, 'tests/ui/scan-actions.ts') },
+      { find: '@/lib/scan-upload', replacement: path.join(root, 'tests/ui/scan-upload.ts') },
       {
         find: '@/lib/recovery-actions',
         replacement: path.join(root, 'tests/ui/recovery-actions.ts'),
