@@ -29,7 +29,7 @@ export default async function More() {
           </form>
         </CardContent>
       </Card>
-      <InstallControls locale={locale} />
+      <InstallControls locale={locale} keepInstructions />
     </div>
   );
 }

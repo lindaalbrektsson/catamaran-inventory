@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useSyncExternalStore } from 'react';
 import { dictionary, type Locale } from '@/lib/i18n';
+import { Smartphone, TabletSmartphone, Share } from 'lucide-react';
 import { Button } from './ui/button';
 
 type InstallEvent = Event & {
@@ -146,7 +147,9 @@ export function PwaProvider({
           <Button
             disabled={!online}
             onClick={async () => {
-              const registration = await navigator.serviceWorker?.getRegistration().catch(() => undefined);
+              const registration = await navigator.serviceWorker
+                ?.getRegistration()
+                .catch(() => undefined);
               if (registration?.waiting) {
                 navigator.serviceWorker.addEventListener(
                   'controllerchange',
@@ -174,23 +177,36 @@ export function PwaProvider({
   );
 }
 
-export function InstallControls({ locale }: { locale: Locale }) {
+export function InstallControls({
+  locale,
+  keepInstructions = false,
+}: {
+  locale: Locale;
+  keepInstructions?: boolean;
+}) {
   const { event, installed, consume } = useContext(InstallContext);
   const [feedback, setFeedback] = useState<
     'installAccepted' | 'installDismissed' | 'installFailed' | null
   >(null);
   const [prompting, setPrompting] = useState(false);
   const ios = useSyncExternalStore(subscribeDevice, isIos, () => false);
+  const otherIosBrowser = useSyncExternalStore(
+    subscribeDevice,
+    () =>
+      isIos() &&
+      (/CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo/.test(navigator.userAgent) ||
+        !/Version\/.+Safari\//.test(navigator.userAgent)),
+    () => false,
+  );
   const standalone = useSyncExternalStore(subscribeStandalone, isStandalone, () => false);
   const t = dictionary(locale);
-  if (standalone || installed) return null;
+  const alreadyInstalled = standalone || installed;
+  if (alreadyInstalled && !keepInstructions) return null;
   return (
     <section className="mx-auto mt-6 max-w-lg rounded-xl border bg-card p-4 text-left">
       <h2 className="text-sm font-semibold">{t.installTitle}</h2>
       <p className="mt-2 text-sm text-muted-foreground">{t.installHint}</p>
-      {ios ? (
-        <p className="mt-3 text-sm leading-6">{t.installIos}</p>
-      ) : (
+      {!ios && !alreadyInstalled && (
         <Button
           className="mt-3 w-full"
           variant="outline"
@@ -222,16 +238,52 @@ export function InstallControls({ locale }: { locale: Locale }) {
           {t[feedback]}
         </p>
       )}
-      {!ios && !event && !prompting && !feedback && (
+      {!ios && !alreadyInstalled && !event && !prompting && !feedback && (
         <p className="mt-3 text-sm leading-6">{t.installUnavailable}</p>
       )}
-      <details className="mt-2 text-sm">
-        <summary className="min-h-11 cursor-pointer py-3 text-primary">
-          {t.installInstructions}
-        </summary>
-        {!ios && <p className="leading-6">{t.installAndroid}</p>}
-        <p className="mt-3 leading-6">{t.installDesktop}</p>
-      </details>
+      <div className="mt-5" id="how-to-install">
+        <h3 className="mb-3 font-semibold">{t.installInstructions}</h3>
+        {otherIosBrowser && !alreadyInstalled && (
+          <p role="status" className="mb-3 rounded-xl bg-secondary p-3 text-sm leading-6">
+            {t.installSafariRequired}
+          </p>
+        )}
+        <div className="grid gap-4">
+          <section
+            aria-labelledby="install-android-title"
+            className="rounded-xl border bg-background p-4"
+          >
+            <h4 id="install-android-title" className="flex items-center gap-3 font-semibold">
+              <Smartphone className="size-6 shrink-0 text-primary" aria-hidden="true" />
+              {t.installAndroidTitle}
+            </h4>
+            <ol className="mt-3 list-decimal space-y-3 pl-6 text-sm leading-6">
+              <li>{t.installAndroidStep1}</li>
+              <li>{t.installAndroidStep2}</li>
+              <li>{t.installAndroidStep3}</li>
+            </ol>
+          </section>
+          <section
+            aria-labelledby="install-apple-title"
+            className="rounded-xl border bg-background p-4"
+          >
+            <h4 id="install-apple-title" className="flex items-center gap-3 font-semibold">
+              <TabletSmartphone className="size-6 shrink-0 text-primary" aria-hidden="true" />
+              {t.installAppleTitle}
+            </h4>
+            <ol className="mt-3 list-decimal space-y-3 pl-6 text-sm leading-6">
+              <li>{t.installAppleStep1}</li>
+              <li>
+                {t.installAppleStep2}
+                <Share className="ml-2 inline size-4" aria-hidden="true" />
+              </li>
+              <li>{t.installAppleStep3}</li>
+              <li>{t.installAppleStep4}</li>
+            </ol>
+          </section>
+        </div>
+        <p className="mt-4 text-sm leading-6 text-muted-foreground">{t.installDesktop}</p>
+      </div>
     </section>
   );
 }

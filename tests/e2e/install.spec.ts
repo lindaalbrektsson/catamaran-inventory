@@ -45,7 +45,7 @@ test('iPhone and iPad show instructions without a dead install button', async ({
   );
   await page.goto('/login');
   await expect(
-    page.getByText('To install the app on your iPhone, tap Share and choose Add to Home Screen.'),
+    page.getByRole('heading', { name: 'How to install on iPhone/iPad', exact: true }),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Install app', exact: true })).toHaveCount(0);
 });
@@ -67,11 +67,7 @@ test('iPad desktop mode uses visible Spanish instructions', async ({ page, conte
     Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 5 });
   });
   await page.goto('/login');
-  await expect(
-    page.getByText(
-      'Para instalar la app en tu iPhone, toca Compartir y selecciona Añadir a pantalla de inicio.',
-    ),
-  ).toBeVisible();
+  await expect(page.getByText('Abre Catamaran Belize en Safari.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Instalar aplicación', exact: true })).toHaveCount(
     0,
   );
@@ -87,4 +83,29 @@ test('unavailable native installation gives feedback and disables the button', a
   await page.goto('/login');
   await expect(page.getByRole('button', { name: 'Install app', exact: true })).toBeDisabled();
   await expect(page.getByText(/Automatic installation is not available/)).toBeVisible();
+});
+
+test('platform cards show every step and iPhone Chrome directs users to Safari', async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    Object.defineProperty(navigator, 'userAgent', {
+      get: () =>
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 CriOS/130.0.0.0 Mobile Safari/604.1',
+    }),
+  );
+  await page.goto('/login');
+  const android = page.getByRole('region', { name: 'How to install on Android', exact: true });
+  const apple = page.getByRole('region', { name: 'How to install on iPhone/iPad', exact: true });
+  await expect(android.getByRole('listitem')).toHaveCount(3);
+  await expect(apple.getByRole('listitem')).toHaveCount(4);
+  await expect(
+    page.getByText('On iPhone/iPad, open this site in Safari to complete installation.'),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Install app', exact: true })).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({
+    path: `artifacts/install-guide-${test.info().project.name}.png`,
+    fullPage: true,
+  });
 });
