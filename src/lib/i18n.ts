@@ -1,6 +1,8 @@
 export type Locale = 'en' | 'es';
 export const en = {
   smartScan: 'Smart Scan',
+  scanApprovalUnknown:
+    'Approval could not be confirmed. Check scan history before retrying. Repeating the same approval will not apply it twice.',
   scanNote: 'Scan note',
   scanReceipt: 'Scan receipt',
   scanAnalyze: 'Read image',
@@ -566,6 +568,8 @@ export const en = {
 export type Key = keyof typeof en;
 export const es: Record<Key, string> = {
   smartScan: 'Escaneo inteligente',
+  scanApprovalUnknown:
+    'No se pudo confirmar la aprobación. Revisa el historial antes de volver a intentar. Repetir la misma aprobación no aplica los cambios dos veces.',
   scanNote: 'Escanear nota',
   scanReceipt: 'Escanear recibo',
   scanAnalyze: 'Leer imagen',

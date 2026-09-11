@@ -94,7 +94,10 @@ export async function approveScan(id: string, review: unknown): Promise<ScanStat
   if (!parsed.success) return { error: 'scanInvalid' };
   const db = await supabase();
   const saved = await db.rpc('approve_scan', { p_id: id, p_review: parsed.data as Json });
-  if (saved.error) return failure(saved.error.message);
+  if (saved.error) {
+    const state = failure(saved.error.message);
+    return state.error === 'scanFailed' ? { error: 'scanApprovalUnknown' } : state;
+  }
   revalidatePath('/inventory', 'layout');
   revalidatePath('/needs', 'layout');
   revalidatePath('/scan', 'layout');
