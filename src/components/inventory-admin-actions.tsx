@@ -18,6 +18,9 @@ export function InventoryAdminActions({ role, locale }: { role: string; locale: 
         <Link className="rounded-xl border p-3" href="/inventory/categories">
           {t.configureCategories}
         </Link>
+        <Link className="rounded-xl border p-3" href="/staff">
+          {t.staffManagement}
+        </Link>
         <Link className="rounded-xl border p-3" href="/inventory/audit">
           {t.auditHistory}
         </Link>

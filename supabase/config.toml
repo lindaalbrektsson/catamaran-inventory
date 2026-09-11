@@ -32,3 +32,7 @@ enable_confirmations = true
 [storage]
 enabled = true
 file_size_limit = "10MiB"
+
+[auth.sms]
+enable_signup = false
+enable_confirmations = true

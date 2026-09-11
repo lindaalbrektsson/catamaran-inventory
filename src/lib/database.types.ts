@@ -1,6 +1,7 @@
 import type { Role, Unit, MovementType } from './domain';
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 export type Profile = {
+  must_change_password: boolean;
   id: string;
   display_name: string;
   role: Role;
@@ -85,7 +86,7 @@ type Table<Row, Insert = Partial<Row>> = {
   Update: Partial<Row>;
   Relationships: [];
 };
-// Maintained against migrations through 20260911000300. Regenerate using the
+// Maintained against migrations through 20260911000400. Regenerate using the
 // Supabase CLI after applying migrations, then review the generated diff.
 export type Database = {
   public: {
@@ -132,6 +133,10 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      manage_staff: {
+        Args: { p_id: string; p_name: string; p_role: Role; p_language: string; p_active: boolean };
+        Returns: undefined;
+      };
       reserve_original_receipt: {
         Args: {
           p_id: string;

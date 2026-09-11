@@ -135,3 +135,7 @@ Remove-Item Env:NEXT_QA_BUILD
 ```
 
 This selects `.next-qa`; leave the variable unset in Vercel, which uses the normal `.next` output.
+
+## Staff authentication update (pending hosted setup)
+
+See [Staff authentication and administrator steps](docs/STAFF_AUTH.md). The local phone/email login, forced password change and existing-profile owner administration require `20260911000400_staff_auth.sql` before deployment. Hosted public signup must be disabled manually; phone login and Auth account provisioning require the documented provider/admin setup. No Auth-admin secret is included.

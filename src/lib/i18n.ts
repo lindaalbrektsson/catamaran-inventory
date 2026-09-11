@@ -1,5 +1,40 @@
 export type Locale = 'en' | 'es';
 export const en = {
+  loginPhone: 'Phone',
+  loginEmail: 'Email',
+  phoneCountry: 'Country code',
+  phoneNumber: 'Phone number',
+  phoneHint: 'Enter the national number without the country code or leading zero.',
+  country501: 'Belize +501',
+  country57: 'Colombia +57',
+  country46: 'Sweden +46',
+  newPasswordTitle: 'Create your new password',
+  newPasswordHint: 'Replace your temporary password before opening the workspace.',
+  confirmPassword: 'Confirm new password',
+  passwordRules: 'Use 12–128 characters and enter the same new password twice.',
+  passwordChangeFailed:
+    'The password could not be changed. Try a different password or contact your owner.',
+  savePassword: 'Save new password',
+  staffManagement: 'Staff accounts',
+  staffName: 'Display name',
+  staffRole: 'Role',
+  staffSaved: 'Staff profile saved.',
+  staffSave: 'Save staff profile',
+  lastOwner: 'Keep at least one active owner with a completed password setup.',
+  passwordPending: 'New password required',
+  staffProvision: 'Create a staff account',
+  staffAdminBoundary:
+    'Creating an Auth account requires a secure administrator connection that is not configured. Use the Supabase administrator workflow below. No password is collected or stored by this page.',
+  staffProvisionSteps:
+    'In Supabase Auth, create the phone or email account with a unique temporary password. Phone accounts do not require email. Then find the same user ID below and set the display name, role, language and active status. New accounts must change their password before accessing the app.',
+  staffPhoneBoundary:
+    'To change a phone number, an authorized Supabase administrator must update this existing Auth user ID and verify the new number. Never create a replacement user. The app audit records masked phone changes automatically.',
+  staffPasswordBoundary:
+    'Enter the temporary password only in the secure Auth administrator tool. Share it privately with the staff member; never put it in notes, metadata, audit records or chat.',
+  staffManualDocs: 'Detailed administrator instructions',
+  staffIdentity: 'Permanent user ID',
+  staffContact: 'Login identity and recovery',
+
   auditHistory: 'Audit history',
   auditBefore: 'Before',
   auditAfter: 'After',
@@ -353,6 +388,40 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const es: Record<Key, string> = {
+  loginPhone: 'Teléfono',
+  loginEmail: 'Correo',
+  phoneCountry: 'Código de país',
+  phoneNumber: 'Número de teléfono',
+  phoneHint: 'Ingresa el número nacional sin código de país ni cero inicial.',
+  country501: 'Belice +501',
+  country57: 'Colombia +57',
+  country46: 'Suecia +46',
+  newPasswordTitle: 'Crea tu nueva contraseña',
+  newPasswordHint: 'Cambia tu contraseña temporal antes de abrir la aplicación.',
+  confirmPassword: 'Confirma la nueva contraseña',
+  passwordRules: 'Usa entre 12 y 128 caracteres e ingresa la misma contraseña nueva dos veces.',
+  passwordChangeFailed:
+    'No se pudo cambiar la contraseña. Prueba otra contraseña o contacta a tu propietario.',
+  savePassword: 'Guardar nueva contraseña',
+  staffManagement: 'Cuentas del personal',
+  staffName: 'Nombre',
+  staffRole: 'Rol',
+  staffSaved: 'Perfil guardado.',
+  staffSave: 'Guardar perfil',
+  lastOwner: 'Debe quedar al menos un propietario activo que haya completado su contraseña.',
+  passwordPending: 'Debe crear una nueva contraseña',
+  staffProvision: 'Crear una cuenta del personal',
+  staffAdminBoundary:
+    'Crear una cuenta de Auth requiere una conexión administrativa segura que aún no está configurada. Sigue las instrucciones de Supabase abajo. Esta página no solicita ni guarda contraseñas.',
+  staffProvisionSteps:
+    'En Supabase Auth, crea la cuenta con teléfono o correo y una contraseña temporal única. Las cuentas con teléfono no requieren correo. Luego busca el mismo ID abajo y configura nombre, rol, idioma y estado activo. Las cuentas nuevas deben cambiar su contraseña antes de acceder.',
+  staffPhoneBoundary:
+    'Para cambiar un teléfono, un administrador autorizado de Supabase debe actualizar este mismo ID de usuario de Auth y verificar el nuevo número. Nunca crees un usuario de reemplazo. La auditoría registra el cambio con números ocultos parcialmente.',
+  staffPasswordBoundary:
+    'Ingresa la contraseña temporal solo en la herramienta administrativa segura de Auth. Compártela en privado con la persona; nunca la pongas en notas, metadatos, auditorías ni chats.',
+  staffManualDocs: 'Instrucciones para el administrador',
+  staffIdentity: 'ID permanente de usuario',
+  staffContact: 'Acceso y recuperación de cuenta',
   auditHistory: 'Historial de auditoría',
   auditBefore: 'Antes',
   auditAfter: 'Después',

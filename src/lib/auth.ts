@@ -12,12 +12,16 @@ export const getProfile = cache(async () => {
   if (error || !data?.claims.sub) return null;
   const result = await db.from('profiles').select('*').eq('id', data.claims.sub).maybeSingle();
   if (result.error) throw new Error('PROFILE_LOAD_FAILED');
-  return result.data;
+  // Direct route handlers also use getProfile: pending passwords confer no active access.
+  return result.data
+    ? { ...result.data, active: result.data.active && !result.data.must_change_password }
+    : null;
 });
 export async function requireProfile() {
   if (!isConfigured()) redirect('/setup');
   const profile = await getProfile();
   if (!profile) redirect('/login');
+  if (profile.must_change_password) redirect('/change-password');
   if (!profile.active) redirect('/pending');
   return profile;
 }
