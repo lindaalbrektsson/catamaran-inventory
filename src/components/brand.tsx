@@ -12,7 +12,7 @@ export function Brand({ locale, inverse = false }: { locale: Locale; inverse?: b
       <div>
         <div className="text-lg font-semibold tracking-tight">{t.brand}</div>
         <div
-          className={`mt-0.5 text-[9px] tracking-[0.16em] ${inverse ? 'text-white/70' : 'text-muted-foreground'}`}
+          className={`mt-0.5 text-[9px] tracking-[0.16em] ${inverse ? 'text-white/85' : 'text-muted-foreground'}`}
         >
           {t.brandSub}
         </div>
