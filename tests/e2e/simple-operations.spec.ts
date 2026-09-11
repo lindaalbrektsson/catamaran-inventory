@@ -12,7 +12,7 @@ test('new deployment notification does not reload an unfinished form', async ({ 
     route.fulfill({ json: { version: 'new-test-version' } }),
   );
   await page.goto('/login');
-  await expect(page.getByText(/New version available/)).toBeVisible();
+  await expect(page.getByText(/New update available/)).toBeVisible();
   await page.getByRole('button', { name: 'Email', exact: true }).click();
   await page.getByLabel('Email address').fill('unfinished@example.test');
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));

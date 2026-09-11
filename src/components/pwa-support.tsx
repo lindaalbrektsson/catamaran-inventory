@@ -1,6 +1,13 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useSyncExternalStore } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { dictionary, type Locale } from '@/lib/i18n';
 import { Smartphone, TabletSmartphone, Share } from 'lucide-react';
 import { Button } from './ui/button';
@@ -57,6 +64,8 @@ export function PwaProvider({
   const [installEvent, setInstallEvent] = useState<InstallEvent | null>(null);
   const [installed, setInstalled] = useState(false);
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const editedForms = useRef(new Set<HTMLFormElement>());
   const online = useSyncExternalStore(
     subscribeOnline,
     () => navigator.onLine,
@@ -87,6 +96,16 @@ export function PwaProvider({
         event.stopImmediatePropagation();
       }
     };
+    // Conservative: keep warning until an edited form leaves the page, including failed saves.
+    const edited = (event: Event) => {
+      const target = event.target;
+      if (target instanceof HTMLElement) {
+        const form = target.closest('form');
+        if (form) editedForms.current.add(form);
+      }
+    };
+    document.addEventListener('input', edited, true);
+    document.addEventListener('change', edited, true);
     window.addEventListener('beforeinstallprompt', install);
     window.addEventListener('appinstalled', installed);
     document.addEventListener('submit', submit, true);
@@ -126,8 +145,18 @@ export function PwaProvider({
           /* Installation is optional; the online app remains usable. */
         });
     }
+    // Version detection works even when service workers are unavailable or registration fails.
+    checkUpdate();
+    const interval = window.setInterval(checkUpdate, 5 * 60 * 1000);
+    window.addEventListener('online', checkUpdate);
+    window.addEventListener('pageshow', checkUpdate);
     document.addEventListener('visibilitychange', checkUpdate);
     return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('online', checkUpdate);
+      window.removeEventListener('pageshow', checkUpdate);
+      document.removeEventListener('input', edited, true);
+      document.removeEventListener('change', edited, true);
       window.removeEventListener('beforeinstallprompt', install);
       window.removeEventListener('appinstalled', installed);
       document.removeEventListener('submit', submit, true);
@@ -145,19 +174,43 @@ export function PwaProvider({
         >
           <span>{t.newVersion}</span>
           <Button
-            disabled={!online}
+            disabled={!online || updating}
             onClick={async () => {
-              const registration = await navigator.serviceWorker
-                ?.getRegistration()
-                .catch(() => undefined);
-              if (registration?.waiting) {
-                navigator.serviceWorker.addEventListener(
-                  'controllerchange',
-                  () => window.location.reload(),
-                  { once: true },
-                );
-                registration.waiting.postMessage('SKIP_WAITING');
-              } else window.location.reload();
+              for (const form of editedForms.current) {
+                if (!form.isConnected) editedForms.current.delete(form);
+              }
+              if (editedForms.current.size && !window.confirm(t.updateUnsaved)) return;
+              setUpdating(true);
+              // Only reload this tab after an explicit tap. Never touch auth cookies or storage.
+              // The worker does not cache HTML; a normal reload gets the production document.
+              let reloaded = false;
+              const reload = () => {
+                if (reloaded) return;
+                reloaded = true;
+                window.location.reload();
+              };
+              // Registration/controller events can fail on mobile. Do not leave a dead button.
+              const fallback = window.setTimeout(reload, 3000);
+              try {
+                const registration = await navigator.serviceWorker?.getRegistration();
+                if (registration?.waiting) {
+                  navigator.serviceWorker.addEventListener(
+                    'controllerchange',
+                    () => {
+                      window.clearTimeout(fallback);
+                      reload();
+                    },
+                    { once: true },
+                  );
+                  registration.waiting.postMessage('SKIP_WAITING');
+                } else {
+                  window.clearTimeout(fallback);
+                  reload();
+                }
+              } catch {
+                window.clearTimeout(fallback);
+                reload();
+              }
             }}
           >
             {t.updateApp}

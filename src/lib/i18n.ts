@@ -275,8 +275,9 @@ export const en = {
   receiptCaptured: 'Receipt saved for owner review.',
   emptyReceiptQueue: 'No receipts to show yet.',
   financialRecords: 'Financial records',
-  newVersion: 'New version available. Update when you have finished your current entry.',
-  updateApp: 'Update',
+  newVersion: 'New update available',
+  updateApp: 'Update now',
+  updateUnsaved: 'You have an unfinished form. Updating will discard unsaved changes. Update now?',
   itemInitialQuantity: 'Initial quantity',
   installAccepted:
     'Installation accepted. Follow any browser confirmation, then look for Catamaran Belize on your home screen or in your apps.',
@@ -860,8 +861,10 @@ export const es: Record<Key, string> = {
   receiptCaptured: 'Recibo guardado para revisión del propietario.',
   emptyReceiptQueue: 'Aún no hay recibos para mostrar.',
   financialRecords: 'Registros financieros',
-  newVersion: 'Hay una nueva versión. Actualiza cuando termines el registro actual.',
-  updateApp: 'Actualizar',
+  newVersion: 'Nueva actualización disponible',
+  updateApp: 'Actualizar ahora',
+  updateUnsaved:
+    'Tienes un formulario sin terminar. Al actualizar se perderán los cambios sin guardar. ¿Actualizar ahora?',
   itemInitialQuantity: 'Cantidad inicial',
   installAccepted:
     'Instalación aceptada. Sigue las indicaciones del navegador y busca Catamaran Belize en la pantalla de inicio o entre tus aplicaciones.',
