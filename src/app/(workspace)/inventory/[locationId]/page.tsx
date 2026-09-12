@@ -15,7 +15,7 @@ export default async function LocationInventory({
   searchParams,
 }: {
   params: Promise<{ locationId: string }>;
-  searchParams: Promise<{ low?: string; action?: string }>;
+  searchParams: Promise<{ low?: string; action?: string; inactive?: string }>;
 }) {
   const profile = await requireProfile();
   const { locationId } = await params,
@@ -38,7 +38,10 @@ export default async function LocationInventory({
         />
       </div>
     );
-  const items = await getInventory(locationId);
+  const showInactive =
+    !search.action && search.inactive === '1' && ['OWNER', 'MANAGER'].includes(profile.role);
+  const allItems = await getInventory(locationId, showInactive);
+  const items = showInactive ? allItems.filter((i) => !i.product.active) : allItems;
   if (
     ['remove', 'transfer'].includes(search.action ?? '') &&
     ['OWNER', 'MANAGER'].includes(profile.role)
@@ -86,7 +89,29 @@ export default async function LocationInventory({
         </>
       )}
       {['OWNER', 'MANAGER'].includes(profile.role) && (
-        <LowNeedSuggestions items={items} location={location} locale={locale} />
+        <LowNeedSuggestions
+          items={items.filter((i) => i.product.active)}
+          location={location}
+          locale={locale}
+        />
+      )}
+      {!search.action && ['OWNER', 'MANAGER'].includes(profile.role) && (
+        <div className="mb-4 flex gap-3">
+          <Link
+            className="inline-flex min-h-12 items-center rounded-xl border p-3"
+            aria-current={!showInactive ? 'page' : undefined}
+            href={`/inventory/${locationId}`}
+          >
+            {t.itemActive}
+          </Link>
+          <Link
+            className="inline-flex min-h-12 items-center rounded-xl border p-3"
+            aria-current={showInactive ? 'page' : undefined}
+            href={`/inventory/${locationId}?inactive=1`}
+          >
+            {t.inactive}
+          </Link>
+        </div>
       )}
       <InventoryList
         items={items}
