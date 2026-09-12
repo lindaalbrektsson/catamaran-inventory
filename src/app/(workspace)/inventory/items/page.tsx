@@ -17,7 +17,6 @@ export default async function Items({
     t = dictionary(locale),
     search = await searchParams,
     importing = !!search.import;
-  if (!importing && !search.product) redirect('/add');
   const item =
     search.product && search.location
       ? await getItem(search.location, search.product, true)
