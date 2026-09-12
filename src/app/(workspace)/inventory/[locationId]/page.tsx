@@ -114,6 +114,7 @@ export default async function LocationInventory({
         </div>
       )}
       <InventoryList
+        inactive={showInactive}
         items={items}
         locale={locale}
         initialLow={search.low === '1'}
