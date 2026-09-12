@@ -14,11 +14,13 @@ export function InventoryList({
   items,
   locale,
   initialLow = false,
+  inactive = false,
   action,
 }: {
   items: InventoryItem[];
   locale: Locale;
   initialLow?: boolean;
+  inactive?: boolean;
   action?: 'add' | 'remove' | 'transfer';
 }) {
   const [query, setQuery] = useState(''),
@@ -32,7 +34,7 @@ export function InventoryList({
       (!category || item.category.id === category) &&
       (!low || isLowStock(item.quantity, item.minimum_stock)),
   );
-  if (!items.length) return <EmptyState title={t.emptyLocation} hint={t.emptyLocationHint} />;
+  if (!items.length) return <EmptyState title={inactive ? t.noInactiveItems : t.emptyLocation} />;
   return (
     <>
       <div className="mb-6 grid grid-cols-[1fr_auto] gap-3 rounded-xl border bg-card p-4 md:grid-cols-[1fr_220px_auto]">
