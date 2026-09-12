@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { units } from './domain';
 export function normalizedName(name: string) {
   return name.toLocaleLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 }
@@ -9,6 +10,17 @@ export const quickAddSchema = z
     product: z.uuid().or(z.literal('')),
     name: z.string().trim().max(150),
     category: z.uuid().or(z.literal('')),
+    unit: z.enum(units).default('piece'),
+    minimum: z
+      .string()
+      .transform((v) => v.replace(',', '.'))
+      .pipe(
+        z
+          .string()
+          .regex(/^(?:0|[1-9]\d{0,10})(?:\.\d{1,3})?$/)
+          .or(z.literal('')),
+      )
+      .default(''),
     quantity: z
       .string()
       .transform((v) => v.replace(',', '.'))

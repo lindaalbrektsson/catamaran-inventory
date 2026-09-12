@@ -343,9 +343,9 @@ it('prevents unit changes after history even for an owner', async () => {
     db.query("update public.products set unit='liter' where id=$1", [product]),
   ).rejects.toThrow('ITEM_UNIT_CONFLICT');
 });
-it('denies manager item configuration', async () => {
+it('manager configuration still rejects invalid fields', async () => {
   await expect(db.query('select public.configure_item($1,$2)', [product, '{}'])).rejects.toThrow(
-    'FORBIDDEN',
+    'ITEM_INVALID',
   );
 });
 

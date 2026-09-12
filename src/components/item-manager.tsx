@@ -250,13 +250,12 @@ export function ItemManager({
               ))}
             </select>
           </label>
-          {productId && <p className="text-sm text-muted-foreground">{t.unitHistoryHint}</p>}
           <label>
             {t.itemLocation}
             <select
               className={control}
               required
-              disabled={pending}
+              disabled={pending || Boolean(productId)}
               value={value.location}
               onChange={(e) => update('location', e.target.value)}
             >
@@ -294,7 +293,7 @@ export function ItemManager({
               />
             </label>
           )}
-          <label className="hidden md:block">
+          <label>
             {t.itemTarget}
             <input
               className={control}
@@ -302,16 +301,6 @@ export function ItemManager({
               disabled={pending}
               value={value.target}
               onChange={(e) => update('target', e.target.value.replace(',', '.'))}
-            />
-          </label>
-          <label>
-            {t.itemNotes}
-            <textarea
-              className={control}
-              maxLength={1000}
-              value={value.notes}
-              disabled={pending}
-              onChange={(e) => update('notes', e.target.value)}
             />
           </label>
           <label className="flex min-h-12 items-center gap-3">

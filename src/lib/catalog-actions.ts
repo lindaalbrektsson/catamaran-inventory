@@ -9,7 +9,7 @@ export async function updateCatalogItem(
   value: ItemInput,
 ): Promise<{ error?: ItemError; success?: boolean }> {
   const p = await requireProfile();
-  if (p.role !== 'OWNER') return { error: 'ITEM_FAILED' };
+  if (!['OWNER', 'MANAGER'].includes(p.role)) return { error: 'ITEM_FAILED' };
   if (
     !z.uuid().safeParse(id).success ||
     !itemSchema.safeParse(value).success ||
