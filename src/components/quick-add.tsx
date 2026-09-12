@@ -32,15 +32,19 @@ export function QuickAdd({
     [open, setOpen] = useState(true),
     listId = useId();
   const query = name.trim().toLocaleLowerCase();
-  const matches = query
-    ? catalog.products
-        .filter(
-          (p) =>
-            p.name.toLocaleLowerCase().includes(query) ||
-            normalizedName(p.name).includes(normalizedName(query)),
-        )
-        .slice(0, 12)
-    : [];
+  const matches =
+    query || category
+      ? catalog.products
+          .filter(
+            (p) =>
+              (!category ||
+                p.category_id === category ||
+                (!!query && normalizedName(p.name) === normalizedName(query))) &&
+              (p.name.toLocaleLowerCase().includes(query) ||
+                normalizedName(p.name).includes(normalizedName(query))),
+          )
+          .slice(0, 12)
+      : [];
   const exact = catalog.products.some((p) => p.name.trim().toLocaleLowerCase() === query);
   const similar = catalog.products.some((p) => normalizedName(p.name) === normalizedName(name));
   const canCreate = !!query && !exact;
@@ -56,6 +60,7 @@ export function QuickAdd({
       setCreating(true);
     } else if (matches[index]?.active) {
       setProduct(matches[index].id);
+      setCategory(matches[index].category_id);
       setName(matches[index].name);
       setCreating(false);
     } else return;
@@ -67,6 +72,30 @@ export function QuickAdd({
     <form ref={ref} action={action} className="grid max-w-xl gap-4">
       <input type="hidden" name="requestId" value={request} />
       <input type="hidden" name="product" value={product} />
+      <label className="grid gap-2">
+        {t.category}
+        <select
+          name="category"
+          required={creating}
+          className={control}
+          value={category}
+          disabled={pending}
+          onChange={(e) => {
+            changed();
+            setCategory(e.target.value);
+            setProduct('');
+            setOpen(true);
+            setActive(-1);
+          }}
+        >
+          <option value="">{creating ? t.itemChoose : t.allCategories}</option>
+          {catalog.categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {locale === 'es' ? c.name_es : c.name_en}
+            </option>
+          ))}
+        </select>
+      </label>
       <label className="grid gap-2">
         {t.quickSearch}
         <input
@@ -178,34 +207,7 @@ export function QuickAdd({
           </select>
         </label>
       )}
-      {creating ? (
-        <>
-          <label className="grid gap-2">
-            {t.category}
-            <select
-              name="category"
-              required
-              className={control}
-              value={category}
-              disabled={pending}
-              onChange={(e) => {
-                changed();
-                setCategory(e.target.value);
-              }}
-            >
-              <option value="">{t.itemChoose}</option>
-              {catalog.categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {locale === 'es' ? c.name_es : c.name_en}
-                </option>
-              ))}
-            </select>
-          </label>
-          <p className="text-sm text-muted-foreground">{t.quickUnit}</p>
-        </>
-      ) : (
-        <input name="category" type="hidden" value="" />
-      )}
+      {creating && <p className="text-sm text-muted-foreground">{t.quickUnit}</p>}
       {creating && (similar || state.error === 'SIMILAR_ITEM') && (
         <div className="rounded-xl border bg-secondary p-3">
           <p>{t.quickSimilar}</p>

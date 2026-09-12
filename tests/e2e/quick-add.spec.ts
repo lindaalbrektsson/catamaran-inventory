@@ -9,7 +9,9 @@ test('existing item is selected inline, location preselected, decimal quantity r
   await input.press('ArrowDown');
   await input.press('Enter');
   await expect(page.getByText('Selected item:', { exact: false })).toContainText('Belikin Beer');
-  await expect(page.getByRole('combobox', { name: 'Category', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Category', exact: true })).toHaveValue(
+    '20000000-0000-4000-8000-000000000001',
+  );
   await expect(page.getByRole('combobox', { name: 'Location', exact: true })).toHaveCount(0);
   await page.getByLabel('Quantity', { exact: true }).fill('2,5');
   await page.getByRole('button', { name: 'Save change', exact: true }).click();
@@ -79,4 +81,21 @@ test('purchase need starts Pending and keeps fields after failure', async ({ pag
   expect(
     JSON.parse((await page.evaluate(() => sessionStorage.getItem('need-fixture')))!),
   ).toMatchObject({ country: 'USA', status: 'PENDING' });
+});
+
+test('category is available before typing and carries into new item creation', async ({ page }) => {
+  await page.goto(base + '?view=quick-add');
+  const category = page.getByRole('combobox', { name: 'Category', exact: true });
+  await expect(category).toBeVisible();
+  await category.selectOption({ label: 'Bar' });
+  await expect(page.getByRole('option', { name: 'Belikin Beer', exact: true })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Type an item name' }).fill('Fresh juice');
+  await page.getByRole('option', { name: /Create as a new item/ }).click();
+  await expect(category).toHaveValue('20000000-0000-4000-8000-000000000001');
+  await page.getByLabel('Quantity', { exact: true }).fill('2');
+  await page.getByRole('button', { name: 'Save change', exact: true }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  expect(
+    JSON.parse((await page.evaluate(() => sessionStorage.getItem('quick-add-fixture')))!).category,
+  ).toBe('20000000-0000-4000-8000-000000000001');
 });
