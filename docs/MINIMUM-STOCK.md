@@ -25,3 +25,11 @@ Below-minimum items retain the manual linked Need action and active-Need duplica
 protection. Current 4 / target 12 suggests 8. No Need is created automatically.
 
 Release is independent of the pending Smart Scan and Auth migrations.
+
+CLI production deployments supply the public commit identifier with
+`--env APP_RELEASE_VERSION=<git HEAD> --build-env APP_RELEASE_VERSION=<git HEAD>`.
+This is not a secret. It keeps the update banner consistent when Vercel Git
+metadata is empty. Git deployments continue using VERCEL_GIT_COMMIT_SHA.
+
+Owner/Manager location lists include an Inactive view so deactivated items remain
+reachable for history review and reactivation. Captain/Crew do not gain this view.

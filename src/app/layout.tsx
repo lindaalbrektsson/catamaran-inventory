@@ -48,7 +48,15 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
     >
       <body className="min-h-full flex flex-col">
         <SessionRefresh />
-        <PwaProvider locale={locale} version={process.env.VERCEL_GIT_COMMIT_SHA ?? 'local'}>
+        <PwaProvider
+          locale={locale}
+          version={
+            process.env.VERCEL_GIT_COMMIT_SHA ||
+            process.env.APP_RELEASE_VERSION ||
+            process.env.VERCEL_DEPLOYMENT_ID ||
+            'local'
+          }
+        >
           {children}
         </PwaProvider>
       </body>
