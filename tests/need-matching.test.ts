@@ -28,3 +28,13 @@ it('suggests only the aggregate target shortfall and never negative stock purcha
     ),
   ).toBe(0);
 });
+
+it('suggests eight for current four and target twelve without changing inventory', () => {
+  const configured = {
+    ...catalog,
+    balances: [{ ...catalog.balances![0], quantity: 4, minimum_stock: 6, target_stock: 12 }],
+  };
+  const before = JSON.stringify(configured);
+  expect(suggestedNeedQuantity(configured, 'a')).toBe(8);
+  expect(JSON.stringify(configured)).toBe(before);
+});

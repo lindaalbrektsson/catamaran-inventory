@@ -51,6 +51,9 @@ export function ItemManager({
       mode: 'create',
     },
   );
+  const [keepMinimum, setKeepMinimum] = useState(
+    initial?.minimum !== undefined && initial.minimum !== '',
+  );
   const update = (key: keyof ItemInput, v: string | boolean) => {
     setValue((old) => ({ ...old, [key]: v }));
     setId(crypto.randomUUID());
@@ -265,18 +268,42 @@ export function ItemManager({
               ))}
             </select>
           </label>
-          {(['minimum', 'target'] as const).map((key) => (
-            <label key={key}>
-              {{ minimum: t.itemMinimum, target: t.itemTarget }[key]}
+          <label className="flex min-h-12 items-center gap-3">
+            <input
+              type="checkbox"
+              role="switch"
+              checked={keepMinimum}
+              disabled={pending}
+              onChange={(e) => {
+                setKeepMinimum(e.target.checked);
+                if (!e.target.checked) update('minimum', '');
+              }}
+            />
+            {t.keepMinimum}
+          </label>
+          {keepMinimum && (
+            <label>
+              {t.minimumQuantity}
               <input
                 className={control}
                 inputMode="decimal"
+                required
                 disabled={pending}
-                value={value[key]}
-                onChange={(e) => update(key, e.target.value.replace(',', '.'))}
+                value={value.minimum}
+                onChange={(e) => update('minimum', e.target.value.replace(',', '.'))}
               />
             </label>
-          ))}
+          )}
+          <label className="hidden md:block">
+            {t.itemTarget}
+            <input
+              className={control}
+              inputMode="decimal"
+              disabled={pending}
+              value={value.target}
+              onChange={(e) => update('target', e.target.value.replace(',', '.'))}
+            />
+          </label>
           <label>
             {t.itemNotes}
             <textarea
