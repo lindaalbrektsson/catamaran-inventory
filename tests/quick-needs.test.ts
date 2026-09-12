@@ -34,10 +34,7 @@ beforeAll(async () => {
     [crew, 'CREW'],
   ]) {
     await db.query('insert into auth.users(id) values($1)', [id]);
-    await db.query(
-      'update public.profiles set active=true,role=$1 where id=$2',
-      [role, id],
-    );
+    await db.query('update public.profiles set active=true,role=$1 where id=$2', [role, id]);
   }
 });
 
@@ -357,4 +354,123 @@ it('new needs omit location, keep product UUID through rename, and permit text-o
     product_id: '',
     location_id: '',
   });
+});
+
+const mobileAdd = (request = crypto.randomUUID(), unit = 'bottle', minimum: number | null = 6) =>
+  db.query<{ id: string }>('select public.quick_add_item($1,$2,null,$3,$4,4,false,$5,$6) id', [
+    request,
+    boat,
+    'Mobile fixture',
+    '20000000-0000-4000-8000-000000000001',
+    unit,
+    minimum,
+  ]);
+const settings = {
+  name: 'Renamed fixture',
+  category: '20000000-0000-4000-8000-000000000002',
+  location: boat,
+  unit: 'bottle',
+  minimum: '12',
+  target: '24',
+  cost: '',
+  currency: 'BZD',
+  notes: '',
+  quantity: '',
+  active: true,
+};
+it.each([owner, manager])('mobile creation and audited settings work for %s', async (actor) => {
+  await user(actor);
+  const request = crypto.randomUUID(),
+    id = (await mobileAdd(request)).rows[0].id;
+  expect((await mobileAdd(request)).rows[0].id).toBe(id);
+  expect((await db.query('select unit from products where id=$1', [id])).rows[0]).toMatchObject({
+    unit: 'bottle',
+  });
+  expect(
+    (
+      await db.query(
+        'select quantity,minimum_stock from inventory_balances where product_id=$1 and location_id=$2',
+        [id, boat],
+      )
+    ).rows[0],
+  ).toMatchObject({ quantity: '4.000', minimum_stock: '6.000' });
+  await db.query('select configure_item($1,$2)', [id, JSON.stringify(settings)]);
+  const history = (
+    await db.query<{
+      history: {
+        actor_id: string;
+        before: Record<string, unknown>;
+        after: Record<string, unknown>;
+        created_at: string;
+      }[];
+    }>('select item_change_history($1,1) history', [id])
+  ).rows[0].history;
+  expect(history.every((e) => e.actor_id === actor && !!e.created_at)).toBe(true);
+  expect(
+    history.some((e) => e.before.name === 'Mobile fixture' && e.after.name === 'Renamed fixture'),
+  ).toBe(true);
+  expect(
+    history.some(
+      (e) => Number(e.before.minimum_stock) === 6 && Number(e.after.minimum_stock) === 12,
+    ),
+  ).toBe(true);
+  await db.query('select configure_item($1,$2)', [
+    id,
+    JSON.stringify({ ...settings, active: false, minimum: '' }),
+  ]);
+  expect((await db.query('select active from products where id=$1', [id])).rows[0]).toMatchObject({
+    active: false,
+  });
+  expect(
+    (
+      await db.query(
+        'select quantity,minimum_stock from inventory_balances where product_id=$1 and location_id=$2',
+        [id, boat],
+      )
+    ).rows[0],
+  ).toMatchObject({ quantity: '4.000', minimum_stock: null });
+  await db.query('select configure_item($1,$2)', [id, JSON.stringify(settings)]);
+  expect(
+    (await db.query('select count(*)::int n from inventory_transactions where product_id=$1', [id]))
+      .rows[0],
+  ).toMatchObject({ n: 1 });
+});
+it('mobile creation invalid minimum rolls back all records', async () => {
+  await db.exec('savepoint invalid_minimum');
+  await expect(mobileAdd(crypto.randomUUID(), 'bottle', -1)).rejects.toThrow('INVALID_INPUT');
+  await db.exec('rollback to savepoint invalid_minimum');
+  expect(
+    (await db.query("select count(*)::int n from products where name='Mobile fixture'")).rows[0],
+  ).toMatchObject({ n: 0 });
+});
+it('operational editing cannot reinterpret historical units or delete audit history', async () => {
+  const id = (await mobileAdd()).rows[0].id;
+  await db.exec('savepoint unit_edit');
+  await expect(
+    db.query('select configure_item($1,$2)', [id, JSON.stringify({ ...settings, unit: 'piece' })]),
+  ).rejects.toThrow('ITEM_UNIT_CONFLICT');
+  await db.exec('rollback to savepoint unit_edit');
+  await db.exec('savepoint delete_audit');
+  await expect(db.exec('delete from audit_events')).rejects.toThrow();
+  await db.exec('rollback to savepoint delete_audit');
+  await expect(db.exec('update audit_events set created_at=now()')).rejects.toThrow();
+});
+it.each(['CREW', 'CAPTAIN'])('%s cannot create/edit/read item changes', async (role) => {
+  await db.exec('reset role');
+  await db.query('update profiles set role=$1 where id=$2', [role, crew]);
+  await user(crew);
+  for (const sql of [
+    "select quick_add_item(gen_random_uuid(),$1,null,'Denied',$2,1,false,'piece',null)",
+    "select configure_item($1,'{}')",
+    'select item_change_history($1,1)',
+  ]) {
+    await db.exec('savepoint denied');
+    await expect(
+      db.query(
+        sql,
+        sql.includes('$2') ? [boat, '20000000-0000-4000-8000-000000000001'] : [product],
+      ),
+    ).rejects.toThrow('FORBIDDEN');
+    await db.exec('rollback to savepoint denied');
+  }
 });

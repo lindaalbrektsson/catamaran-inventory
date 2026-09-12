@@ -56,6 +56,22 @@ export function ProductOverview({
           )}
         </CardContent>
       </Card>
+      {['OWNER', 'MANAGER'].includes(role) && (
+        <div className="mb-4 flex flex-wrap gap-3">
+          <Link
+            className="inline-flex min-h-12 items-center rounded-xl border p-3"
+            href={`/inventory/items?product=${item.product_id}&location=${item.location_id}`}
+          >
+            {t.editItem}
+          </Link>
+          <Link
+            className="inline-flex min-h-12 items-center rounded-xl border p-3"
+            href={`${basePath}/settings-history`}
+          >
+            {t.itemChanges}
+          </Link>
+        </div>
+      )}
       <div className="stock-actions grid gap-3 rounded-xl p-3 sm:grid-cols-2">
         {item.product.active && can(role, 'inventory.add') && (
           <Button asChild>

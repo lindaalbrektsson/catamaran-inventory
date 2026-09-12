@@ -1,6 +1,7 @@
 'use client';
 import { useActionState, useId, useState } from 'react';
 import { quickAdd } from '@/lib/quick-actions';
+import { units } from '@/lib/domain';
 import { normalizedName } from '@/lib/quick-domain';
 import type { ItemCatalog } from '@/lib/item-domain';
 import { dictionary, type Locale } from '@/lib/i18n';
@@ -25,6 +26,9 @@ export function QuickAdd({
     [creating, setCreating] = useState(false),
     [quantity, setQuantity] = useState(''),
     [category, setCategory] = useState(''),
+    [unit, setUnit] = useState<string>('piece'),
+    [minimum, setMinimum] = useState(''),
+    [keepMinimum, setKeepMinimum] = useState(false),
     [location, setLocation] = useState(locationId),
     [confirm, setConfirm] = useState(false),
     [request, setRequest] = useState(requestId),
@@ -207,7 +211,60 @@ export function QuickAdd({
           </select>
         </label>
       )}
-      {creating && <p className="text-sm text-muted-foreground">{t.quickUnit}</p>}
+      {creating && (
+        <>
+          <label className="grid gap-2">
+            {t.itemUnit}
+            <select
+              name="unit"
+              className={control}
+              value={unit}
+              disabled={pending}
+              onChange={(e) => {
+                changed();
+                setUnit(e.target.value);
+              }}
+            >
+              {units.map((u) => (
+                <option key={u} value={u}>
+                  {t[u]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex min-h-12 items-center gap-3">
+            <input
+              type="checkbox"
+              role="switch"
+              checked={keepMinimum}
+              disabled={pending}
+              onChange={(e) => {
+                changed();
+                setKeepMinimum(e.target.checked);
+                if (!e.target.checked) setMinimum('');
+              }}
+            />
+            {t.keepMinimum}
+          </label>
+          {keepMinimum && (
+            <label className="grid gap-2">
+              {t.minimumQuantity}
+              <input
+                name="minimum"
+                inputMode="decimal"
+                required
+                className={control}
+                value={minimum}
+                disabled={pending}
+                onChange={(e) => {
+                  changed();
+                  setMinimum(e.target.value);
+                }}
+              />
+            </label>
+          )}
+        </>
+      )}
       {creating && (similar || state.error === 'SIMILAR_ITEM') && (
         <div className="rounded-xl border bg-secondary p-3">
           <p>{t.quickSimilar}</p>

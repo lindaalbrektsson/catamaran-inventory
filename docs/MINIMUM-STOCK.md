@@ -1,18 +1,27 @@
-# Minimum stock settings
+# Mobile item settings
 
-Minimum and target stock were already stored per product/location, with audited
-configuration RPCs, low-stock indicators and linked Need suggestions. The full
-creation page had been redirected to quick Add; it is now accessible again from
-Owner desktop Inventory → Add item.
+Owner and Manager can create items inline from Add: name, category, unit,
+optional minimum, quantity. Location is retained when launched from a location.
+Existing stock Add keeps its item/quantity flow and never changes thresholds.
 
-Item creation and editing show Keep minimum in stock (off for new items). Turning
-it on reveals Minimum quantity; turning it off saves a null minimum. Existing
-configured minimums start enabled. Target stock is optional in Owner desktop
-settings. Quick stock Add has no new fields or steps. Permissions are unchanged.
+Item detail → Edit item supports name, category, unit, optional minimum/target,
+and active/inactive on mobile. Location is fixed to the detail being edited.
+No explanatory metadata text, cost, notes, or extra creation screens are needed.
 
-Below-minimum items offer Add to Need to Purchase. Existing Pending/Ordered Needs
-are opened instead of duplicated. Creating a Need remains an explicit user action.
-The linked Need picker retains its target-shortfall suggestion: current 4, target
-12 suggests 8. No stock is changed by editing thresholds or viewing suggestions.
+Unit changes remain blocked once transaction history exists or stock is nonzero.
+This avoids reinterpreting historical quantities; zero-stock items without
+transactions may change unit. Names and other settings retain the stable UUID.
 
-No database migration is needed for this UI restoration.
+Migration `20260912000100_mobile_item_settings.sql` introduces quick_add_item,
+allows active Owner/Manager configure_item/configure_inventory, and provides
+scoped item_change_history. Captain/Crew are unchanged. Broad audit access stays
+Owner-only. Item history exposes only operational fields and server timestamps.
+
+All stock goes through change_stock. Creation/configuration audits preserve the
+actor, product ID, before/after values and server timestamp. Normal UI deactivates
+items; audit update/delete/truncate protections remain intact.
+
+Below-minimum items retain the manual linked Need action and active-Need duplicate
+protection. Current 4 / target 12 suggests 8. No Need is created automatically.
+
+Release is independent of the pending Smart Scan and Auth migrations.

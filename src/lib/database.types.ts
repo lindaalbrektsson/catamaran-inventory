@@ -262,6 +262,21 @@ export type Database = {
         Args: { p_id: string };
         Returns: Database['public']['Tables']['audit_events']['Row'][];
       };
+      item_change_history: { Args: { p_id: string; p_page?: number }; Returns: Json };
+      quick_add_item: {
+        Args: {
+          p_request: string;
+          p_location: string;
+          p_product: string | null;
+          p_name: string;
+          p_category: string | null;
+          p_quantity: number;
+          p_unit: Product['unit'];
+          p_minimum: number | null;
+          p_confirm_duplicate: boolean;
+        };
+        Returns: string;
+      };
       quick_add_stock: {
         Args: {
           p_request: string;

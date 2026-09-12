@@ -99,3 +99,23 @@ test('category is available before typing and carries into new item creation', a
     JSON.parse((await page.evaluate(() => sessionStorage.getItem('quick-add-fixture')))!).category,
   ).toBe('20000000-0000-4000-8000-000000000001');
 });
+
+test('new inline item has unit and optional minimum without helper text', async ({ page }) => {
+  await page.goto(base + '?view=quick-add');
+  await expect(page.getByRole('switch', { name: 'Keep minimum in stock' })).toHaveCount(0);
+  await page.getByRole('combobox', { name: 'Type an item name' }).fill('New mobile item');
+  await page.getByRole('option', { name: /Create as a new item/ }).click();
+  await expect(page.getByText('New items use pieces.', { exact: false })).toHaveCount(0);
+  await page
+    .getByRole('combobox', { name: 'Category', exact: true })
+    .selectOption({ label: 'Bar' });
+  await page.getByRole('combobox', { name: 'Unit', exact: true }).selectOption('bottle');
+  await page.getByRole('switch', { name: 'Keep minimum in stock' }).check();
+  await page.getByLabel('Minimum quantity', { exact: true }).fill('6');
+  await page.getByLabel('Quantity', { exact: true }).fill('4');
+  await page.getByRole('button', { name: 'Save change', exact: true }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  expect(
+    JSON.parse((await page.evaluate(() => sessionStorage.getItem('quick-add-fixture')))!),
+  ).toMatchObject({ unit: 'bottle', minimum: '6', quantity: '4' });
+});

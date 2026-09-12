@@ -42,3 +42,31 @@ test('editing a configured item retains its enabled minimum', async ({ page }) =
   await expect(page.getByRole('switch', { name: 'Keep minimum in stock' })).toBeChecked();
   await expect(page.getByLabel('Minimum quantity', { exact: true })).toHaveValue('6');
 });
+
+test('mobile settings edit keeps the product ID and updates operational fields', async ({
+  page,
+}) => {
+  await page.goto('http://127.0.0.1:4174/?view=items&edit=1&minimum=1');
+  await expect(page.getByText('Owners can edit metadata later.', { exact: false })).toHaveCount(0);
+  await page.getByLabel('Name', { exact: true }).fill('Corrected name');
+  await page
+    .getByRole('combobox', { name: 'Category', exact: true })
+    .selectOption({ label: 'Boat supplies' });
+  await page.getByLabel('Minimum quantity', { exact: true }).fill('24');
+  await page.getByLabel('Target stock', { exact: true }).fill('30');
+  await page.getByRole('button', { name: 'Save item', exact: true }).click();
+  await expect(page.getByRole('status')).toBeVisible();
+  expect(
+    JSON.parse((await page.evaluate(() => sessionStorage.getItem('item-edit-fixture')))!).value,
+  ).toMatchObject({ name: 'Corrected name', minimum: '24', target: '30' });
+});
+test('item history displays actor timestamp and before/after values on mobile', async ({
+  page,
+}) => {
+  await page.goto('http://127.0.0.1:4174/?view=item-changes');
+  await expect(page.getByText('Fixture Encargado')).toBeVisible();
+  await expect(page.getByText('Before: 12', { exact: true })).toBeVisible();
+  await expect(page.getByText('After: 24', { exact: true })).toBeVisible();
+  await expect(page.locator('time')).toHaveAttribute('datetime', '2026-09-12T10:14:00Z');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

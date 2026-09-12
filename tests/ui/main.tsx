@@ -1,3 +1,4 @@
+import { ItemChangeHistory } from '@/components/item-change-history';
 import { MovementHistory } from '@/components/movement-history';
 import { TasksFixture } from './tasks';
 import { DocumentsFixture } from './documents';
@@ -226,6 +227,22 @@ createRoot(document.getElementById('root')!).render(
             locale={locale}
             role={params.has('manager') ? 'MANAGER' : 'OWNER'}
           />
+        ) : params.get('view') === 'item-changes' ? (
+          <ItemChangeHistory
+            locale={locale}
+            categories={[item.category]}
+            events={[
+              {
+                id: 'fixture',
+                created_at: '2026-09-12T10:14:00Z',
+                actor_id: 'fixture-user',
+                actor: 'Fixture Encargado',
+                location: 'Bodega',
+                before: { name: 'Water', minimum_stock: 12 },
+                after: { name: 'Drinking water', minimum_stock: 24 },
+              },
+            ]}
+          />
         ) : params.get('view') === 'items' ? (
           <ItemManager
             locale={locale}
@@ -251,7 +268,7 @@ createRoot(document.getElementById('root')!).render(
                 : undefined
             }
             catalog={{
-              categories: [item.category!],
+              categories: [item.category!, items[2].category!],
               locations,
               products: params.has('edit') ? [item.product] : [],
             }}

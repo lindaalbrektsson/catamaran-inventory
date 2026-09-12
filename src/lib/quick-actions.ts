@@ -34,13 +34,15 @@ export async function quickAdd(_previous: ActionState, form: FormData): Promise<
   const v = result.data;
   const { data, error } = await (
     await supabase()
-  ).rpc('quick_add_stock', {
+  ).rpc('quick_add_item', {
     p_request: v.requestId,
     p_location: v.location,
     p_product: v.product || null,
     p_name: v.name,
     p_category: v.category || null,
     p_quantity: Number(v.quantity),
+    p_unit: v.unit,
+    p_minimum: v.minimum ? Number(v.minimum) : null,
     p_confirm_duplicate: v.confirmDuplicate,
   });
   if (error || !data) return { error: errorKey(error?.message ?? '') };
