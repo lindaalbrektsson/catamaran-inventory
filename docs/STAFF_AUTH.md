@@ -1,3 +1,5 @@
+> Updated rollout status: see [Phone Auth transition](PHONE-AUTH-TRANSITION.md). The Auth configuration and migrations described below have now been applied; email remains temporarily available until Linda verifies phone login.
+
 # Staff onboarding and account security
 
 Phone/password login is the default; email/password remains available. There is no public signup flow. Staff use Belize +501, Colombia +57 or Sweden +46 without needing email.

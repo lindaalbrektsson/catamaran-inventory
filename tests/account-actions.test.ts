@@ -116,3 +116,9 @@ it('generates readable random credentials without a shared preset', () => {
   for (const password of passwords)
     expect(password).toMatch(/^Cat-(?:[A-HJ-NP-Z2-9]{4}-){3}[A-HJ-NP-Z2-9]{4}$/);
 });
+it('rejects creation of roles outside the operational onboarding choices', async () => {
+  const value = form();
+  value.set('role', 'CREW');
+  expect(await accountChange(value)).toEqual({ error: 'INVALID_INPUT' });
+  expect(m.create).not.toHaveBeenCalled();
+});

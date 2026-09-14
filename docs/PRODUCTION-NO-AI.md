@@ -1,3 +1,5 @@
+> Updated rollout status: see [Phone Auth transition](PHONE-AUTH-TRANSITION.md). The Auth configuration and migrations described below have now been applied; email remains temporarily available until Linda verifies phone login.
+
 # Production release without Smart Scan
 
 Production main contains the verified operational application. Smart Scan remains

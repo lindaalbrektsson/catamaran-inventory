@@ -288,3 +288,22 @@ it('capability changes are audited and cannot remove the final admin', async () 
     'ACCOUNT_ADMIN_PROTECTED',
   );
 });
+it('account administrator cannot issue their own temporary reset', async () => {
+  await expect(
+    db.query('select public.begin_account_change($1,$2,$3)', [crypto.randomUUID(), owner, 'RESET']),
+  ).rejects.toThrow('ACCOUNT_ADMIN_PROTECTED');
+});
+it('own phone change retains account administrator capability and history identity', async () => {
+  const request = crypto.randomUUID();
+  await db.query('select public.begin_account_change($1,$2,$3)', [request, owner, 'PHONE']);
+  await db.exec('reset role');
+  await db.query("update auth.users set phone='46701239876' where id=$1", [owner]);
+  await db.query("select public.finish_account_change($1,$2,'{}')", [request, owner]);
+  const result = await db.query(
+    'select id,account_admin,must_change_password,credential_pending from public.profiles where id=$1',
+    [owner],
+  );
+  expect(result.rows).toEqual([
+    { id: owner, account_admin: true, must_change_password: false, credential_pending: false },
+  ]);
+});

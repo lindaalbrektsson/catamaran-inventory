@@ -48,7 +48,7 @@ begin
   if not op.completed then update private.account_changes set running=true where id=op.id; end if;
   return jsonb_build_object('target',op.target_id,'completed',op.completed);
  end if;
- if p_target=auth.uid() then raise exception 'ACCOUNT_ADMIN_PROTECTED'; end if;
+ if p_target=auth.uid() and p_kind<>'PHONE' then raise exception 'ACCOUNT_ADMIN_PROTECTED'; end if;
  if p_target is not null and not exists(select 1 from public.profiles where id=p_target and not credential_pending) then raise exception 'ACCOUNT_CHANGE_PENDING'; end if;
  insert into private.account_changes(id,actor_id,target_id,kind) values(p_request,auth.uid(),p_target,p_kind);
  if p_target is not null then update public.profiles set credential_pending=true where id=p_target; end if;
