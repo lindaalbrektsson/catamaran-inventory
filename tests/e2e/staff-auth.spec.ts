@@ -58,3 +58,23 @@ test('phone controls translate and private staff/password routes require authent
     await expect(page).toHaveURL(/\/login$/);
   }
 });
+test('chosen temporary password is optional, masked and cleared when the page hides', async ({
+  page,
+}) => {
+  await page.goto('http://127.0.0.1:4174/?view=account');
+  await page
+    .getByRole('combobox', { name: 'Temporary password', exact: true })
+    .selectOption('CHOOSE');
+  const password = page.locator('input[name="temporaryPassword"]');
+  await expect(password).toHaveAttribute('type', 'password');
+  await password.fill('Isolated-Temporary-Only');
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(password).toHaveValue('');
+  await page
+    .getByRole('combobox', { name: 'Temporary password', exact: true })
+    .selectOption('GENERATE');
+  await expect(password).toHaveCount(0);
+});

@@ -35,6 +35,15 @@ export async function accountChange(form: FormData): Promise<AccountResult> {
     (v.kind !== 'CREATE' && !v.target)
   )
     return { error: 'INVALID_INPUT' };
+  const mode = form.get('temporaryMode') ?? 'GENERATE';
+  const chosen = form.get('temporaryPassword');
+  if (
+    v.kind !== 'PHONE' &&
+    (!['GENERATE', 'CHOOSE'].includes(String(mode)) ||
+      (mode === 'CHOOSE' &&
+        (typeof chosen !== 'string' || chosen.length < 12 || chosen.length > 128)))
+  )
+    return { error: 'passwordRules' };
   const db = await supabase();
   const { data, error } = await db.rpc('begin_account_change', {
     p_request: v.request,
@@ -49,7 +58,7 @@ export async function accountChange(form: FormData): Promise<AccountResult> {
     target = op.target;
   try {
     if (v.kind === 'CREATE') {
-      password = temporaryPassword();
+      password = mode === 'CHOOSE' ? (chosen as string) : temporaryPassword();
       if (target) {
         const updated = await admin.auth.admin.updateUserById(target, { password });
         if (updated.error) return { error: 'accountChangeFailed' };
@@ -64,7 +73,7 @@ export async function accountChange(form: FormData): Promise<AccountResult> {
         target = created.data.user.id;
       }
     } else if (v.kind === 'RESET') {
-      password = temporaryPassword();
+      password = mode === 'CHOOSE' ? (chosen as string) : temporaryPassword();
       const updated = await admin.auth.admin.updateUserById(target!, { password });
       if (updated.error) return { error: 'accountChangeFailed' };
     } else {
