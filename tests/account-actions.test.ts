@@ -122,3 +122,33 @@ it('rejects creation of roles outside the operational onboarding choices', async
   expect(await accountChange(value)).toEqual({ error: 'INVALID_INPUT' });
   expect(m.create).not.toHaveBeenCalled();
 });
+it.each(['CREATE', 'RESET'])(
+  'uses the admin-chosen temporary password for %s without sending it to database RPCs',
+  async (kind) => {
+    const f = form(kind);
+    f.set('temporaryMode', 'CHOOSE');
+    f.set('temporaryPassword', 'Chosen-Temporary-Only');
+    if (kind === 'RESET') m.rpc.mockResolvedValue({ data: { target, completed: false } });
+    const result = await accountChange(f);
+    expect(result.temporary).toBe('Chosen-Temporary-Only');
+    if (kind === 'CREATE')
+      expect(m.create).toHaveBeenCalledWith(
+        expect.objectContaining({ phone_confirm: true, password: result.temporary }),
+      );
+    else expect(m.update).toHaveBeenCalledWith(target, { password: result.temporary });
+    expect(JSON.stringify(m.rpc.mock.calls) + JSON.stringify(m.finish.mock.calls)).not.toContain(
+      result.temporary,
+    );
+  },
+);
+it.each(['short', 'x'.repeat(129)])(
+  'rejects invalid chosen passwords before acquiring an account lock',
+  async (password) => {
+    const f = form('RESET');
+    f.set('temporaryMode', 'CHOOSE');
+    f.set('temporaryPassword', password);
+    expect(await accountChange(f)).toEqual({ error: 'passwordRules' });
+    expect(m.rpc).not.toHaveBeenCalled();
+    expect(m.update).not.toHaveBeenCalled();
+  },
+);

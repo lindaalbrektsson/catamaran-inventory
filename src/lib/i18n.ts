@@ -139,6 +139,9 @@ export const en = {
   passwordChangeFailed:
     'The password could not be changed. Try a different password or contact your owner.',
   savePassword: 'Save new password',
+  temporaryPasswordLabel: 'Temporary password',
+  temporaryGenerate: 'Generate a password',
+  temporaryChoose: 'Choose a password',
   adminRole: 'Admin',
   staffManagement: 'Users',
   staffName: 'Display name',
@@ -715,6 +718,9 @@ export const es: Record<Key, string> = {
   passwordChangeFailed:
     'No se pudo cambiar la contraseña. Prueba otra contraseña o contacta a tu propietario.',
   savePassword: 'Guardar nueva contraseña',
+  temporaryPasswordLabel: 'Contraseña temporal',
+  temporaryGenerate: 'Generar una contraseña',
+  temporaryChoose: 'Elegir una contraseña',
   adminRole: 'Administrador',
   staffManagement: 'Usuarios',
   staffName: 'Nombre',

@@ -64,3 +64,7 @@ Local tests exercise phone/email credentials, password gates, server-only admin 
 After manual configuration, apply and verify the migrations, assign Linda's capability, deploy the tested commit, then verify with an explicitly approved real staff account. A successful local suite is not proof that hosted Phone Auth or admin configuration works. Staff enter their own new password privately; do not record browser traces or screenshots of real credential entry. Check production login, gated routes, first password change, operational access and masked audit events. Production resets and phone changes require a real authorized account-maintenance request.
 
 References: [Supabase Admin createUser](https://supabase.com/docs/reference/javascript/auth-admin-createuser), [Admin updateUserById](https://supabase.com/docs/reference/javascript/auth-admin-updateuserbyid), [Auth sessions](https://supabase.com/docs/guides/auth/sessions).
+
+## Administrator-chosen temporary passwords
+
+Creation and reset now offer Generate a password (default) or Choose a password. Chosen passwords are validated server-side at 12–128 characters before any account operation starts. The value is sent only to Supabase Auth, never to application SQL RPC payloads. Inputs clear after submission and on page hiding; the one-time response is also hidden when the page loses visibility. No password retrieval route exists. See STAFF-PASSWORD-ACCEPTANCE.md for real-device acceptance steps.

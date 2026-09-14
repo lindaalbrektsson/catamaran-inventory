@@ -21,10 +21,15 @@ export function AccountForm({
       profile ? (self ? 'PHONE' : 'RESET') : 'CREATE',
     ),
     [request, setRequest] = useState(''),
+    [temporaryMode, setTemporaryMode] = useState('GENERATE'),
+    [chosenPassword, setChosenPassword] = useState(''),
     [result, setResult] = useState<AccountResult>({}),
     [pending, start] = useTransition();
   useEffect(() => {
-    const clear = () => setResult({});
+    const clear = () => {
+      setResult({});
+      setChosenPassword('');
+    };
     window.addEventListener('pagehide', clear);
     const hidden = () => {
       if (document.hidden) clear();
@@ -66,7 +71,11 @@ export function AccountForm({
         const id = request || crypto.randomUUID();
         setRequest(id);
         form.set('request', id);
-        start(async () => setResult(await accountChange(form)));
+        setChosenPassword('');
+        start(async () => {
+          const response = await accountChange(form);
+          setResult(document.hidden ? { ...response, temporary: undefined } : response);
+        });
       }}
     >
       <fieldset disabled={pending} className="contents">
@@ -85,6 +94,7 @@ export function AccountForm({
                 setKind(e.target.value as 'RESET' | 'PHONE');
                 setRequest('');
                 setResult({});
+                setChosenPassword('');
               }}
             >
               {!self && <option value="RESET">{t.resetStaffPassword}</option>}
@@ -149,6 +159,41 @@ export function AccountForm({
               <input type="checkbox" name="verified" required />
               {t.phoneVerified}
             </label>
+          </>
+        )}
+        {kind !== 'PHONE' && (
+          <>
+            <label className="grid gap-2">
+              {t.temporaryPasswordLabel}
+              <select
+                name="temporaryMode"
+                className={c}
+                value={temporaryMode}
+                onChange={(e) => {
+                  setTemporaryMode(e.target.value);
+                  setChosenPassword('');
+                }}
+              >
+                <option value="GENERATE">{t.temporaryGenerate}</option>
+                <option value="CHOOSE">{t.temporaryChoose}</option>
+              </select>
+            </label>
+            {temporaryMode === 'CHOOSE' && (
+              <label className="grid gap-2">
+                {t.temporaryPasswordLabel}
+                <input
+                  type="password"
+                  name="temporaryPassword"
+                  autoComplete="new-password"
+                  required
+                  minLength={12}
+                  maxLength={128}
+                  className={c}
+                  value={chosenPassword}
+                  onChange={(e) => setChosenPassword(e.target.value)}
+                />
+              </label>
+            )}
           </>
         )}
         {!configured && <p role="status">{t.accountAdminSetup}</p>}
