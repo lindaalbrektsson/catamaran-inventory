@@ -54,11 +54,13 @@ it.each([
   ['46', '0701234567'],
   ['57', '+573001234567'],
 ])('rejects invalid phone input %s %s', (c, n) => expect(phoneIdentity(c, n)).toBeNull());
-it('supports email and phone password credentials without signup', () => {
+it('accepts phone credentials and rejects email login submissions', () => {
   const form = new FormData();
   form.set('email', 'staff@example.test');
   form.set('password', 'test-only-password');
-  expect(loginCredentials(form)).toMatchObject({ email: 'staff@example.test' });
+  expect(loginCredentials(form)).toBeNull();
+  form.set('method', 'email');
+  expect(loginCredentials(form)).toBeNull();
   form.set('method', 'phone');
   form.delete('email');
   form.set('country', '501');
