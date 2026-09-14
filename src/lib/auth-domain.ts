@@ -17,6 +17,5 @@ export function loginCredentials(form: FormData) {
     const phone = phoneIdentity(String(form.get('country') ?? ''), String(form.get('phone') ?? ''));
     return phone ? { phone, password } : null;
   }
-  const email = z.email().max(254).safeParse(form.get('email'));
-  return email.success ? { email: email.data, password } : null;
+  return null;
 }

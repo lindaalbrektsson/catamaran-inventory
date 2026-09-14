@@ -1,3 +1,5 @@
+> Phone cutover complete: Linda confirmed successful live phone/password login on the existing account. Normal app login now accepts phone/password only; earlier transition instructions below are historical. No session storage was cleared.
+
 # Phone authentication transition — 2026-09-14
 
 Hosted phone authentication is enabled; public signup is disabled. Phone confirmations remain required. No SMS credentials were added or SMS sent. Configuration was applied through Supabase CLI with only three declared Auth properties; unrelated hosted settings were preserved.

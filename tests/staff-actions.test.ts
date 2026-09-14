@@ -39,23 +39,31 @@ beforeEach(() => {
     must_change_password: true,
   });
 });
-it.each(['phone', 'email'])('signs in with %s password without calling signup', async (method) => {
-  const f = new FormData();
-  f.set('method', method);
-  f.set('country', '501');
-  f.set('phone', '1234567');
-  f.set('email', 'staff@example.test');
-  f.set('password', 'test-only-password');
-  m.signIn.mockResolvedValue({ data: { user: { id: 'staff-id' } }, error: null });
-  m.maybeSingle.mockResolvedValue({ data: { language: 'es', must_change_password: true } });
-  await expect(signIn({}, f)).rejects.toThrow('REDIRECT:/change-password');
-  expect(m.signIn).toHaveBeenCalledWith(
-    method === 'phone'
-      ? { phone: '+5011234567', password: 'test-only-password' }
-      : { email: 'staff@example.test', password: 'test-only-password' },
-  );
-  expect(m.cookie).toHaveBeenCalledWith('coral-language', 'es', expect.any(Object));
-});
+it.each(['phone', 'email'])(
+  'handles %s submissions under the phone-only login policy',
+  async (method) => {
+    const f = new FormData();
+    f.set('method', method);
+    f.set('country', '501');
+    f.set('phone', '1234567');
+    f.set('email', 'staff@example.test');
+    f.set('password', 'test-only-password');
+    m.signIn.mockResolvedValue({ data: { user: { id: 'staff-id' } }, error: null });
+    m.maybeSingle.mockResolvedValue({ data: { language: 'es', must_change_password: true } });
+    if (method === 'email') {
+      expect(await signIn({}, f)).toEqual({ error: 'authError' });
+      expect(m.signIn).not.toHaveBeenCalled();
+      return;
+    }
+    await expect(signIn({}, f)).rejects.toThrow('REDIRECT:/change-password');
+    expect(m.signIn).toHaveBeenCalledWith(
+      method === 'phone'
+        ? { phone: '+5011234567', password: 'test-only-password' }
+        : { email: 'staff@example.test', password: 'test-only-password' },
+    );
+    expect(m.cookie).toHaveBeenCalledWith('coral-language', 'es', expect.any(Object));
+  },
+);
 it('fails closed when the Auth password update fails', async () => {
   const f = new FormData();
   f.set('password', 'new-test-password');

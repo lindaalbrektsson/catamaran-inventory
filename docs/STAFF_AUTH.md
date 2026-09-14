@@ -1,3 +1,5 @@
+> Phone cutover complete: Linda confirmed successful live phone/password login on the existing account. Normal app login now accepts phone/password only; earlier transition instructions below are historical. No session storage was cleared.
+
 > Updated rollout status: see [Phone Auth transition](PHONE-AUTH-TRANSITION.md). The Auth configuration and migrations described below have now been applied; email remains temporarily available until Linda verifies phone login.
 
 # Staff onboarding and account security

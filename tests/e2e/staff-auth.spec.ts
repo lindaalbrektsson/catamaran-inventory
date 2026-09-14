@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/test';
-test('private login switches between phone and email without registration links', async ({
-  page,
-}) => {
+test('private login is phone-only without registration links', async ({ page }) => {
   await page.goto('/login');
   await expect(page.getByLabel('Email address', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('Phone number', { exact: true })).toBeVisible();
@@ -18,8 +16,7 @@ test('private login switches between phone and email without registration links'
     path: `artifacts/phone-login-${test.info().project.name}.png`,
     fullPage: true,
   });
-  await page.getByRole('button', { name: 'Email', exact: true }).click();
-  await expect(page.getByLabel('Email address', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Email', exact: true })).toHaveCount(0);
 });
 
 test('isolated account provisioning shows the temporary password once and clears it', async ({
@@ -55,7 +52,6 @@ test('phone controls translate and private staff/password routes require authent
 }) => {
   await page.goto('/login');
   await page.getByRole('button', { name: 'Language', exact: true }).click();
-  await page.getByRole('button', { name: 'Teléfono', exact: true }).click();
   await expect(page.getByLabel('Número de teléfono', { exact: true })).toBeVisible();
   for (const route of ['/staff', '/change-password']) {
     await page.goto(route);

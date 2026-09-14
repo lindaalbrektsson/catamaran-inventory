@@ -13,10 +13,9 @@ test('new deployment notification does not reload an unfinished form', async ({ 
   );
   await page.goto('/login');
   await expect(page.getByText(/New update available/)).toBeVisible();
-  await page.getByRole('button', { name: 'Email', exact: true }).click();
-  await page.getByLabel('Email address').fill('unfinished@example.test');
+  await page.getByLabel('Phone number').fill('1234567');
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-  await expect(page.getByLabel('Email address')).toHaveValue('unfinished@example.test');
+  await expect(page.getByLabel('Phone number')).toHaveValue('1234567');
 });
 test('Excel actions are owner-only and desktop-only', async ({ page }, info) => {
   await page.goto('http://127.0.0.1:4174/?view=admin');
