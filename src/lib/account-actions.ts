@@ -31,7 +31,7 @@ export async function accountChange(form: FormData): Promise<AccountResult> {
         : phoneIdentity(String(form.get('country')), String(form.get('phone')));
   if (
     (v.kind !== 'RESET' && (!phone || form.get('verified') !== 'on')) ||
-    (v.kind === 'CREATE' && !v.name) ||
+    (v.kind === 'CREATE' && (!v.name || !['OWNER', 'MANAGER'].includes(v.role))) ||
     (v.kind !== 'CREATE' && !v.target)
   )
     return { error: 'INVALID_INPUT' };

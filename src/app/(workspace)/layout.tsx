@@ -27,7 +27,9 @@ export default async function Workspace({ children }: { children: React.ReactNod
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{profile.display_name}</p>
-              <p className="text-xs text-muted-foreground">{t[profile.role]}</p>
+              <p className="text-xs text-muted-foreground">
+                {profile.account_admin && profile.role === 'OWNER' ? t.adminRole : t[profile.role]}
+              </p>
             </div>
           </div>
         </div>

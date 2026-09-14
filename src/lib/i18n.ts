@@ -201,14 +201,15 @@ export const en = {
   passwordChangeFailed:
     'The password could not be changed. Try a different password or contact your owner.',
   savePassword: 'Save new password',
-  staffManagement: 'Staff accounts',
+  adminRole: 'Admin',
+  staffManagement: 'Users',
   staffName: 'Display name',
   staffRole: 'Role',
   staffSaved: 'Staff profile saved.',
   staffSave: 'Save staff profile',
   lastOwner: 'Keep at least one active owner with a completed password setup.',
   passwordPending: 'New password required',
-  staffProvision: 'Create a staff account',
+  staffProvision: 'Add user',
   staffAdminBoundary:
     'Creating an Auth account requires a secure administrator connection that is not configured. Use the Supabase administrator workflow below. No password is collected or stored by this page.',
   staffProvisionSteps:
@@ -840,14 +841,15 @@ export const es: Record<Key, string> = {
   passwordChangeFailed:
     'No se pudo cambiar la contraseña. Prueba otra contraseña o contacta a tu propietario.',
   savePassword: 'Guardar nueva contraseña',
-  staffManagement: 'Cuentas del personal',
+  adminRole: 'Administrador',
+  staffManagement: 'Usuarios',
   staffName: 'Nombre',
   staffRole: 'Rol',
   staffSaved: 'Perfil guardado.',
   staffSave: 'Guardar perfil',
   lastOwner: 'Debe quedar al menos un propietario activo que haya completado su contraseña.',
   passwordPending: 'Debe crear una nueva contraseña',
-  staffProvision: 'Crear una cuenta del personal',
+  staffProvision: 'Añadir usuario',
   staffAdminBoundary:
     'Crear una cuenta de Auth requiere una conexión administrativa segura que aún no está configurada. Sigue las instrucciones de Supabase abajo. Esta página no solicita ni guarda contraseñas.',
   staffProvisionSteps:

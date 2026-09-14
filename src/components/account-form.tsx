@@ -9,13 +9,17 @@ export function AccountForm({
   locale,
   profile,
   configured,
+  self = false,
 }: {
   locale: Locale;
   profile?: Profile;
   configured: boolean;
+  self?: boolean;
 }) {
   const t = dictionary(locale),
-    [kind, setKind] = useState<'CREATE' | 'RESET' | 'PHONE'>(profile ? 'RESET' : 'CREATE'),
+    [kind, setKind] = useState<'CREATE' | 'RESET' | 'PHONE'>(
+      profile ? (self ? 'PHONE' : 'RESET') : 'CREATE',
+    ),
     [request, setRequest] = useState(''),
     [result, setResult] = useState<AccountResult>({}),
     [pending, start] = useTransition();
@@ -83,7 +87,7 @@ export function AccountForm({
                 setResult({});
               }}
             >
-              <option value="RESET">{t.resetStaffPassword}</option>
+              {!self && <option value="RESET">{t.resetStaffPassword}</option>}
               <option value="PHONE">{t.changeStaffPhone}</option>
             </select>
           </label>
@@ -97,11 +101,13 @@ export function AccountForm({
             <label className="grid gap-2">
               {t.staffRole}
               <select name="role" defaultValue="MANAGER" className={c}>
-                {roles.map((r) => (
-                  <option key={r} value={r}>
-                    {t[r]}
-                  </option>
-                ))}
+                {roles
+                  .filter((r) => r === 'OWNER' || r === 'MANAGER')
+                  .map((r) => (
+                    <option key={r} value={r}>
+                      {t[r]}
+                    </option>
+                  ))}
               </select>
             </label>
             <label className="grid gap-2">

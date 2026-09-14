@@ -25,9 +25,14 @@ export default async function Staff() {
           {profiles.map((p) => (
             <section key={p.id} className="grid content-start gap-4">
               <StaffProfileForm profile={p} locale={locale} />
-              {p.id !== profile.id && (
-                <AccountForm profile={p} locale={locale} configured={accountAdminConfigured()} />
-              )}
+              {
+                <AccountForm
+                  profile={p}
+                  self={p.id === profile.id}
+                  locale={locale}
+                  configured={accountAdminConfigured()}
+                />
+              }
             </section>
           ))}
         </div>

@@ -33,14 +33,12 @@ test('isolated account provisioning shows the temporary password once and clears
       name: 'I have verified that this number belongs to this staff member.',
     })
     .check();
-  await page.getByRole('button', { name: 'Create a staff account', exact: true }).click();
+  await page.getByRole('button', { name: 'Add user', exact: true }).click();
   await expect(page.locator('output')).toHaveText('Isolated-UI-Example-Only');
   await page.getByRole('button', { name: 'Done — hide password' }).click();
   await expect(page.locator('output')).toHaveCount(0);
   await page.goto('http://127.0.0.1:4174/?view=account&unconfigured=1');
-  await expect(
-    page.getByRole('button', { name: 'Create a staff account', exact: true }),
-  ).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Add user', exact: true })).toBeDisabled();
 });
 
 test('isolated first-password form has confirmation and fails closed', async ({ page }) => {
