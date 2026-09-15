@@ -1,3 +1,4 @@
+import { timed } from '@/lib/performance';
 import Link from 'next/link';
 import type { InventoryItem } from '@/lib/inventory';
 import type { Location } from '@/lib/database.types';
@@ -14,17 +15,29 @@ export async function LowNeedSuggestions({
   location: Location;
   locale: Locale;
 }) {
+  if (!items.length) return null;
   const t = dictionary(locale),
     db = await supabase();
-  const open = await collect((a, b) =>
-    db
-      .from('purchase_needs')
-      .select('id,product_id,status')
-      .eq('archived', false)
-      .in('status', ['PENDING', 'ORDERED'])
-      .order('id')
-      .range(a, b),
-  );
+  const ids = [...new Set(items.map((i) => i.product_id))];
+  const open = await timed('needs.inventory', async () => {
+    const rows = [];
+    // Bound URL size; retain pagination, exact product links and all active statuses.
+    for (let offset = 0; offset < ids.length; offset += 100) {
+      rows.push(
+        ...(await collect((a, b) =>
+          db
+            .from('purchase_needs')
+            .select('id,product_id,status')
+            .eq('archived', false)
+            .in('status', ['PENDING', 'ORDERED'])
+            .in('product_id', ids.slice(offset, offset + 100))
+            .order('id')
+            .range(a, b),
+        )),
+      );
+    }
+    return rows;
+  });
   const low = items.filter(
     (i) =>
       isLowStock(i.quantity, i.minimum_stock) || open.some((n) => n.product_id === i.product_id),

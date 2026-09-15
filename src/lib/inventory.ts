@@ -1,4 +1,5 @@
 import 'server-only';
+import { timed } from './performance';
 import { supabase } from './supabase/server';
 import type { Balance, Category, Product, Location } from './database.types';
 import { isLowStock, type MovementType } from './domain';
@@ -29,13 +30,18 @@ const getCatalog = cache(async () => {
   ]);
   return { products, categories };
 });
-export async function getLocations() {
-  const db = await supabase();
-  return collect((from, to) =>
-    db.from('locations').select('*').eq('active', true).order('name').range(from, to),
-  );
-}
+export const getLocations = cache(async () =>
+  timed('locations.list', async () => {
+    const db = await supabase();
+    return collect((from, to) =>
+      db.from('locations').select('*').eq('active', true).order('name').range(from, to),
+    );
+  }),
+);
 export async function getLocation(id: string) {
+  return timed('location.load', () => loadLocation(id));
+}
+async function loadLocation(id: string) {
   validId(id);
   const { data, error } = await (
     await supabase()
@@ -54,15 +60,17 @@ export const getInventory = cache(
     validId(locationId);
     const db = await supabase();
     const [balances, { products, categories }] = await Promise.all([
-      collect((from, to) =>
-        db
-          .from('inventory_balances')
-          .select('*')
-          .eq('location_id', locationId)
-          .order('product_id')
-          .range(from, to),
+      timed('inventory.balances', () =>
+        collect((from, to) =>
+          db
+            .from('inventory_balances')
+            .select('*')
+            .eq('location_id', locationId)
+            .order('product_id')
+            .range(from, to),
+        ),
       ),
-      getCatalog(),
+      timed('inventory.catalog', getCatalog),
     ]);
     const catalog = new Map(products.map((p) => [p.id, p]));
     const groups = new Map(categories.map((c) => [c.id, c]));

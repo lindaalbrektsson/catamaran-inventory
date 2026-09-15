@@ -1,4 +1,5 @@
 import 'server-only';
+import { timed } from './performance';
 import { cache } from 'react';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
@@ -8,9 +9,13 @@ import type { Locale } from './i18n';
 export const getProfile = cache(async () => {
   if (!isConfigured()) return null;
   const db = await supabase();
-  const { data, error } = await db.auth.getClaims();
+  const { data, error } = await timed('auth.claims', () => db.auth.getClaims());
+  if (error && (error.name === 'AuthRetryableFetchError' || (error.status ?? 0) >= 500))
+    throw new Error('AUTH_LOAD_FAILED');
   if (error || !data?.claims.sub) return null;
-  const result = await db.from('profiles').select('*').eq('id', data.claims.sub).maybeSingle();
+  const result = await timed('profile.load', () =>
+    db.from('profiles').select('*').eq('id', data.claims.sub).maybeSingle(),
+  );
   if (result.error) throw new Error('PROFILE_LOAD_FAILED');
   if (result.data && Number(data.claims.iat ?? 0) < result.data.credential_epoch) return null;
   // Direct route handlers also use getProfile: pending passwords confer no active access.

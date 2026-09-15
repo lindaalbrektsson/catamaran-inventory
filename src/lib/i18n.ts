@@ -411,7 +411,11 @@ export const en = {
   installUnavailable:
     'Automatic installation is not available in this browser right now. Open the site in Chrome or Safari and follow the instructions below. It may already be installed.',
   brand: 'Catamaran Belize',
-  brandSub: 'BOATS · STOCK · CREW',
+  archiveItem: 'Archive item',
+  archiveItemConfirm:
+    'Archive this item at all locations? Stock and history will be preserved. You can reactivate it from Inactive → Edit item.',
+  itemArchived: 'Item archived',
+  brandSub: 'BOAT · STOCK · CREW',
   home: 'Home',
   inventory: 'Inventory',
   add: 'Add',
@@ -998,7 +1002,11 @@ export const es: Record<Key, string> = {
     'Android: abre en Chrome y usa Instalar aplicación o Agregar a la pantalla principal en el menú cuando esté disponible.',
   installUnavailable: 'Usa el menú del navegador para instalar cuando esté disponible.',
   brand: 'Catamaran Belize',
-  brandSub: 'BARCOS · INVENTARIO · EQUIPO',
+  archiveItem: 'Archivar artículo',
+  archiveItemConfirm:
+    '¿Archivar este artículo en todas las ubicaciones? Se conservarán las existencias y el historial. Puedes reactivarlo desde Inactivos → Editar artículo.',
+  itemArchived: 'Artículo archivado',
+  brandSub: 'BARCO · INVENTARIO · EQUIPO',
   home: 'Inicio',
   inventory: 'Inventario',
   add: 'Agregar',

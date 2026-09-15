@@ -1,4 +1,5 @@
 import 'server-only';
+import { readFetch } from './read-fetch';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from '@/lib/database.types';
@@ -7,6 +8,7 @@ export async function supabase() {
   const jar = await cookies();
   const { url, key } = config();
   return createServerClient<Database>(url, key, {
+    global: { fetch: readFetch },
     cookies: {
       getAll: () => jar.getAll(),
       setAll: (values) => {

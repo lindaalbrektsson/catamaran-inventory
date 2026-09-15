@@ -334,6 +334,7 @@ export type Database = {
         Returns: string;
       };
       configure_item: { Args: { p_id: string; p_values: Json }; Returns: undefined };
+      archive_inventory_item: { Args: { p_id: string }; Returns: undefined };
       reverse_stock: { Args: { p_request: string; p_original: string }; Returns: string };
       capture_receipt: {
         Args: { p_id: string; p_type: string; p_payment: string; p_hash: string; p_size: number };

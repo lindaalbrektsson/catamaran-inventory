@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArchiveItem } from './archive-item';
 import { Plus, Minus, TriangleAlert } from 'lucide-react';
 import { dictionary, number, type Locale } from '@/lib/i18n';
 import { isLowStock, can, type Role } from '@/lib/domain';
@@ -71,6 +72,9 @@ export function ProductOverview({
             {t.itemChanges}
           </Link>
         </div>
+      )}
+      {role === 'OWNER' && item.product.active && (
+        <ArchiveItem productId={item.product_id} locale={locale} />
       )}
       <div className="stock-actions grid gap-3 rounded-xl p-3 sm:grid-cols-2">
         {item.product.active && can(role, 'inventory.add') && (

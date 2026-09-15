@@ -5,3 +5,7 @@ export async function updateCatalogItem(id: string, value: unknown) {
 export async function saveCategory() {
   return { success: true };
 }
+export async function archiveInventoryItem(id: string) {
+  sessionStorage.setItem('archived-item-fixture', id);
+  return { success: true };
+}

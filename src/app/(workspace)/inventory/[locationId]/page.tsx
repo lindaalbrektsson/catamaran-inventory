@@ -1,3 +1,4 @@
+import { timed } from '@/lib/performance';
 import { QuickMove } from '@/components/quick-move';
 import { LowNeedSuggestions } from '@/components/low-need-suggestions';
 import { getLocations } from '@/lib/inventory';
@@ -10,7 +11,7 @@ import { PageHeader } from '@/components/page-header';
 import Link from 'next/link';
 import { ReceiptActions } from '@/components/receipt-actions';
 import { InventoryList } from '@/components/inventory-list';
-export default async function LocationInventory({
+async function renderLocationInventory({
   params,
   searchParams,
 }: {
@@ -21,8 +22,12 @@ export default async function LocationInventory({
   const { locationId } = await params,
     locale = await getLocale(),
     t = dictionary(locale);
-  const [location, search] = await Promise.all([getLocation(locationId), searchParams]);
-  if (search.action === 'add' && ['OWNER', 'MANAGER'].includes(profile.role))
+  const search = await searchParams;
+  if (search.action === 'add' && ['OWNER', 'MANAGER'].includes(profile.role)) {
+    const [location, catalog] = await Promise.all([
+      getLocation(locationId),
+      timed('inventory.catalog', itemCatalog),
+    ]);
     return (
       <div className="page">
         <PageHeader
@@ -31,16 +36,24 @@ export default async function LocationInventory({
           locale={locale}
         />
         <QuickAdd
-          catalog={await itemCatalog()}
+          catalog={catalog}
           locale={locale}
           locationId={locationId}
           requestId={crypto.randomUUID()}
         />
       </div>
     );
+  }
   const showInactive =
     !search.action && search.inactive === '1' && ['OWNER', 'MANAGER'].includes(profile.role);
-  const allItems = await getInventory(locationId, showInactive);
+  const moving =
+    ['remove', 'transfer'].includes(search.action ?? '') &&
+    ['OWNER', 'MANAGER'].includes(profile.role);
+  const [location, allItems, destinations] = await Promise.all([
+    getLocation(locationId),
+    getInventory(locationId, showInactive),
+    moving ? getLocations() : Promise.resolve([]),
+  ]);
   const items = showInactive ? allItems.filter((i) => !i.product.active) : allItems;
   if (
     ['remove', 'transfer'].includes(search.action ?? '') &&
@@ -56,7 +69,7 @@ export default async function LocationInventory({
         <QuickMove
           items={items}
           location={location}
-          destinations={(await getLocations()).filter((l) => l.id !== locationId)}
+          destinations={destinations.filter((l) => l.id !== locationId)}
           mode={search.action as 'remove' | 'transfer'}
           locale={locale}
           role={profile.role}
@@ -127,4 +140,10 @@ export default async function LocationInventory({
       />
     </div>
   );
+}
+
+export default async function LocationInventory(
+  props: Parameters<typeof renderLocationInventory>[0],
+) {
+  return timed('route.location', () => renderLocationInventory(props));
 }

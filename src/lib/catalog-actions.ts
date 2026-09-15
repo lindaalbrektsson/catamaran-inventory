@@ -4,6 +4,19 @@ import { requireProfile } from './auth';
 import { supabase } from './supabase/server';
 import { revalidatePath } from 'next/cache';
 import { itemSchema, type ItemInput, type ItemError } from './item-domain';
+export async function archiveInventoryItem(
+  id: string,
+): Promise<{ error?: string; success?: boolean }> {
+  const profile = await requireProfile();
+  if (profile.role !== 'OWNER') return { error: 'FORBIDDEN' };
+  if (!z.uuid().safeParse(id).success) return { error: 'INVALID_INPUT' };
+  const { error } = await (await supabase()).rpc('archive_inventory_item', { p_id: id });
+  if (error) return { error: 'UNKNOWN' };
+  revalidatePath('/inventory', 'layout');
+  revalidatePath('/');
+  revalidatePath('/add');
+  return { success: true };
+}
 export async function updateCatalogItem(
   id: string,
   value: ItemInput,

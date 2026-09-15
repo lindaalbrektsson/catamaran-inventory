@@ -1,3 +1,4 @@
+import { timed } from '@/lib/performance';
 import { AccountForm } from '@/components/account-form';
 import { accountAdminConfigured } from '@/lib/supabase/admin';
 import { redirect } from 'next/navigation';
@@ -8,13 +9,18 @@ import { collect } from '@/lib/inventory';
 import { DesktopOnly } from '@/components/desktop-only';
 import { StaffProfileForm } from '@/components/staff-profile-form';
 export default async function Staff() {
+  return timed('route.staff', renderStaff);
+}
+async function renderStaff() {
   const profile = await requireProfile();
   if (profile.role !== 'OWNER' || !profile.account_admin) redirect('/inventory');
   const locale = await getLocale(),
     t = dictionary(locale),
     db = await supabase();
-  const profiles = await collect((a, b) =>
-    db.from('profiles').select('*').order('display_name').order('id').range(a, b),
+  const profiles = await timed('staff.list', () =>
+    collect((a, b) =>
+      db.from('profiles').select('*').order('display_name').order('id').range(a, b),
+    ),
   );
   return (
     <DesktopOnly locale={locale}>

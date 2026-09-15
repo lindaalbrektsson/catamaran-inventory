@@ -1,3 +1,4 @@
+import { timed } from '@/lib/performance';
 import { taskSummary } from '@/lib/tasks';
 import { getDocuments } from '@/lib/documents';
 import { DocumentList } from '@/components/document-list';
@@ -11,27 +12,39 @@ import { getLocations } from '@/lib/inventory';
 import { LocationCards } from '@/components/location-cards';
 import { can } from '@/lib/domain';
 export default async function Home() {
+  return timed('route.home', renderHome);
+}
+async function renderHome() {
   const profile = await requireProfile(),
     locale = await getLocale(),
     t = dictionary(locale);
   const canUseNeeds = ['OWNER', 'MANAGER'].includes(profile.role);
-  let pending = 0,
-    ordered = 0;
-  if (canUseNeeds) {
-    const db = await supabase();
-    const counts = await Promise.all(
-      ['PENDING', 'ORDERED'].map((status) =>
-        db
-          .from('purchase_needs')
-          .select('id', { count: 'exact', head: true })
-          .eq('archived', false)
-          .eq('status', status as 'PENDING' | 'ORDERED'),
-      ),
-    );
-    if (counts.some((result) => result.error)) throw new Error('NEED_SUMMARY_LOAD_FAILED');
-    pending = counts[0].count ?? 0;
-    ordered = counts[1].count ?? 0;
-  }
+  const [locations, counts, tasks, documents] = await Promise.all([
+    getLocations(),
+    timed('needs.summary', async () => {
+      let pending = 0,
+        ordered = 0;
+      if (canUseNeeds) {
+        const db = await supabase();
+        const counts = await Promise.all(
+          ['PENDING', 'ORDERED'].map((status) =>
+            db
+              .from('purchase_needs')
+              .select('id', { count: 'exact', head: true })
+              .eq('archived', false)
+              .eq('status', status as 'PENDING' | 'ORDERED'),
+          ),
+        );
+        if (counts.some((result) => result.error)) throw new Error('NEED_SUMMARY_LOAD_FAILED');
+        pending = counts[0].count ?? 0;
+        ordered = counts[1].count ?? 0;
+      }
+      return { pending, ordered };
+    }),
+    timed('tasks.summary', taskSummary),
+    timed('documents.list', getDocuments),
+  ]);
+  const { pending, ordered } = counts;
   return (
     <div className="page">
       <h1 className="mb-6 text-2xl font-semibold">{t.brand}</h1>
@@ -44,7 +57,7 @@ export default async function Home() {
         </Link>
       )}
       <LocationCards
-        locations={await getLocations()}
+        locations={locations}
         locale={locale}
         canAdd={can(profile.role, 'inventory.add')}
       />
@@ -93,7 +106,7 @@ export default async function Home() {
         </section>
       )}
       <TaskList
-        {...await taskSummary()}
+        {...tasks}
         locale={locale}
         actorId={profile.id}
         now={new Date().toISOString()}
@@ -101,7 +114,7 @@ export default async function Home() {
         canManage={canUseNeeds}
       />
       <DocumentList
-        documents={await getDocuments()}
+        documents={documents}
         locale={locale}
         owner={profile.role === 'OWNER'}
         home

@@ -293,7 +293,7 @@ createRoot(document.getElementById('root')!).render(
           <ProductOverview
             item={item}
             locale={locale}
-            role={params.has('crew') ? 'CREW' : 'MANAGER'}
+            role={params.has('crew') ? 'CREW' : params.has('owner') ? 'OWNER' : 'MANAGER'}
             basePath={`/inventory/${item.location_id}/${item.product_id}`}
           />
         ) : params.get('view') === 'transfer' ? (

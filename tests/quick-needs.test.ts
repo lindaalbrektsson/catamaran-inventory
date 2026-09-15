@@ -34,7 +34,10 @@ beforeAll(async () => {
     [crew, 'CREW'],
   ]) {
     await db.query('insert into auth.users(id) values($1)', [id]);
-    await db.query('update public.profiles set active=true,must_change_password=false,role=$1 where id=$2', [role, id]);
+    await db.query(
+      'update public.profiles set active=true,must_change_password=false,role=$1 where id=$2',
+      [role, id],
+    );
   }
 });
 
@@ -473,4 +476,77 @@ it.each(['CREW', 'CAPTAIN'])('%s cannot create/edit/read item changes', async (r
     ).rejects.toThrow('FORBIDDEN');
     await db.exec('rollback to savepoint denied');
   }
+});
+
+it('Owner archives idempotently, preserving balances, references and immutable history, then restores', async () => {
+  const id = (await mobileAdd()).rows[0].id;
+  await need(crypto.randomUUID(), { ...needValue, product_id: id });
+  await user(owner);
+  const before = (await db.query('select * from inventory_balances where product_id=$1', [id]))
+    .rows;
+  const movements = (
+    await db.query('select * from inventory_transactions where product_id=$1', [id])
+  ).rows;
+  const needs = (await db.query('select * from purchase_needs where product_id=$1', [id])).rows;
+  await db.query('select archive_inventory_item($1)', [id]);
+  expect((await db.query('select active from products where id=$1', [id])).rows[0]).toMatchObject({
+    active: false,
+  });
+  expect(
+    (await db.query('select * from inventory_balances where product_id=$1', [id])).rows,
+  ).toEqual(before);
+  expect(
+    (await db.query('select * from inventory_transactions where product_id=$1', [id])).rows,
+  ).toEqual(movements);
+  expect((await db.query('select * from purchase_needs where product_id=$1', [id])).rows).toEqual(
+    needs,
+  );
+  const audit = (
+    await db.query(
+      "select * from audit_events where entity_type='products' and entity_id=$1 and actor_id=$2",
+      [id, owner],
+    )
+  ).rows;
+  expect(audit).toHaveLength(1);
+  expect(audit[0]).toMatchObject({
+    before_data: { active: true },
+    after_data: { active: false },
+    actor_id: owner,
+  });
+  expect(audit[0]).toHaveProperty('created_at', expect.any(Date));
+  await db.query('select archive_inventory_item($1)', [id]);
+  expect(
+    (
+      await db.query(
+        "select * from audit_events where entity_type='products' and entity_id=$1 and actor_id=$2",
+        [id, owner],
+      )
+    ).rows,
+  ).toEqual(audit);
+  await db.query('select configure_item($1,$2)', [id, JSON.stringify(settings)]);
+  expect((await db.query('select active from products where id=$1', [id])).rows[0]).toMatchObject({
+    active: true,
+  });
+  expect(
+    (await db.query('select * from inventory_transactions where product_id=$1', [id])).rows,
+  ).toEqual(movements);
+  await db.exec('savepoint protected_history');
+  await expect(db.exec('delete from audit_events')).rejects.toThrow();
+  await db.exec('rollback to savepoint protected_history');
+  await expect(db.exec('update audit_events set created_at=now()')).rejects.toThrow();
+});
+it.each(['MANAGER', 'CAPTAIN', 'CREW'])(
+  '%s cannot invoke Owner archive RPC directly',
+  async (role) => {
+    await db.exec('reset role');
+    await db.query('update profiles set role=$1 where id=$2', [role, crew]);
+    await user(crew);
+    await expect(db.query('select archive_inventory_item($1)', [product])).rejects.toThrow(
+      'FORBIDDEN',
+    );
+  },
+);
+it('anonymous users cannot call archive RPC', async () => {
+  await db.exec('reset role;set role anon');
+  await expect(db.query('select archive_inventory_item($1)', [product])).rejects.toThrow();
 });
