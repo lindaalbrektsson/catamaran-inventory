@@ -7,6 +7,34 @@ afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
+it.each([
+  'task_people',
+  'task_history',
+  'reminder_people',
+  'reminder_delivery_status',
+  'maintenance_people',
+  'maintenance_history',
+  'document_people',
+  'document_history',
+])('bounds read-only POST RPC %s without retrying', async (rpc) => {
+  const controller = new AbortController();
+  vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
+  const fetcher = vi.fn(
+    (_input, init) =>
+      new Promise((_resolve, reject) =>
+        init.signal.addEventListener('abort', () => reject(new Error('READ_TIMEOUT'))),
+      ),
+  );
+  vi.stubGlobal('fetch', fetcher);
+  const result = readFetch('https://example.test/rest/v1/rpc/' + rpc, {
+    method: 'POST',
+    body: '{}',
+  });
+  const assertion = expect(result).rejects.toThrow('READ_TIMEOUT');
+  controller.abort();
+  await assertion;
+  expect(fetcher).toHaveBeenCalledTimes(1);
+});
 it('timings are opt-in and never log result or exception data', async () => {
   const log = vi.spyOn(console, 'info').mockImplementation(() => {});
   await timed('profile.load', async () => ({ password: 'PRIVATE' }));

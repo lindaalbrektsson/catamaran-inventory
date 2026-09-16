@@ -1,6 +1,8 @@
 import 'server-only';
 
 type Operation =
+  | 'updates.page'
+  | 'maintenance.catalog'
   | 'auth.claims'
   | 'profile.load'
   | 'locations.list'

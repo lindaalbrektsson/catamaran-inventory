@@ -16,7 +16,7 @@ beforeEach(() => {
 });
 function form() {
   const f = new FormData();
-  f.set('id', '50000000-0000-4000-8000-000000000001');
+  f.set('id', crypto.randomUUID());
   f.set('task', '50000000-0000-4000-8000-000000000002');
   f.set('body', '');
   f.set('duration', '1');
@@ -24,7 +24,8 @@ function form() {
   return f;
 }
 it('voice bytes use generated private path; only metadata crosses server action', async () => {
-  expect(await addTaskUpdate({}, form())).toEqual({});
+  const input = form();
+  expect(await addTaskUpdate({}, input)).toEqual({});
   expect(m.prepare.mock.calls[0][0].voice).toBeUndefined();
   expect(m.prepare.mock.calls[0][2]).toMatchObject({
     content_type: 'audio/webm',
@@ -32,7 +33,7 @@ it('voice bytes use generated private path; only metadata crosses server action'
     byte_size: 7,
   });
   expect(m.upload).toHaveBeenCalledWith(
-    '50000000-0000-4000-8000-000000000001/voice',
+    `${input.get('id')}/voice`,
     expect.any(File),
     expect.objectContaining({ upsert: false }),
   );
@@ -60,4 +61,13 @@ it('retry checks immutable already-uploaded object through server completion', a
   m.upload.mockResolvedValue({ error: { message: 'already exists' } });
   expect(await addTaskUpdate({}, form())).toEqual({});
   expect(m.finish).toHaveBeenCalledTimes(1);
+});
+
+it('retry after failed completion revalidates without sending accepted bytes again', async () => {
+  const input = form();
+  m.finish.mockResolvedValueOnce({ error: 'docUploadIncomplete' });
+  expect(await addTaskUpdate({}, input)).toEqual({ error: 'docUploadIncomplete' });
+  expect(await addTaskUpdate({}, input)).toEqual({});
+  expect(m.upload).toHaveBeenCalledTimes(1);
+  expect(m.finish).toHaveBeenCalledTimes(2);
 });

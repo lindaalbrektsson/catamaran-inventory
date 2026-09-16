@@ -11,19 +11,41 @@ import { TaskProgress } from '@/components/task-progress';
 import { LocalTime } from '@/components/local-time';
 import { dictionary, type Key } from '@/lib/i18n';
 import type { Json } from '@/lib/database.types';
-export default async function MaintenanceDetail({ params }: { params: Promise<{ id: string }> }) {
+export default async function MaintenanceDetail({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ historyPage?: string }>;
+}) {
   const p = await requireProfile();
   if (!['OWNER', 'MANAGER'].includes(p.role)) redirect('/tasks');
   const { id } = await params;
   validId(id);
   const locale = await getLocale(),
     t = dictionary(locale),
-    catalog = await maintenanceCatalog(),
-    task = catalog.tasks.find((x) => x.id === id),
+    db = await supabase();
+  const requestedPage = Number((await searchParams).historyPage ?? 0);
+  const historyPage =
+    Number.isSafeInteger(requestedPage) && requestedPage >= 0 && requestedPage < 100000
+      ? requestedPage
+      : 0;
+  const [catalog, completed] = await Promise.all([
+    maintenanceCatalog(id),
+    db
+      .from('maintenance_occurrences')
+      .select('*')
+      .eq('task_id', id)
+      .eq('status', 'DONE')
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .range(historyPage * 20, historyPage * 20 + 20),
+  ]);
+  if (completed.error) throw new Error('MAINTENANCE_HISTORY_FAILED');
+  const task = catalog.tasks.find((x) => x.id === id),
     rule = catalog.rules.find((x) => x.task_id === id);
   if (!task || !rule) notFound();
-  const db = await supabase(),
-    occurrences = catalog.occurrences.filter((x) => x.task_id === id),
+  const occurrences = [...(completed.data ?? []).slice(0, 20).reverse(), ...catalog.occurrences],
     ids = occurrences.map((x) => x.id);
   const [updates, history, people, subtasks] = await Promise.all([
     ids.length
@@ -143,6 +165,7 @@ export default async function MaintenanceDetail({ params }: { params: Promise<{ 
                   <p className="whitespace-pre-wrap break-words">{u.body}</p>
                   {u.photo_ready && (
                     <Link
+                      prefetch={false}
                       href={'/maintenance-photo/' + u.id}
                       className="inline-flex min-h-12 items-center underline"
                     >
@@ -152,6 +175,7 @@ export default async function MaintenanceDetail({ params }: { params: Promise<{ 
                 </article>
               ))}
             <TaskUpdateHistory
+              key={crypto.randomUUID()}
               task={id}
               occurrence={o.id}
               locale={locale}
@@ -165,6 +189,18 @@ export default async function MaintenanceDetail({ params }: { params: Promise<{ 
             )}
           </section>
         ))}
+      <nav className="flex flex-wrap gap-3" aria-label={t.maintenanceHistory}>
+        {historyPage > 0 && (
+          <Link className="min-h-12 rounded-xl border p-3" href={`?historyPage=${historyPage - 1}`}>
+            {t.updatesNewer}
+          </Link>
+        )}
+        {(completed.data?.length ?? 0) > 20 && (
+          <Link className="min-h-12 rounded-xl border p-3" href={`?historyPage=${historyPage + 1}`}>
+            {t.updatesMore}
+          </Link>
+        )}
+      </nav>
       <details className="my-5">
         <summary className="min-h-12 cursor-pointer py-3">{t.maintenanceHistory}</summary>
         {history.data?.map((a) => {

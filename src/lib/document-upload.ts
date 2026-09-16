@@ -1,4 +1,5 @@
 'use client';
+import { uploadOnce } from './upload-once';
 import { createBrowserClient } from '@supabase/ssr';
 import {
   prepareDocument,
@@ -53,9 +54,15 @@ export async function uploadDocument(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
       );
-      await db.storage
-        .from('documents')
-        .upload(prepared.path, file, { contentType: file.type, upsert: false, cacheControl: '0' });
+      await uploadOnce('documents/' + prepared.path + '/' + metadata!.sha256, () =>
+        db.storage
+          .from('documents')
+          .upload(prepared.path!, file, {
+            contentType: file.type,
+            upsert: false,
+            cacheControl: '0',
+          }),
+      );
     } catch {
       return { error: 'docUploadIncomplete' };
     }

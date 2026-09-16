@@ -111,8 +111,14 @@ export function PwaProvider({
     document.addEventListener('submit', submit, true);
     let registration: ServiceWorkerRegistration | undefined;
     let lastCheck = 0;
+    let lastVersionCheck = 0;
     const checkUpdate = () => {
-      if (document.visibilityState === 'visible' && navigator.onLine) {
+      if (
+        document.visibilityState === 'visible' &&
+        navigator.onLine &&
+        Date.now() - lastVersionCheck >= 30000
+      ) {
+        lastVersionCheck = Date.now();
         void fetch('/app-version', { cache: 'no-store' })
           .then((r) => (r.ok ? r.json() : null))
           .then((data) => {

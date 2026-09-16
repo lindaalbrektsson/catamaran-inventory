@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { supabase } from '@/lib/supabase/server';
 import { getDocuments, documentPeople } from '@/lib/documents';
@@ -79,14 +78,14 @@ export default async function DocumentDetail({ params }: { params: Promise<{ id:
       {d.category && <p className="mb-4">{d.category}</p>}
       {d.current_file_id ? (
         <div className="mb-5 flex flex-wrap gap-3">
-          <Link
+          <a
             className="min-h-14 rounded-xl bg-primary p-4 font-semibold text-primary-foreground"
             href={`/document-file/${id}`}
             target="_blank"
             rel="noopener noreferrer"
           >
             {t.docOpen}
-          </Link>
+          </a>
           <a className="min-h-14 rounded-xl border p-4" href={`/document-file/${id}?download=1`}>
             {t.docDownload}
           </a>

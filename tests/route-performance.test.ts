@@ -1,5 +1,10 @@
 import { beforeEach, expect, it, vi } from 'vitest';
-const state = vi.hoisted(() => ({ active: 0, peak: 0, starts: [] as string[] }));
+const state = vi.hoisted(() => ({
+  active: 0,
+  peak: 0,
+  starts: [] as string[],
+  blockSecondary: false,
+}));
 async function delay<T>(name: string, value: T): Promise<T> {
   state.starts.push(name);
   state.active++;
@@ -19,9 +24,14 @@ vi.mock('@/lib/inventory', () => ({
   getInventory: () => delay('inventory', []),
 }));
 vi.mock('@/lib/tasks', () => ({
-  taskSummary: () => delay('tasks', { tasks: [], people: [], types: [] }),
+  taskSummary: () =>
+    state.blockSecondary
+      ? new Promise(() => {})
+      : delay('tasks', { tasks: [], people: [], types: [] }),
 }));
-vi.mock('@/lib/documents', () => ({ getDocuments: () => delay('documents', []) }));
+vi.mock('@/lib/documents', () => ({
+  getDocuments: () => (state.blockSecondary ? new Promise(() => {}) : delay('documents', [])),
+}));
 vi.mock('@/lib/item-catalog', () => ({ itemCatalog: () => delay('catalog', {}) }));
 vi.mock('@/lib/supabase/server', () => ({
   supabase: async () => ({
@@ -36,6 +46,7 @@ vi.mock('@/components/low-need-suggestions', () => ({ LowNeedSuggestions: () => 
 import Home from '@/app/(workspace)/page';
 import LocationPage from '@/app/(workspace)/inventory/[locationId]/page';
 beforeEach(() => {
+  state.blockSecondary = false;
   state.active = 0;
   state.peak = 0;
   state.starts = [];
@@ -74,3 +85,12 @@ it.each(['view', 'add', 'transfer'])(
     expect(state.peak).toBe(action === 'transfer' ? 3 : 2);
   },
 );
+
+it('Home location actions render without waiting for stalled Tasks or Documents', async () => {
+  state.blockSecondary = true;
+  const result = await Promise.race([
+    Home(),
+    new Promise((resolve) => setTimeout(() => resolve(null), 1000)),
+  ]);
+  expect(result).not.toBeNull();
+});

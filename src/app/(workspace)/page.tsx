@@ -1,3 +1,5 @@
+import { Suspense } from 'react';
+import type { Locale } from '@/lib/i18n';
 import { timed } from '@/lib/performance';
 import { taskSummary } from '@/lib/tasks';
 import { getDocuments } from '@/lib/documents';
@@ -19,7 +21,10 @@ async function renderHome() {
     locale = await getLocale(),
     t = dictionary(locale);
   const canUseNeeds = ['OWNER', 'MANAGER'].includes(profile.role);
-  const [locations, counts, tasks, documents] = await Promise.all([
+  // Start independent secondary reads now, but never hold location actions behind them.
+  const tasks = timed('tasks.summary', taskSummary).catch(() => null);
+  const documents = timed('documents.list', getDocuments).catch(() => null);
+  const [locations, counts] = await Promise.all([
     getLocations(),
     timed('needs.summary', async () => {
       let pending = 0,
@@ -41,8 +46,6 @@ async function renderHome() {
       }
       return { pending, ordered };
     }),
-    timed('tasks.summary', taskSummary),
-    timed('documents.list', getDocuments),
   ]);
   const { pending, ordered } = counts;
   return (
@@ -105,21 +108,84 @@ async function renderHome() {
           </Link>
         </section>
       )}
-      <TaskList
-        {...tasks}
-        locale={locale}
-        actorId={profile.id}
-        now={new Date().toISOString()}
-        home
-        canManage={canUseNeeds}
-      />
-      <DocumentList
-        documents={documents}
-        locale={locale}
-        owner={profile.role === 'OWNER'}
-        home
-        now={new Date().toISOString()}
-      />
+      <Suspense
+        fallback={
+          <p role="status" className="mt-4 min-h-24">
+            {t.tasksTitle}: {t.loading}
+          </p>
+        }
+      >
+        <HomeTasks data={tasks} locale={locale} actorId={profile.id} canManage={canUseNeeds} />
+      </Suspense>
+      <Suspense
+        fallback={
+          <p role="status" className="mt-4 min-h-24">
+            {t.documents}: {t.loading}
+          </p>
+        }
+      >
+        <HomeDocuments data={documents} locale={locale} owner={profile.role === 'OWNER'} />
+      </Suspense>
     </div>
+  );
+}
+
+function SecondaryFailure({ locale }: { locale: Locale }) {
+  const t = dictionary(locale);
+  return (
+    <div role="alert" className="mt-4 rounded-xl border p-4">
+      <p>{t.errorTitle}</p>
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Explicit reload retries failed secondary reads. */}
+      <a className="inline-flex min-h-12 items-center underline" href="/">
+        {t.retry}
+      </a>
+    </div>
+  );
+}
+async function HomeTasks({
+  data,
+  locale,
+  actorId,
+  canManage,
+}: {
+  data: Promise<Awaited<ReturnType<typeof taskSummary>> | null>;
+  locale: Locale;
+  actorId: string;
+  canManage: boolean;
+}) {
+  const tasks = await data;
+  return tasks ? (
+    <TaskList
+      {...tasks}
+      locale={locale}
+      actorId={actorId}
+      canManage={canManage}
+      home
+      now={new Date().toISOString()}
+    />
+  ) : (
+    <SecondaryFailure locale={locale} />
+  );
+}
+async function HomeDocuments({
+  data,
+  locale,
+  owner,
+}: {
+  data: Promise<Awaited<ReturnType<typeof getDocuments>> | null>;
+  locale: Locale;
+  owner: boolean;
+}) {
+  const documents = await data;
+  return documents ? (
+    <DocumentList
+      documents={documents}
+      locale={locale}
+      owner={owner}
+      home
+      now={new Date().toISOString()}
+    />
+  ) : (
+    <SecondaryFailure locale={locale} />
   );
 }

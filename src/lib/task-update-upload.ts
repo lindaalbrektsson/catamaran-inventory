@@ -1,4 +1,5 @@
 'use client';
+import { uploadOnce } from './upload-once';
 import { createBrowserClient } from '@supabase/ssr';
 import { prepareTaskUpdate, finishTaskUpdate } from './task-update-actions';
 import { audioMime, VOICE_MAX_BYTES, VOICE_TYPES } from './voice-domain';
@@ -50,14 +51,17 @@ export async function addTaskUpdate(_: ActionState, form: FormData): Promise<Act
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     );
-    for (const f of files)
-      await db.storage
-        .from('task-update-files')
-        .upload(`${values.id}/${f.kind}`, f.file, {
-          contentType: f.meta.content_type,
-          upsert: false,
-          cacheControl: '0',
-        });
+    await Promise.all(
+      files.map((f) =>
+        uploadOnce(`task-update-files/${values.id}/${f.kind}/${f.meta.sha256}`, () =>
+          db.storage.from('task-update-files').upload(`${values.id}/${f.kind}`, f.file, {
+            contentType: f.meta.content_type,
+            upsert: false,
+            cacheControl: '0',
+          }),
+        ),
+      ),
+    );
     return await finishTaskUpdate(values.id);
   } catch {
     return { error: 'docUploadIncomplete' };

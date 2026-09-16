@@ -23,7 +23,7 @@ export function VoicePlayer({
       <audio
         aria-label={t.voiceNote}
         controls
-        preload="metadata"
+        preload="none"
         src={src}
         className="h-12 w-full max-w-sm"
         onError={() => setFailed(true)}

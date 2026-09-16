@@ -709,6 +709,9 @@ export const en = {
   notFound: 'Page not found',
   notFoundHint: 'This item may be unavailable or outside your assigned locations.',
   loading: 'Loading…',
+  updatesMore: 'Older updates',
+  updatesNewer: 'Newer updates',
+  updatesLoadFailed: 'Could not load updates. Try again.',
   expensesPending: 'Expenses are the next milestone',
   expensesPendingHint:
     'Purchases, receipts and reimbursements will be added after the inventory foundation is verified.',
@@ -1449,6 +1452,9 @@ export const es: Record<Key, string> = {
   notFoundHint:
     'Este producto puede no estar disponible o estar fuera de tus ubicaciones asignadas.',
   loading: 'Cargando…',
+  updatesMore: 'Actualizaciones anteriores',
+  updatesNewer: 'Actualizaciones más recientes',
+  updatesLoadFailed: 'No se pudieron cargar las actualizaciones. Intenta de nuevo.',
   expensesPending: 'Los gastos son la siguiente etapa',
   expensesPendingHint:
     'Las compras, los recibos y los reembolsos se agregarán después de verificar la base de inventario.',

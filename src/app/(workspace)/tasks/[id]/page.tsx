@@ -214,7 +214,7 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
         )}
       <section className="my-5 min-w-0">
         <h2 className="mb-3 text-xl font-semibold">{t.updatesTitle}</h2>
-        <TaskUpdateHistory task={id} locale={locale} people={catalog.people} />
+        <TaskUpdateHistory key={crypto.randomUUID()} task={id} locale={locale} people={catalog.people} />
         {canManage && !task.archived && task.status !== 'DONE' && (
           <details>
             <summary className="min-h-12 cursor-pointer py-3">{t.maintenanceUpdate}</summary>

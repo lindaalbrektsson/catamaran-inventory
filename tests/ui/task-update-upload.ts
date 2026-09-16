@@ -1,4 +1,5 @@
 export async function addTaskUpdate(_: unknown, form: FormData) {
+  if (location.search.includes('slow-save')) await new Promise((r) => setTimeout(r, 1000));
   if (!location.search.includes('voice-')) return { error: 'taskStale' as const };
   const voice = form.get('voice'),
     photo = form.get('photo');

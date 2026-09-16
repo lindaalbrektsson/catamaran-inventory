@@ -110,6 +110,7 @@ export function DocumentList({
           return (
             <Link
               key={d.id}
+              prefetch={false}
               href={home ? `/document-file/${d.id}` : `/documents/${d.id}`}
               target={home ? '_blank' : undefined}
               rel={home ? 'noopener noreferrer' : undefined}
