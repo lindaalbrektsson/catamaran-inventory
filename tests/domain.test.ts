@@ -7,7 +7,7 @@ import {
   stockSchema,
   units,
   movementTypes,
-  roles,
+  staffRoles,
 } from '../src/lib/domain';
 import { en, es } from '../src/lib/i18n';
 const input = {
@@ -53,7 +53,7 @@ describe('permissions and translations', () => {
   });
   it('has matching dictionaries and all domain labels', () => {
     expect(Object.keys(es).sort()).toEqual(Object.keys(en).sort());
-    for (const key of [...units, ...movementTypes, ...roles]) {
+    for (const key of [...units, ...movementTypes, ...staffRoles]) {
       expect(en[key]).toBeTruthy();
       expect(es[key]).toBeTruthy();
     }

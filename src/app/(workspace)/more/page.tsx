@@ -19,7 +19,11 @@ export default async function More() {
           <div className="pb-5">
             <h2 className="text-xl font-semibold">{profile.display_name}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {profile.account_admin && profile.role === 'OWNER' ? t.adminRole : t[profile.role]}
+              {profile.account_admin && profile.role === 'OWNER'
+                ? t.adminRole
+                : profile.role === 'OWNER' || profile.role === 'MANAGER'
+                  ? t[profile.role]
+                  : t.roleReview}
             </p>
             <p className="mt-4 text-sm text-muted-foreground">{t.scopeNote}</p>
           </div>

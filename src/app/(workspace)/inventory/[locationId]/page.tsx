@@ -9,7 +9,6 @@ import { dictionary } from '@/lib/i18n';
 import { getLocation, getInventory } from '@/lib/inventory';
 import { PageHeader } from '@/components/page-header';
 import Link from 'next/link';
-import { ReceiptActions } from '@/components/receipt-actions';
 import { InventoryList } from '@/components/inventory-list';
 async function renderLocationInventory({
   params,
@@ -98,7 +97,6 @@ async function renderLocationInventory({
               </Link>
             ))}
           </div>
-          {!search.action && <ReceiptActions locale={locale} />}
         </>
       )}
       {['OWNER', 'MANAGER'].includes(profile.role) && (

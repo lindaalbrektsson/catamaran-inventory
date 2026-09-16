@@ -30,6 +30,7 @@ test('isolated account provisioning shows the temporary password once and clears
       name: 'I have verified that this number belongs to this staff member.',
     })
     .check();
+  await page.locator('input[name="temporaryPassword"]').fill('Isolated-UI-Example-Only');
   await page.getByRole('button', { name: 'Add user', exact: true }).click();
   await expect(page.locator('output')).toHaveText('Isolated-UI-Example-Only');
   await page.getByRole('button', { name: 'Done — hide password' }).click();
@@ -58,13 +59,13 @@ test('phone controls translate and private staff/password routes require authent
     await expect(page).toHaveURL(/\/login$/);
   }
 });
-test('chosen temporary password is optional, masked and cleared when the page hides', async ({
+test('manual temporary password is required, masked and cleared when the page hides', async ({
   page,
 }) => {
   await page.goto('http://127.0.0.1:4174/?view=account');
-  await page
-    .getByRole('combobox', { name: 'Temporary password', exact: true })
-    .selectOption('CHOOSE');
+  await expect(page.getByRole('combobox', { name: 'Temporary password', exact: true })).toHaveCount(
+    0,
+  );
   const password = page.locator('input[name="temporaryPassword"]');
   await expect(password).toHaveAttribute('type', 'password');
   await password.fill('Isolated-Temporary-Only');
@@ -73,8 +74,6 @@ test('chosen temporary password is optional, masked and cleared when the page hi
     document.dispatchEvent(new Event('visibilitychange'));
   });
   await expect(password).toHaveValue('');
-  await page
-    .getByRole('combobox', { name: 'Temporary password', exact: true })
-    .selectOption('GENERATE');
-  await expect(password).toHaveCount(0);
+  await expect(password).toHaveAttribute('required', '');
+  await expect(page.getByRole('option', { name: 'Generate password', exact: true })).toHaveCount(0);
 });

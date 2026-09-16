@@ -2,7 +2,7 @@
 import { useActionState } from 'react';
 import { manageStaff } from '@/lib/staff-actions';
 import { dictionary, type Locale } from '@/lib/i18n';
-import { roles } from '@/lib/domain';
+import { staffRoles } from '@/lib/domain';
 import type { Profile } from '@/lib/database.types';
 import { Button } from './ui/button';
 export function StaffProfileForm({ profile, locale }: { profile: Profile; locale: Locale }) {
@@ -29,8 +29,17 @@ export function StaffProfileForm({ profile, locale }: { profile: Profile; locale
       </label>
       <label className="grid gap-2">
         {t.staffRole}
-        <select name="role" defaultValue={profile.role} className={control} disabled={pending}>
-          {roles.map((r) => (
+        <select
+          name="role"
+          defaultValue={profile.role === 'OWNER' || profile.role === 'MANAGER' ? profile.role : ''}
+          required
+          className={control}
+          disabled={pending}
+        >
+          <option value="" disabled>
+            {t.roleReview}
+          </option>
+          {staffRoles.map((r) => (
             <option key={r} value={r}>
               {t[r]}
             </option>

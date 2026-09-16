@@ -112,3 +112,19 @@ it('owner saves only allowed staff profile fields', async () => {
     p_active: true,
   });
 });
+
+it.each(['CAPTAIN', 'CREW'])(
+  'staff action rejects legacy role %s before database access',
+  async (role) => {
+    const f = new FormData();
+    for (const [k, v] of Object.entries({
+      id: '40000000-0000-4000-8000-000000000002',
+      name: 'Staff',
+      role,
+      language: 'en',
+    }))
+      f.set(k, v);
+    expect(await manageStaff({}, f)).toEqual({ error: 'INVALID_INPUT' });
+    expect(m.rpc).not.toHaveBeenCalled();
+  },
+);

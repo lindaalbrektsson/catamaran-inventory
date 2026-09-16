@@ -35,7 +35,7 @@ export async function accountChange(form: FormData): Promise<AccountResult> {
     (v.kind !== 'CREATE' && !v.target)
   )
     return { error: 'INVALID_INPUT' };
-  const mode = form.get('temporaryMode') ?? 'GENERATE';
+  const mode = v.kind === 'CREATE' ? 'CHOOSE' : (form.get('temporaryMode') ?? 'GENERATE');
   const chosen = form.get('temporaryPassword');
   if (
     v.kind !== 'PHONE' &&
@@ -58,7 +58,7 @@ export async function accountChange(form: FormData): Promise<AccountResult> {
     target = op.target;
   try {
     if (v.kind === 'CREATE') {
-      password = mode === 'CHOOSE' ? (chosen as string) : temporaryPassword();
+      password = chosen as string;
       if (target) {
         const updated = await admin.auth.admin.updateUserById(target, { password });
         if (updated.error) return { error: 'accountChangeFailed' };

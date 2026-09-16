@@ -36,6 +36,7 @@ function form(kind = 'CREATE') {
     verified: 'on',
   }))
     f.set(key, value);
+  if (kind === 'CREATE') f.set('temporaryPassword', 'Manually-Chosen-Only');
   return f;
 }
 beforeEach(() => {
@@ -61,7 +62,7 @@ it('stops at missing server configuration', async () => {
   expect(await accountChange(form())).toEqual({ error: 'accountAdminSetup' });
   expect(m.rpc).not.toHaveBeenCalled();
 });
-it('creates a phone-only staff account with a one-time generated password', async () => {
+it('creates a phone-only staff account with the manually entered temporary password', async () => {
   const f = form(),
     result = await accountChange(f);
   expect(result.success).toBe(true);
@@ -152,3 +153,12 @@ it.each(['short', 'x'.repeat(129)])(
     expect(m.update).not.toHaveBeenCalled();
   },
 );
+
+it('creation never falls back to generation when the password is missing', async () => {
+  const f = form();
+  f.delete('temporaryPassword');
+  f.set('temporaryMode', 'GENERATE');
+  expect(await accountChange(f)).toEqual({ error: 'passwordRules' });
+  expect(m.rpc).not.toHaveBeenCalled();
+  expect(m.create).not.toHaveBeenCalled();
+});

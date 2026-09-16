@@ -10,7 +10,7 @@ export function TaskList({
   types,
   locale,
   actorId,
-  initialAssignee = '',
+  initialAssignee = 'me',
   now: initialNow,
   home = false,
   canManage = false,
@@ -27,12 +27,24 @@ export function TaskList({
 }) {
   const t = dictionary(locale),
     [now, setNow] = useState(initialNow),
-    [status, setStatus] = useState('OPEN'),
-    [assignee, setAssignee] = useState(initialAssignee === 'me' ? actorId : initialAssignee),
-    [type, setType] = useState(''),
-    [due, setDue] = useState(''),
-    [before, setBefore] = useState(''),
-    [archived, setArchived] = useState(false);
+    [filters, setFilters] = useState({
+      status: 'OPEN',
+      assignee: initialAssignee === 'me' ? actorId : initialAssignee,
+      type: '',
+      due: '',
+      before: '',
+      archived: false,
+    }),
+    [filterOpen, setFilterOpen] = useState(false);
+  const [draft, setDraft] = useState(filters);
+  const { status, assignee, type, due, before, archived } = filters;
+  const filterCount =
+    Number(status !== 'OPEN') +
+    Number(!!assignee && assignee !== actorId) +
+    Number(!!type) +
+    Number(!!due) +
+    Number(!!before) +
+    Number(archived);
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date().toISOString()), 60000);
     return () => clearInterval(timer);
@@ -96,79 +108,167 @@ export function TaskList({
             {t.taskViewMine}
           </Link>
           {canManage && (
-            <Link className="ml-4 inline-flex min-h-12 items-center underline" href="/tasks">
+            <Link
+              className="ml-4 inline-flex min-h-12 items-center underline"
+              href="/tasks?assignee="
+            >
               {t.taskViewAll}
             </Link>
           )}
         </>
       ) : (
-        <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="grid gap-2">
-            {t.taskStatus}
-            <select className={c} value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="OPEN">{t.taskOpen}</option>
-              <option value="ALL">{t.taskAll}</option>
-              {taskStatuses.map((s) => (
-                <option key={s} value={s}>
-                  {t[`taskStatus${s}`]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="grid gap-2">
-            {t.taskAssignee}
-            <select className={c} value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-              <option value="">{t.taskAll}</option>
-              <option value="NONE">{t.taskUnassigned}</option>
-              {people.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.display_name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="grid gap-2">
-            {t.taskType}
-            <select className={c} value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="">{t.taskAll}</option>
-              {types.map((x) => (
-                <option key={x.code} value={x.code}>
-                  {locale === 'es' ? x.name_es : x.name_en}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="grid gap-2">
-            {t.taskDueFilter}
-            <select className={c} value={due} onChange={(e) => setDue(e.target.value)}>
-              <option value="">{t.taskAll}</option>
-              {(['taskOverdue', 'taskDueToday', 'taskDueTomorrow', 'taskReminderDue'] as const).map(
-                (k) => (
-                  <option key={k} value={k}>
-                    {t[k]}
-                  </option>
-                ),
+        <>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              aria-pressed={assignee === actorId}
+              className={`${c} ${assignee === actorId ? 'bg-secondary font-semibold' : ''}`}
+              onClick={() => setFilters({ ...filters, assignee: actorId })}
+            >
+              {t.taskMyTasks}
+            </button>
+            <button
+              type="button"
+              aria-pressed={assignee === ''}
+              className={`${c} ${assignee === '' ? 'bg-secondary font-semibold' : ''}`}
+              onClick={() => setFilters({ ...filters, assignee: '' })}
+            >
+              {t.taskAllTasks}
+            </button>
+            <button
+              type="button"
+              aria-expanded={filterOpen}
+              aria-controls="task-filters"
+              className={`${c} ml-auto`}
+              onClick={() => {
+                setDraft(filters);
+                setFilterOpen(!filterOpen);
+              }}
+            >
+              {t.taskFilter}{' '}
+              {filterCount > 0 && (
+                <span className="ml-2 rounded-full bg-secondary px-2 py-1 text-sm">
+                  {filterCount}
+                </span>
               )}
-            </select>
-          </label>
-          <label className="grid gap-2">
-            {t.taskDueBy}
-            <input
-              type="date"
-              className={c}
-              value={before}
-              onChange={(e) => setBefore(e.target.value)}
-            />
-          </label>
-          <label className="flex min-h-12 items-center gap-3 self-end">
-            <input
-              type="checkbox"
-              checked={archived}
-              onChange={(e) => setArchived(e.target.checked)}
-            />
-            {t.taskArchived}
-          </label>
-        </div>
+            </button>
+          </div>
+          {filterOpen && (
+            <form
+              id="task-filters"
+              aria-label={t.taskFilter}
+              className="mb-5 grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-2 lg:grid-cols-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setFilters(draft);
+                setFilterOpen(false);
+              }}
+            >
+              <label className="grid gap-2">
+                {t.taskStatus}
+                <select
+                  className={c}
+                  value={draft.status}
+                  onChange={(e) => setDraft({ ...draft, status: e.target.value })}
+                >
+                  <option value="OPEN">{t.taskOpen}</option>
+                  <option value="ALL">{t.taskAll}</option>
+                  {taskStatuses.map((s) => (
+                    <option key={s} value={s}>
+                      {t[`taskStatus${s}`]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-2">
+                {t.taskAssignee}
+                <select
+                  className={c}
+                  value={draft.assignee}
+                  onChange={(e) => setDraft({ ...draft, assignee: e.target.value })}
+                >
+                  <option value="">{t.taskAll}</option>
+                  <option value="NONE">{t.taskUnassigned}</option>
+                  {people.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.display_name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-2">
+                {t.taskType}
+                <select
+                  className={c}
+                  value={draft.type}
+                  onChange={(e) => setDraft({ ...draft, type: e.target.value })}
+                >
+                  <option value="">{t.taskAll}</option>
+                  {types.map((x) => (
+                    <option key={x.code} value={x.code}>
+                      {locale === 'es' ? x.name_es : x.name_en}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-2">
+                {t.taskDueFilter}
+                <select
+                  className={c}
+                  value={draft.due}
+                  onChange={(e) => setDraft({ ...draft, due: e.target.value })}
+                >
+                  <option value="">{t.taskAll}</option>
+                  {(
+                    ['taskOverdue', 'taskDueToday', 'taskDueTomorrow', 'taskReminderDue'] as const
+                  ).map((k) => (
+                    <option key={k} value={k}>
+                      {t[k]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-2">
+                {t.taskDueBy}
+                <input
+                  type="date"
+                  className={c}
+                  value={draft.before}
+                  onChange={(e) => setDraft({ ...draft, before: e.target.value })}
+                />
+              </label>
+              <label className="flex min-h-12 items-center gap-3 self-end">
+                <input
+                  type="checkbox"
+                  checked={draft.archived}
+                  onChange={(e) => setDraft({ ...draft, archived: e.target.checked })}
+                />
+                {t.taskArchived}
+              </label>
+              <div className="flex flex-wrap gap-3 sm:col-span-2 lg:col-span-3">
+                <button
+                  type="button"
+                  className={c}
+                  onClick={() =>
+                    setDraft({
+                      status: 'OPEN',
+                      assignee: actorId,
+                      type: '',
+                      due: '',
+                      before: '',
+                      archived: false,
+                    })
+                  }
+                >
+                  {t.taskResetFilters}
+                </button>
+                <button type="submit" className={`${c} bg-primary text-primary-foreground`}>
+                  {t.taskApplyFilters}
+                </button>
+              </div>
+            </form>
+          )}
+        </>
       )}
       <div className={home ? 'grid gap-3' : 'grid gap-4 md:grid-cols-2 xl:grid-cols-3'}>
         {displayed.map((task) => {

@@ -309,3 +309,9 @@ it('own phone change retains account administrator capability and history identi
     { id: owner, account_admin: true, must_change_password: false, credential_pending: false },
   ]);
 });
+
+it.each(['CAPTAIN', 'CREW'])('staff RPC rejects assigning legacy role %s', async (role) => {
+  await expect(
+    db.query("select public.manage_staff($1,'Staff',$2,'en',true)", [manager, role]),
+  ).rejects.toThrow('INVALID_INPUT');
+});

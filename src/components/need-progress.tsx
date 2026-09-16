@@ -18,17 +18,21 @@ export function NeedProgress({
     t = dictionary(locale);
   if (status === 'DONE') return null;
   return (
-    <form action={action} className="mt-3">
+    <form action={action} className="w-28 shrink-0 sm:w-32">
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="version" value={version} />
       <input type="hidden" name="requestId" value={request} />
       <button
         disabled={pending}
-        className="min-h-12 w-full rounded-xl bg-primary p-3 font-semibold text-primary-foreground"
+        className="min-h-11 w-full rounded-lg border border-primary/20 bg-secondary px-2 py-2 text-sm font-medium leading-tight text-primary"
       >
         {pending ? t.saving : status === 'PENDING' ? t.needMarkOrdered : t.needMarkDone}
       </button>
-      {state.error && <p role="alert">{t[state.error]}</p>}
+      {state.error && (
+        <p role="alert" className="mt-1 break-words text-xs text-destructive">
+          {t[state.error]}
+        </p>
+      )}
     </form>
   );
 }

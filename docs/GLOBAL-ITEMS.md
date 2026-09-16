@@ -46,10 +46,11 @@ prohibitions remain. No automatic merge is performed.
 
 ## Rollout
 
-Pending migration: `supabase/migrations/20260916000100_global_items.sql`.
-This migration has only been exercised in isolated local test databases. It is
-not applied to hosted Supabase by implementing this change. Apply it through the
-existing reviewed CLI workflow before deploying these application changes.
+Migration: `supabase/migrations/20260916000100_global_items.sql`.
+Applied to production on 2026-09-16 through the reviewed CLI workflow, alongside
+`20260916000200_supported_staff_roles.sql`. The role migration limits new staff
+assignments to OWNER/MANAGER while retaining legacy enum values and permissions.
+Migration history and unchanged production record counts/stock totals were verified.
 No production stock, accounts or purchase records are seeded or changed by QA.
 
 Browser checks use desktop/mobile Chromium emulation and isolated action

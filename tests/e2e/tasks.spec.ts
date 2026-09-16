@@ -29,15 +29,32 @@ test('task form submits assignment, subtasks and Belize reminder; preserves inpu
 });
 test('filters overdue tasks and assignees', async ({ page }) => {
   await page.goto(url + 'task-list');
+  await expect(page.getByRole('button', { name: 'My tasks', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.getByRole('heading', { name: 'Check engine' })).toBeVisible();
+  await expect(page.getByRole('combobox')).toHaveCount(0);
+  await page.getByRole('button', { name: 'All tasks', exact: true }).click();
+  await page.getByRole('button', { name: 'Filter', exact: true }).click();
   await page
     .getByRole('combobox', { name: 'Due / reminder', exact: true })
     .selectOption('taskOverdue');
+  await expect(page.getByRole('heading', { name: 'Check engine' })).toBeVisible();
+  await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Call mechanic' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Check engine' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Filter 1', exact: true }).click();
   await page
     .getByRole('combobox', { name: 'Assignee', exact: true })
     .selectOption('40000000-0000-4000-8000-000000000001');
+  await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
   await expect(page.getByText('No matching tasks.')).toBeVisible();
+  await page.getByRole('button', { name: 'Filter 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Reset filters', exact: true }).click();
+  await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Check engine' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Filter', exact: true })).toBeVisible();
 });
 test('changes status and completes subtasks', async ({ page }) => {
   await page.goto(url + 'task-progress');

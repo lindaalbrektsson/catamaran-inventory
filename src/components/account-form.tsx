@@ -3,7 +3,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { accountChange, type AccountResult } from '@/lib/account-actions';
 import { dictionary, type Locale } from '@/lib/i18n';
 import { phoneCountries } from '@/lib/auth-domain';
-import { roles } from '@/lib/domain';
+import { staffRoles } from '@/lib/domain';
 import type { Profile } from '@/lib/database.types';
 export function AccountForm({
   locale,
@@ -111,13 +111,11 @@ export function AccountForm({
             <label className="grid gap-2">
               {t.staffRole}
               <select name="role" defaultValue="MANAGER" className={c}>
-                {roles
-                  .filter((r) => r === 'OWNER' || r === 'MANAGER')
-                  .map((r) => (
-                    <option key={r} value={r}>
-                      {t[r]}
-                    </option>
-                  ))}
+                {staffRoles.map((r) => (
+                  <option key={r} value={r}>
+                    {t[r]}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="grid gap-2">
@@ -163,28 +161,32 @@ export function AccountForm({
         )}
         {kind !== 'PHONE' && (
           <>
-            <label className="grid gap-2">
-              {t.temporaryPasswordLabel}
-              <select
-                name="temporaryMode"
-                className={c}
-                value={temporaryMode}
-                onChange={(e) => {
-                  setTemporaryMode(e.target.value);
-                  setChosenPassword('');
-                }}
-              >
-                <option value="GENERATE">{t.temporaryGenerate}</option>
-                <option value="CHOOSE">{t.temporaryChoose}</option>
-              </select>
-            </label>
-            {temporaryMode === 'CHOOSE' && (
+            {kind === 'CREATE' ? (
+              <input type="hidden" name="temporaryMode" value="CHOOSE" />
+            ) : (
+              <label className="grid gap-2">
+                {t.temporaryPasswordLabel}
+                <select
+                  name="temporaryMode"
+                  className={c}
+                  value={temporaryMode}
+                  onChange={(e) => {
+                    setTemporaryMode(e.target.value);
+                    setChosenPassword('');
+                  }}
+                >
+                  <option value="GENERATE">{t.temporaryGenerate}</option>
+                  <option value="CHOOSE">{t.temporaryChoose}</option>
+                </select>
+              </label>
+            )}
+            {(kind === 'CREATE' || temporaryMode === 'CHOOSE') && (
               <label className="grid gap-2">
                 {t.temporaryPasswordLabel}
                 <input
                   type="password"
                   name="temporaryPassword"
-                  autoComplete="new-password"
+                  autoComplete={kind === 'CREATE' ? 'off' : 'new-password'}
                   required
                   minLength={12}
                   maxLength={128}

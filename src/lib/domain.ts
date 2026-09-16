@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+// Legacy database values remain readable; never offer them for assignment.
+export const staffRoles = ['OWNER', 'MANAGER'] as const;
 export const roles = ['OWNER', 'MANAGER', 'CAPTAIN', 'CREW'] as const;
 export type Role = (typeof roles)[number];
 export const units = [

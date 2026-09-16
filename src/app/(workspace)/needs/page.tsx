@@ -91,18 +91,22 @@ export default async function Needs({
         </label>
         <button className={`${control} self-end`}>{t.applyFilters}</button>
       </form>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="divide-y overflow-hidden rounded-xl border bg-card">
         {needs.map((n) => (
-          <article key={n.id} className="rounded-xl border bg-card p-5">
-            <Link href={`/needs/${n.id}`} className="block min-h-12">
-              <h2 className="font-semibold">
+          <article key={n.id} className="flex items-center gap-3 px-3 py-3 sm:px-4">
+            <Link href={`/needs/${n.id}`} className="block min-h-11 min-w-0 flex-1">
+              <h2 className="break-words font-semibold leading-snug">
                 {catalog.products.find((p) => p.id === n.product_id)?.name ?? n.name}
               </h2>
-              <p className="mt-2">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {t[n.country]} · {n.status === 'PENDING' ? t.needPending : t[n.status]}
+                {n.location_id && catalog.locations.find((l) => l.id === n.location_id) && (
+                  <> · {catalog.locations.find((l) => l.id === n.location_id)?.name}</>
+                )}
               </p>
-              <p>{catalog.locations.find((l) => l.id === n.location_id)?.name}</p>
-              <LocalTime value={n.created_at} locale={locale} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                <LocalTime value={n.created_at} locale={locale} />
+              </p>
             </Link>
             <NeedProgress
               key={n.version}

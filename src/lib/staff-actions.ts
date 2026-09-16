@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { getProfile, requireProfile } from './auth';
 import { supabase } from './supabase/server';
 import { newPasswordSchema } from './auth-domain';
-import { roles } from './domain';
+import { staffRoles } from './domain';
 import type { ActionState } from './actions';
 export async function changeFirstPassword(
   _previous: ActionState,
@@ -39,7 +39,7 @@ export async function manageStaff(
     .object({
       id: z.uuid(),
       name: z.string().trim().min(1).max(100),
-      role: z.enum(roles),
+      role: z.enum(staffRoles),
       language: z.enum(['en', 'es']),
     })
     .safeParse(Object.fromEntries(form));

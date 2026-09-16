@@ -16,9 +16,7 @@ export default async function Tasks({
         {...catalog}
         locale={locale}
         actorId={profile.id}
-        initialAssignee={
-          query.assignee ?? (['OWNER', 'MANAGER'].includes(profile.role) ? '' : 'me')
-        }
+        initialAssignee={query.assignee ?? 'me'}
         now={new Date().toISOString()}
         canManage={['OWNER', 'MANAGER'].includes(profile.role)}
       />
