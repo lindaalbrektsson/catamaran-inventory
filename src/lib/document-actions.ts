@@ -23,10 +23,20 @@ const failure = (message: string): DocumentResult => ({
 });
 export async function prepareDocument(values: unknown, file: unknown): Promise<DocumentResult> {
   const p = await requireProfile();
-  if (p.role !== 'OWNER') return { error: 'FORBIDDEN' };
+  if (!['OWNER', 'MANAGER'].includes(p.role)) return { error: 'FORBIDDEN' };
   const v = documentSchema.safeParse(values),
     f = file === null ? null : documentFileSchema.safeParse(file);
   if (!v.success || (f && !f.success)) return { error: 'INVALID_INPUT' };
+  if (
+    p.role === 'MANAGER' &&
+    (v.data.version !== 0 ||
+      !f?.success ||
+      v.data.access_level !== 'MANAGERS' ||
+      v.data.favorite ||
+      v.data.archived ||
+      v.data.selected_users.length)
+  )
+    return { error: 'FORBIDDEN' };
   const { id, requestId, version, ...metadata } = v.data;
   const { data, error } = await (
     await supabase()
@@ -44,7 +54,7 @@ export async function prepareDocument(values: unknown, file: unknown): Promise<D
 }
 export async function finishDocument(fileId: string): Promise<DocumentResult> {
   const p = await requireProfile();
-  if (p.role !== 'OWNER') return { error: 'FORBIDDEN' };
+  if (!['OWNER', 'MANAGER'].includes(p.role)) return { error: 'FORBIDDEN' };
   if (!z.uuid().safeParse(fileId).success) return { error: 'INVALID_INPUT' };
   const db = await supabase(),
     { data: f } = await db

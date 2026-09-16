@@ -135,3 +135,17 @@ test('Delete user requires confirmation and supports cancel', async ({ page }) =
     'User deactivated. Historical records have been preserved.',
   );
 });
+
+test('Add user has only name, username, role and manual temporary password', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4174/?view=account');
+  await expect(page.locator('input:not([type=hidden]),select')).toHaveCount(4);
+  await expect(
+    page.locator('input[type=tel],input[type=checkbox],select[name=country],select[name=language]'),
+  ).toHaveCount(0);
+  for (const role of ['OWNER', 'MANAGER']) {
+    await page.getByLabel('Display name', { exact: true }).fill('Local fixture');
+    await page.getByLabel('Username', { exact: true }).fill('fixture.' + role.toLowerCase());
+    await page.getByRole('combobox', { name: 'Role', exact: true }).selectOption(role);
+    await page.locator('input[name=temporaryPassword]').fill('abcdef');
+  }
+});

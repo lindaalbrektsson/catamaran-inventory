@@ -65,12 +65,13 @@ it('returns version conflicts without success redirect', async () => {
   m.rpc.mockResolvedValue({ error: { message: 'TASK_STALE' } });
   expect(await saveTask({}, form())).toEqual({ error: 'taskStale' });
 });
-it('server action refuses manager archive', async () => {
+it('server action preserves database denial for manager archiving another task', async () => {
   m.profile.mockResolvedValue({ role: 'MANAGER' });
   const f = form();
   f.set('version', '1');
   f.set('action', 'ARCHIVE');
   f.set('archived', 'true');
+  m.rpc.mockResolvedValueOnce({ error: { message: 'FORBIDDEN' }, data: null });
   expect(await taskProgress({}, f)).toEqual({ error: 'FORBIDDEN' });
-  expect(m.rpc).not.toHaveBeenCalled();
+  expect(m.rpc).toHaveBeenCalled();
 });

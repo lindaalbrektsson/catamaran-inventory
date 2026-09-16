@@ -10,6 +10,7 @@ export default async function Documents() {
         documents={await getDocuments()}
         locale={locale}
         owner={p.role === 'OWNER'}
+        canUpload={['OWNER', 'MANAGER'].includes(p.role)}
         now={new Date().toISOString()}
       />
     </div>

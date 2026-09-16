@@ -120,6 +120,19 @@ export function AccountForm({
               <input required name="name" maxLength={100} className={c} />
             </label>
             <label className="grid gap-2">
+              {t.username}
+              <input
+                name="username"
+                required
+                maxLength={40}
+                autoCapitalize="none"
+                autoComplete="off"
+                defaultValue={initialUsername}
+                readOnly={Boolean(initialRequest)}
+                className={c}
+              />
+            </label>
+            <label className="grid gap-2">
               {t.staffRole}
               <select name="role" defaultValue="MANAGER" className={c}>
                 {staffRoles.map((r) => (
@@ -129,17 +142,6 @@ export function AccountForm({
                 ))}
               </select>
             </label>
-            <label className="grid gap-2">
-              {t.language}
-              <select name="language" className={c}>
-                <option value="en">{t.en}</option>
-                <option value="es">{t.es}</option>
-              </select>
-            </label>
-            <label className="flex min-h-12 items-center gap-3">
-              <input type="checkbox" name="active" defaultChecked />
-              {t.itemActive}
-            </label>
           </>
         ) : (
           <>
@@ -148,7 +150,7 @@ export function AccountForm({
             <input type="hidden" name="language" value={profile.language} />
           </>
         )}
-        {(kind === 'CREATE' || kind === 'USERNAME') && (
+        {kind === 'USERNAME' && (
           <label className="grid gap-2">
             {t.username}
             <input
@@ -163,7 +165,7 @@ export function AccountForm({
             />
           </label>
         )}
-        {(kind === 'CREATE' || kind === 'CONTACT') && (
+        {kind === 'CONTACT' && (
           <>
             <label className="grid gap-2">
               {t.phoneCountry}

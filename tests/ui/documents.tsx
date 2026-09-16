@@ -1,6 +1,5 @@
 import { DocumentForm } from '@/components/document-form';
 import { DocumentList } from '@/components/document-list';
-import { DesktopOnly } from '@/components/desktop-only';
 import type { Locale } from '@/lib/i18n';
 import type { OperationalDocument } from '@/lib/database.types';
 const id = '70000000-0000-4000-8000-000000000001',
@@ -34,15 +33,16 @@ export function DocumentsFixture({
   owner: boolean;
 }) {
   return view === 'document-form' ? (
-    <DesktopOnly locale={locale}>
+    <>
       <DocumentForm
+        owner={owner}
         locale={locale}
         id={id}
         requestId={crypto.randomUUID()}
         people={[{ id: person, display_name: 'Fixture staff', active: true }]}
         categories={['Operations']}
       />
-    </DesktopOnly>
+    </>
   ) : (
     <DocumentList
       documents={[

@@ -7,6 +7,19 @@ export default defineConfig({
   plugins: [tailwindcss()],
   resolve: {
     alias: [
+      {
+        find: '@/lib/task-update-upload',
+        replacement: path.join(root, 'tests/ui/task-update-upload.ts'),
+      },
+      {
+        find: '@/lib/maintenance-upload',
+        replacement: path.join(root, 'tests/ui/maintenance-actions.ts'),
+      },
+      {
+        find: '@/lib/maintenance-actions',
+        replacement: path.join(root, 'tests/ui/maintenance-actions.ts'),
+      },
+      { find: '@/lib/push-actions', replacement: path.join(root, 'tests/ui/push-actions.ts') },
       { find: '@/lib/delete-user', replacement: path.join(root, 'tests/ui/delete-user.ts') },
       {
         find: '@/lib/global-items-actions',

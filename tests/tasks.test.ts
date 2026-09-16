@@ -141,10 +141,10 @@ it('creates assigned tasks with due dates, reminders and server-owned audit fiel
     ).rows[0],
   ).toMatchObject({ due_date: '2026-10-01', remind_at: '2026-10-01 14:00:00+00' });
 });
-it('manager can create, assign and edit operational tasks', async () => {
+it('manager can create, assign and edit ordinary tasks without reminders', async () => {
   await user(manager);
   const id = crypto.randomUUID(),
-    v = values();
+    v = { ...values(), remind_at: '' };
   await mutate(id, 0, 'SAVE', v);
   await mutate(id, 1, 'SAVE', {
     ...v,
@@ -190,7 +190,7 @@ it('records subtask completion and reversal without losing history', async () =>
 });
 it('assigned crew can update status but cannot create or administer tasks', async () => {
   const id = crypto.randomUUID(),
-    v = values();
+    v = { ...values(), remind_at: '' };
   await mutate(id, 0, 'SAVE', v);
   await db.exec("reset role;update public.profiles set role='CREW' where id='" + manager + "'");
   await user(manager);
@@ -210,9 +210,9 @@ it('unassigned crew cannot read or mutate another task', async () => {
   ).toEqual([]);
   await expect(mutate(id, 1, 'STATUS', { status: 'DONE' })).rejects.toThrow('FORBIDDEN');
 });
-it('manager cannot archive', async () => {
+it('manager cannot archive ordinary shared tasks', async () => {
   const id = crypto.randomUUID();
-  await mutate(id, 0, 'SAVE', values());
+  await mutate(id, 0, 'SAVE', { ...values(), remind_at: '' });
   await user(manager);
   await expect(mutate(id, 1, 'ARCHIVE', { archived: true })).rejects.toThrow('FORBIDDEN');
 });
@@ -275,4 +275,178 @@ it('does not allow subtasks to be removed from history', async () => {
     v = values();
   await mutate(id, 0, 'SAVE', v);
   await expect(mutate(id, 1, 'SAVE', { ...v, subtasks: [] })).rejects.toThrow('IMMUTABLE_HISTORY');
+});
+
+async function rejected(operation: () => Promise<unknown>, message = 'FORBIDDEN') {
+  await db.exec('savepoint forbidden_attempt');
+  await expect(operation()).rejects.toThrow(message);
+  await db.exec('rollback to savepoint forbidden_attempt');
+}
+it('manager creates, edits, completes and deletes own reminder with immutable audit', async () => {
+  await user(manager);
+  const id = crypto.randomUUID(),
+    v = values();
+  await mutate(id, 0, 'SAVE', v);
+  await mutate(id, 1, 'SAVE', { ...v, title: 'Check fuel level' });
+  await mutate(id, 2, 'STATUS', { status: 'DONE' });
+  await mutate(id, 3, 'ARCHIVE', { archived: true });
+  expect(await row(id)).toMatchObject({
+    reminder_private: true,
+    archived: true,
+    created_by: manager,
+    updated_by: manager,
+  });
+  const h = (
+    await db.query<{ actor_id: string; before_data: unknown; after_data: unknown }>(
+      'select * from public.task_history($1)',
+      [id],
+    )
+  ).rows;
+  expect(h).toHaveLength(5);
+  expect(h.every((x) => x.actor_id === manager)).toBe(true);
+  expect(h.some((x) => x.before_data && x.after_data)).toBe(true);
+});
+it('manager cannot assign another user or bypass scope by clearing reminder time', async () => {
+  await user(manager);
+  await rejected(() => mutate(crypto.randomUUID(), 0, 'SAVE', { ...values(), assignee_id: owner }));
+  const id = crypto.randomUUID(),
+    v = values();
+  await mutate(id, 0, 'SAVE', v);
+  await rejected(() => mutate(id, 1, 'SAVE', { ...v, remind_at: '', assignee_id: owner }));
+  await mutate(id, 1, 'SAVE', { ...v, remind_at: '' });
+  expect(await row(id)).toMatchObject({ reminder_private: true, remind_at: null });
+});
+it('manager cannot read another recipient reminder, subtasks, history or delivery status, nor mutate any action', async () => {
+  const id = crypto.randomUUID(),
+    v = { ...values(), assignee_id: owner };
+  await mutate(id, 0, 'SAVE', v);
+  await user(manager);
+  expect(await row(id)).toBeUndefined();
+  expect(
+    (await db.query('select * from public.task_subtasks where task_id=$1', [id])).rows,
+  ).toEqual([]);
+  expect((await db.query('select * from public.task_history($1)', [id])).rows).toEqual([]);
+  expect((await db.query('select public.reminder_delivery_status($1) status', [id])).rows).toEqual([
+    { status: null },
+  ]);
+  for (const [action, payload] of [
+    ['SAVE', v],
+    ['STATUS', { status: 'DONE' }],
+    ['SUBTASK', { subtask_id: v.subtasks[0].id, completed: true }],
+    ['ARCHIVE', { archived: true }],
+  ] as const)
+    await rejected(() => mutate(id, 1, action, payload));
+});
+it('privacy remains after clearing reminder time; managers cannot claim another shared task as a reminder', async () => {
+  const id = crypto.randomUUID(),
+    v = { ...values(), assignee_id: owner };
+  await mutate(id, 0, 'SAVE', v);
+  await mutate(id, 1, 'SAVE', { ...v, remind_at: '' });
+  const shared = crypto.randomUUID();
+  await mutate(shared, 0, 'SAVE', { ...values(), assignee_id: owner, remind_at: '' });
+  await user(manager);
+  expect(await row(id)).toBeUndefined();
+  await rejected(() => mutate(shared, 1, 'SAVE', { ...values(), subtasks: [] }));
+});
+it('owner can assign self, manager and another active owner, but not unsupported/inactive recipients', async () => {
+  const other = crypto.randomUUID();
+  await db.exec('reset role');
+  await db.query('insert into auth.users(id) values($1)', [other]);
+  await db.query(
+    "update public.profiles set role='OWNER',active=true,must_change_password=false where id=$1",
+    [other],
+  );
+  await user(owner);
+  for (const recipient of [owner, manager, other]) {
+    const id = crypto.randomUUID();
+    await mutate(id, 0, 'SAVE', { ...values(), assignee_id: recipient });
+    await mutate(id, 1, 'ARCHIVE', { archived: true });
+    expect(await row(id)).toMatchObject({
+      created_by: owner,
+      assignee_id: recipient,
+      archived: true,
+    });
+  }
+  await db.exec('reset role');
+  await db.query("update public.profiles set role='CREW' where id=$1", [other]);
+  await user(owner);
+  await rejected(
+    () => mutate(crypto.randomUUID(), 0, 'SAVE', { ...values(), assignee_id: other }),
+    'INVALID_INPUT',
+  );
+  await db.exec('reset role');
+  await db.query("update public.profiles set role='OWNER',active=false where id=$1", [other]);
+  await user(owner);
+  await rejected(
+    () => mutate(crypto.randomUUID(), 0, 'SAVE', { ...values(), assignee_id: other }),
+    'INVALID_INPUT',
+  );
+  const directory = (await db.query<{ id: string }>('select * from public.reminder_people()')).rows;
+  expect(directory.map((x) => x.id).sort()).toEqual([owner, manager].sort());
+  await user(manager);
+  expect(
+    (await db.query<{ id: string }>('select * from public.reminder_people()')).rows.map(
+      (x) => x.id,
+    ),
+  ).toEqual([manager]);
+});
+it('owner cannot edit reminders they neither assigned nor received', async () => {
+  await user(manager);
+  const id = crypto.randomUUID();
+  await mutate(id, 0, 'SAVE', values());
+  await user(owner);
+  await rejected(() => mutate(id, 1, 'ARCHIVE', { archived: true }));
+});
+it('manager cannot edit or replay their own old request after Owner reassigns recipient', async () => {
+  const id = crypto.randomUUID(),
+    request = crypto.randomUUID(),
+    v = values();
+  await mutate(id, 0, 'SAVE', v, request);
+  await mutate(id, 1, 'SAVE', { ...v, assignee_id: owner });
+  await user(manager);
+  await rejected(() => mutate(id, 0, 'SAVE', v, request));
+});
+it('one occurrence sends once to each assigned-user device, never creator devices; later time sends again', async () => {
+  const subscribe = async (suffix: string) =>
+    db.query('select public.save_push_subscription($1,$2,$3)', [
+      'https://fcm.googleapis.com/fcm/send/' + suffix,
+      'a'.repeat(87),
+      'b'.repeat(22),
+    ]);
+  await subscribe('owner');
+  await user(manager);
+  await subscribe('manager-phone');
+  await subscribe('manager-tablet');
+  await db.exec('reset role;update private.push_subscriptions set mobile_pwa=true');
+  await user(owner);
+  const id = crypto.randomUUID();
+  const now = (await db.query<{ t: string }>('select now()::text t')).rows[0].t
+    .replace(' ', 'T')
+    .replace(/\+00$/, '+00:00');
+  await mutate(id, 0, 'SAVE', { ...values(), remind_at: now });
+  await db.exec('reset role');
+  const claim = async () =>
+    (
+      await db.query<{ r: { id: string; endpoint: string; title: string } | null }>(
+        'select public.claim_due_push() r',
+      )
+    ).rows[0].r;
+  const first = await claim(),
+    second = await claim();
+  expect(first?.endpoint).toContain('manager-');
+  expect(second?.endpoint).toContain('manager-');
+  expect(first?.endpoint).not.toBe(second?.endpoint);
+  expect(first?.title).toBe('Check engine');
+  expect(await claim()).toBeNull();
+  await db.query("select public.finish_push($1,'SENT',$2)", [first!.id, first!.endpoint]);
+  await user(manager);
+  expect((await db.query('select public.reminder_delivery_status($1) status', [id])).rows).toEqual([
+    { status: { sent: 1, failed: 0, claimed: 2 } },
+  ]);
+  await db.exec('reset role');
+  await db.query("update private.push_subscriptions set created_at=now()-interval '2 minutes'");
+  await db.query("update public.tasks set remind_at=now()-interval '1 minute' where id=$1", [id]);
+  expect(await claim()).toBeTruthy();
+  expect(await claim()).toBeTruthy();
+  expect(await claim()).toBeNull();
 });

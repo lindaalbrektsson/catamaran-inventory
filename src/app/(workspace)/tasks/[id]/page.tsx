@@ -1,4 +1,7 @@
-import { notFound } from 'next/navigation';
+import { TaskUpdateHistory } from '@/components/task-update-history';
+import { TaskUpdateForm } from '@/components/task-update-form';
+import { ReminderSnooze } from '@/components/reminder-snooze';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { taskCatalog } from '@/lib/tasks';
@@ -20,7 +23,11 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
   const { data: task, error } = await db.from('tasks').select('*').eq('id', id).maybeSingle();
   if (error) throw new Error('TASK_LOAD_FAILED');
   if (!task) notFound();
-  const [catalog, subtasks, history] = await Promise.all([
+  if (task.type_code === 'MAINTENANCE') {
+    const r = await db.from('maintenance_rules').select('task_id').eq('task_id', id).maybeSingle();
+    if (r.data) redirect('/tasks/maintenance/' + id);
+  }
+  const [catalog, subtasks, history, delivery] = await Promise.all([
     taskCatalog(),
     collect((a, b) =>
       db
@@ -32,11 +39,17 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
         .range(a, b),
     ),
     db.rpc('task_history', { p_id: id }),
+    db.rpc('reminder_delivery_status', { p_id: id }),
   ]);
+  if (delivery.error) throw new Error('REMINDER_STATUS_LOAD_FAILED');
   if (history.error) throw new Error('TASK_HISTORY_LOAD_FAILED');
   const name = (id: string | null) =>
     catalog.people.find((x) => x.id === id)?.display_name ?? t.taskUnassigned;
-  const canManage = ['OWNER', 'MANAGER'].includes(p.role),
+  const canManage =
+      ['OWNER', 'MANAGER'].includes(p.role) &&
+      (!task.reminder_private ||
+        (task.assignee_id ?? task.created_by) === p.id ||
+        (p.role === 'OWNER' && task.created_by === p.id)),
     type = catalog.types.find((x) => x.code === task.type_code);
   const productLocations =
     task.product_id && canManage
@@ -95,6 +108,16 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
     <div className="page max-w-5xl">
       <PageHeader title={task.title} locale={locale} back="/tasks" />
       <div className="mb-5 grid gap-2">
+        {task.remind_at && (
+          <p className="text-sm">
+            {t.pushTitle}:{' '}
+            {Number(obj(delivery.data).sent) > 0
+              ? t.reminderSent
+              : Number(obj(delivery.data).claimed) > 0
+                ? t.reminderDeliveryAttempted
+                : t.reminderNotSent}
+          </p>
+        )}
         <p>
           {t[`taskStatus${task.status}`]} ·{' '}
           {type ? (locale === 'es' ? type.name_es : type.name_en) : task.type_code}
@@ -169,7 +192,7 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
           {t.taskRelatedTask}
         </Link>
       )}
-      {!task.archived && (
+      {!task.archived && (!task.reminder_private || canManage) && (
         <TaskProgress
           key={`status-${task.version}`}
           task={task}
@@ -177,13 +200,35 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
           requestId={crypto.randomUUID()}
         />
       )}
+      {!task.archived &&
+        task.status !== 'DONE' &&
+        task.remind_at &&
+        (task.assignee_id ?? task.created_by) === p.id && (
+          <ReminderSnooze
+            key={`snooze-${task.version}`}
+            id={id}
+            actorId={p.id}
+            version={task.version}
+            locale={locale}
+          />
+        )}
+      <section className="my-5 min-w-0">
+        <h2 className="mb-3 text-xl font-semibold">{t.updatesTitle}</h2>
+        <TaskUpdateHistory task={id} locale={locale} people={catalog.people} />
+        {canManage && !task.archived && task.status !== 'DONE' && (
+          <details>
+            <summary className="min-h-12 cursor-pointer py-3">{t.maintenanceUpdate}</summary>
+            <TaskUpdateForm task={id} locale={locale} />
+          </details>
+        )}
+      </section>
       <h2 className="my-4 text-xl font-semibold">
         {t.taskSubtasks} ({subtasks.filter((s) => s.completed).length}/{subtasks.length})
       </h2>
       <div className="grid gap-3">
         {subtasks.map((s) => (
           <div key={s.id}>
-            {task.archived ? (
+            {task.archived || (task.reminder_private && !canManage) ? (
               <p>
                 {s.completed ? '✓ ' : ''}
                 {s.title}
@@ -213,13 +258,18 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
             id={task.id}
             requestId={crypto.randomUUID()}
             actorId={p.id}
+            actorRole={p.role}
           />
         </details>
       )}
-      {p.role === 'OWNER' && (
+      {canManage && (p.role === 'OWNER' || task.reminder_private) && (
         <details className="my-5 rounded-xl border p-4">
           <summary className="min-h-12 cursor-pointer py-3">
-            {task.archived ? t.taskRestore : t.taskArchive}
+            {task.archived
+              ? t.taskRestore
+              : task.reminder_private
+                ? t.reminderDelete
+                : t.taskArchive}
           </summary>
           <p className="mb-3 text-sm">{t.taskArchiveHint}</p>
           <TaskProgress

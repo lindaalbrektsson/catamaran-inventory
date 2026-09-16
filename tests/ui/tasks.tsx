@@ -13,6 +13,7 @@ const task: Task = {
   assignee_id: actor,
   due_date: '2026-09-30',
   remind_at: '2026-09-30T16:00:00Z',
+  reminder_private: true,
   archived: false,
   version: 1,
   created_by: actor,
@@ -38,6 +39,10 @@ const sub: TaskSubtask = {
   updated_by: actor,
 };
 const catalog = {
+  reminderPeople: [
+    { id: actor, display_name: 'Fixture operator', active: true },
+    { id: '40000000-0000-4000-8000-000000000002', display_name: 'Fixture manager', active: true },
+  ],
   people: [{ id: actor, display_name: 'Fixture operator', active: true }],
   types: [
     { code: 'TASK', name_en: 'Task', name_es: 'Tarea', active: true },
@@ -65,6 +70,7 @@ export function TasksFixture({ locale, view }: { locale: Locale; view: string })
         locale={locale}
         catalog={catalog}
         actorId={actor}
+        actorRole={new URLSearchParams(location.search).has('manager') ? 'MANAGER' : 'OWNER'}
         id={task.id}
         requestId={crypto.randomUUID()}
       />

@@ -87,3 +87,31 @@ test('Spanish home tasks have clear indicators and quick add', async ({ page }) 
   await expect(page.getByText('Vencida', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test('Manager reminder forces self assignment; Owner can choose active staff', async ({ page }) => {
+  await page.goto(url + 'task-form&manager');
+  await page.getByLabel('Title', { exact: true }).fill('Own reminder');
+  await page.getByText('Description and reminder', { exact: true }).click();
+  await page.getByLabel('Reminder (Belize time)', { exact: true }).fill('2026-10-01T08:30');
+  await expect(page.locator('select[name=assignee_id]')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Save task' }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  expect(
+    await page.evaluate(() => JSON.parse(sessionStorage.getItem('task-fixture')!).assignee_id),
+  ).toBe('40000000-0000-4000-8000-000000000001');
+  await page.goto(url + 'task-form');
+  await page.getByText('Description and reminder', { exact: true }).click();
+  await page.getByLabel('Reminder (Belize time)', { exact: true }).fill('2026-10-01T08:30');
+  await expect(page.getByRole('combobox', { name: 'Assigned to' })).toHaveValue(
+    '40000000-0000-4000-8000-000000000001',
+  );
+  await page
+    .getByRole('combobox', { name: 'Assigned to' })
+    .selectOption('40000000-0000-4000-8000-000000000002');
+  await page.getByLabel('Title', { exact: true }).fill('Assigned reminder');
+  await page.getByRole('button', { name: 'Save task' }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  expect(
+    await page.evaluate(() => JSON.parse(sessionStorage.getItem('task-fixture')!).assignee_id),
+  ).toBe('40000000-0000-4000-8000-000000000002');
+});

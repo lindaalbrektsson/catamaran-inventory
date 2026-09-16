@@ -41,7 +41,7 @@ function form(kind = 'CREATE') {
 }
 beforeEach(() => {
   vi.resetAllMocks();
-  m.profile.mockResolvedValue({ role: 'OWNER', account_admin: true });
+  m.profile.mockResolvedValue({ role: 'OWNER', account_admin: true, language: 'es' });
   m.configured.mockReturnValue(true);
   process.env.AUTH_INTERNAL_EMAIL_DOMAIN = 'auth.example.test';
   m.rpc.mockResolvedValue({
@@ -77,7 +77,7 @@ it('creates a username staff account with an opaque email with the manually ente
   });
   expect(m.finish).toHaveBeenCalledWith('finish_username_creation', {
     p_request: f.get('request'),
-    p_contact: '+5011234567',
+    p_contact: null,
     p_target: target,
     p_values: { name: 'Isolated staff', role: 'MANAGER', language: 'es', active: true },
   });
@@ -181,3 +181,26 @@ it('releases failed setup and retries the same linked Auth UUID', async () => {
   expect(m.create).toHaveBeenCalledTimes(1);
   expect(m.update).toHaveBeenCalledWith(target, { password: 'Manually-Chosen-Only' });
 });
+
+it.each(['OWNER', 'MANAGER'])(
+  'creates %s using only four visible fields, ignoring obsolete phone inputs',
+  async (role) => {
+    const f = form();
+    f.set('role', role);
+    f.delete('language');
+    f.delete('active');
+    f.delete('verified');
+    f.set('phone', 'this is not a phone');
+    f.set('country', 'invalid');
+    expect((await accountChange(f)).success).toBe(true);
+    expect(m.create.mock.calls[0][0]).not.toHaveProperty('phone');
+    expect(m.create.mock.calls[0][0]).not.toHaveProperty('phone_confirm');
+    expect(m.finish).toHaveBeenCalledWith(
+      'finish_username_creation',
+      expect.objectContaining({
+        p_contact: null,
+        p_values: expect.objectContaining({ role, active: true, language: 'es' }),
+      }),
+    );
+  },
+);

@@ -22,10 +22,13 @@ export async function accountChange(form: FormData): Promise<AccountResult> {
       role: z.enum(roles),
       language: z.enum(['en', 'es']),
     })
-    .safeParse(Object.fromEntries(form));
+    .safeParse({
+      ...Object.fromEntries(form),
+      ...(form.get('kind') === 'CREATE' ? { language: actor.language ?? 'en' } : {}),
+    });
   if (!parsed.success) return { error: 'INVALID_INPUT' };
   const v = parsed.data;
-  const rawPhone = String(form.get('phone') ?? '').trim();
+  const rawPhone = v.kind === 'CONTACT' ? String(form.get('phone') ?? '').trim() : '';
   const contact = rawPhone ? phoneIdentity(String(form.get('country')), rawPhone) : null;
   const username = usernameSchema.safeParse(form.get('username'));
   if (
@@ -101,12 +104,12 @@ export async function accountChange(form: FormData): Promise<AccountResult> {
         name: v.name,
         role: v.role,
         language: v.language,
-        active: form.get('active') === 'on',
+        active: v.kind === 'CREATE' ? true : form.get('active') === 'on',
       },
     };
     const finished =
       v.kind === 'CREATE'
-        ? await admin.rpc('finish_username_creation', { ...args, p_contact: contact })
+        ? await admin.rpc('finish_username_creation', { ...args, p_contact: null })
         : await admin.rpc('finish_account_change', args);
     if (finished.error) return { error: 'accountChangeFailed' };
     revalidatePath('/staff');

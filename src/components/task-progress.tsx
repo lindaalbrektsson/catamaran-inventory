@@ -24,6 +24,15 @@ export function TaskProgress({
   return (
     <form
       action={action}
+      onSubmit={(event) => {
+        if (
+          archive &&
+          task.reminder_private &&
+          !task.archived &&
+          !window.confirm(t.reminderDeleteConfirm)
+        )
+          event.preventDefault();
+      }}
       className="grid gap-3 rounded-xl border p-4"
       onChange={() => setRequest(crypto.randomUUID())}
     >
@@ -39,7 +48,11 @@ export function TaskProgress({
         <>
           <input type="hidden" name="archived" value={String(!task.archived)} />
           <button disabled={pending} className="min-h-12 rounded-xl border p-3">
-            {task.archived ? t.taskRestore : t.taskArchive}
+            {task.archived
+              ? t.taskRestore
+              : task.reminder_private
+                ? t.reminderDelete
+                : t.taskArchive}
           </button>
         </>
       ) : subtask ? (

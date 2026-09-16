@@ -60,7 +60,8 @@ export async function taskProgress(_state: ActionState, form: FormData): Promise
     .safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: 'INVALID_INPUT' };
   const v = parsed.data;
-  if (v.action === 'ARCHIVE' && actor.role !== 'OWNER') return { error: 'FORBIDDEN' };
+  if (v.action === 'ARCHIVE' && !['OWNER', 'MANAGER'].includes(actor.role))
+    return { error: 'FORBIDDEN' };
   let values: Json;
   if (v.action === 'STATUS') values = { status: String(form.get('status')) };
   else if (v.action === 'SUBTASK')
@@ -77,6 +78,31 @@ export async function taskProgress(_state: ActionState, form: FormData): Promise
     p_version: v.version,
     p_action: v.action,
     p_values: values,
+  });
+  if (error) return taskError(error.message);
+  refreshTask(v.id);
+  return {};
+}
+
+export async function snoozeReminder(_state: ActionState, form: FormData): Promise<ActionState> {
+  await requireProfile();
+  const parsed = z
+    .object({
+      id: z.uuid(),
+      version: z.coerce.number().int().positive(),
+      minutes: z.coerce.number().refine((n) => [30, 60, 120, 240, 1440].includes(n)),
+      time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { error: 'INVALID_INPUT' };
+  const v = parsed.data;
+  const { error } = await (
+    await supabase()
+  ).rpc('snooze_reminder', {
+    p_id: v.id,
+    p_version: v.version,
+    p_minutes: v.minutes,
+    p_time: v.time,
   });
   if (error) return taskError(error.message);
   refreshTask(v.id);

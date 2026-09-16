@@ -17,6 +17,7 @@ export default async function NewTask() {
         id={crypto.randomUUID()}
         requestId={crypto.randomUUID()}
         actorId={p.id}
+        actorRole={p.role}
       />
     </div>
   );

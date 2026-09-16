@@ -185,7 +185,7 @@ it('archive removes from active favorites, retains history and restores', async 
   ]);
   expect((await db.query('select * from public.document_history($1)', [d.id])).rows.length).toBe(6);
 });
-it('manager cannot upload or edit access', async () => {
+it('manager cannot edit existing access', async () => {
   const d = await create();
   await user(manager);
   await expect(save(d.id, 2, values({ access_level: 'OWNERS' }))).rejects.toThrow('FORBIDDEN');
@@ -271,4 +271,93 @@ it('file reservation is atomic and cannot publish missing bytes', async () => {
   await expect(db.query('select public.complete_document_file($1)', [d])).rejects.toThrow(
     'DOCUMENT_INCOMPLETE',
   );
+});
+
+it('manager uploads a private document, retries safely, completes and cannot elevate access', async () => {
+  await create({ access_level: 'OWNERS' });
+  await user(manager);
+  const id = crypto.randomUUID(),
+    file = crypto.randomUUID(),
+    request = crypto.randomUUID();
+  const v = values({ favorite: false, access_level: 'MANAGERS' }),
+    f = { id: file, content_type: 'image/jpeg', byte_size: 100, sha256: 'a'.repeat(64) };
+  await save(id, 0, v, f, request);
+  await save(id, 0, v, f, request);
+  await operation('object.upload');
+  await db.query("insert into storage.objects(bucket_id,name,metadata) values('documents',$1,$2)", [
+    id + '/' + file,
+    JSON.stringify({ size: 100, mimetype: 'image/jpeg' }),
+  ]);
+  await operation('object.get_authenticated');
+  expect((await db.query('select id from public.documents')).rows).toEqual([{ id }]);
+  await db.query('select public.complete_document_file($1)', [file]);
+  const r = await db.query<{ uploaded_by: string; uploaded_at: string }>(
+    'select uploaded_by,uploaded_at from public.documents where id=$1',
+    [id],
+  );
+  expect(r.rows[0].uploaded_by).toBe(manager);
+  expect(r.rows[0].uploaded_at).toBeTruthy();
+  await expect(save(id, 2, values({ access_level: 'STAFF' }))).rejects.toThrow('FORBIDDEN');
+});
+it('manager cannot publish new documents with Owner permissions', async () => {
+  await user(manager);
+  await expect(
+    save(crypto.randomUUID(), 0, values({ access_level: 'STAFF' }), {
+      id: crypto.randomUUID(),
+      content_type: 'image/jpeg',
+      byte_size: 10,
+      sha256: 'a'.repeat(64),
+    }),
+  ).rejects.toThrow('FORBIDDEN');
+});
+const endpoint = 'https://fcm.googleapis.com/fcm/send/fixture-endpoint';
+async function subscribe() {
+  await db.query('select public.save_push_subscription($1,$2,$3)', [
+    endpoint,
+    'a'.repeat(87),
+    'a'.repeat(22),
+  ]);
+}
+it('push subscriptions are private, self-only and cannot be stolen', async () => {
+  await subscribe();
+  expect(
+    (await db.query('select public.has_push_subscription($1) enabled', [endpoint])).rows,
+  ).toEqual([{ enabled: true }]);
+  await user(manager);
+  await db.query('select public.remove_push_subscription($1)', [endpoint]);
+  expect(
+    (await db.query('select public.has_push_subscription($1) enabled', [endpoint])).rows,
+  ).toEqual([{ enabled: false }]);
+  await expect(subscribe()).rejects.toThrow('SUBSCRIPTION_CONFLICT');
+});
+it('anonymous/operational clients cannot dispatch reminders or read private subscriptions', async () => {
+  await expect(db.query('select public.claim_due_push()')).rejects.toThrow();
+});
+it('due task delivery claims are unique per device occurrence and exclude completed tasks', async () => {
+  await subscribe();
+  await db.exec('reset role;update private.push_subscriptions set mobile_pwa=true');
+  const task = crypto.randomUUID();
+  await db.query(
+    "insert into public.tasks(id,title,type_code,assignee_id,created_by,updated_by,remind_at) values($1,'Private title','TASK',$2,$2,$2,now())",
+    [task, owner],
+  );
+  const a = await db.query<{ r: { id: string; task: string } }>('select public.claim_due_push() r');
+  expect(a.rows[0].r.task).toBe(task);
+  expect(JSON.stringify(a.rows)).toContain('Private title');
+  expect((await db.query('select public.claim_due_push() r')).rows).toEqual([{ r: null }]);
+  await db.query("select public.finish_push($1,'EXPIRED',$2)", [a.rows[0].r.id, endpoint]);
+  expect((await db.query('select * from private.push_subscriptions')).rows).toEqual([]);
+});
+it('unassigned reminders go to creator, completed and inactive users get no push', async () => {
+  await subscribe();
+  await db.exec('reset role;update private.push_subscriptions set mobile_pwa=true');
+  const task = crypto.randomUUID();
+  await db.query(
+    "insert into public.tasks(id,title,type_code,created_by,updated_by,remind_at,status) values($1,'Fixture','TASK',$2,$2,now(),'DONE')",
+    [task, owner],
+  );
+  expect((await db.query('select public.claim_due_push() r')).rows).toEqual([{ r: null }]);
+  await db.query("update public.tasks set status='IN_PROGRESS' where id=$1", [task]);
+  await db.query('update public.profiles set active=false where id=$1', [owner]);
+  expect((await db.query('select public.claim_due_push() r')).rows).toEqual([{ r: null }]);
 });

@@ -34,7 +34,7 @@ beforeEach(() => {
   m.profile.mockResolvedValue({ role: 'OWNER', id: '40000000-0000-4000-8000-000000000001' });
   m.rpc.mockResolvedValue({ data: { id: 'saved' }, error: null });
 });
-it.each(['MANAGER', 'CAPTAIN', 'CREW'])('%s cannot administer documents', async (role) => {
+it.each(['CAPTAIN', 'CREW'])('%s cannot administer documents', async (role) => {
   m.profile.mockResolvedValue({ role });
   expect(await prepareDocument(values(), null)).toEqual({ error: 'FORBIDDEN' });
   expect(await finishDocument(crypto.randomUUID())).toEqual({ error: 'FORBIDDEN' });
@@ -70,4 +70,14 @@ it('completion rejects mismatched stored bytes', async () => {
   m.download.mockResolvedValue({ data: new Blob(['wrong']), error: null });
   expect(await finishDocument(crypto.randomUUID())).toEqual({ error: 'docInvalidFile' });
   expect(m.rpc).not.toHaveBeenCalled();
+});
+
+it('manager can create but cannot administer document metadata', async () => {
+  m.profile.mockResolvedValue({ role: 'MANAGER' });
+  await prepareDocument(
+    { ...values(), favorite: false, access_level: 'MANAGERS' },
+    { id: crypto.randomUUID(), content_type: 'image/jpeg', byte_size: 20, sha256: 'a'.repeat(64) },
+  );
+  expect(m.rpc).toHaveBeenCalledWith('save_document', expect.anything());
+  expect(await prepareDocument(values(), null)).toEqual({ error: 'FORBIDDEN' });
 });

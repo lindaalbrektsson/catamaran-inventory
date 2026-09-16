@@ -1,7 +1,10 @@
+import { VoiceFixture } from './voice';
+import { NotificationSettings } from '@/components/notification-settings';
 import { DeleteUserButton } from '@/components/delete-user-button';
 import { GlobalItems, GlobalItemEditor } from '@/components/global-items';
 import { ItemChangeHistory } from '@/components/item-change-history';
 import { MovementHistory } from '@/components/movement-history';
+import { MaintenanceFixture } from './maintenance';
 import { TasksFixture } from './tasks';
 import { DocumentsFixture } from './documents';
 import { AccountForm } from '@/components/account-form';
@@ -124,6 +127,10 @@ createRoot(document.getElementById('root')!).render(
             view={params.get('view')!}
             owner={!params.has('staff')}
           />
+        ) : params.get('view')?.startsWith('voice-') ? (
+          <VoiceFixture locale={locale} />
+        ) : params.get('view')?.startsWith('maintenance-') ? (
+          <MaintenanceFixture locale={locale} view={params.get('view')!} />
         ) : params.get('view')?.startsWith('task-') ? (
           <TasksFixture locale={locale} view={params.get('view')!} />
         ) : params.get('view') === 'global-items' ? (
@@ -144,6 +151,11 @@ createRoot(document.getElementById('root')!).render(
               locations,
               products: items.map((i) => i.product),
             }}
+          />
+        ) : params.get('view') === 'notifications' ? (
+          <NotificationSettings
+            locale={locale}
+            publicKey={params.has('unconfigured') ? '' : 'B'.repeat(87)}
           />
         ) : params.get('view') === 'delete-user' ? (
           <DeleteUserButton target="40000000-0000-4000-8000-000000000002" locale={locale} />

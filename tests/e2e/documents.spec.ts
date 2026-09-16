@@ -37,8 +37,7 @@ test('document list filters active, archived, category and search', async ({ pag
   await page.getByRole('searchbox', { name: 'Search documents' }).fill('no match');
   await expect(page.getByText('No matching documents.')).toBeVisible();
 });
-test('owner upload preserves title, access, favorite and file on retry', async ({ page }, info) => {
-  test.skip(info.project.name === 'mobile', 'Owner administration is desktop-only');
+test('owner upload preserves title, access, favorite and file on retry', async ({ page }) => {
   await page.goto(url + 'document-form');
   await page.getByLabel('Title', { exact: true }).fill('Fixture document');
   await page
@@ -47,13 +46,11 @@ test('owner upload preserves title, access, favorite and file on retry', async (
   await page.getByRole('checkbox', { name: 'Fixture staff' }).check();
   await page.getByRole('checkbox', { name: 'Favorite', exact: true }).check();
   await page.getByLabel('Expiry date (optional)').fill('2026-10-01');
-  await page
-    .locator('input[type=file]')
-    .setInputFiles({
-      name: 'fixture.pdf',
-      mimeType: 'application/pdf',
-      buffer: Buffer.from('%PDF-1.4\nfixture-only\n%%EOF'),
-    });
+  await page.locator('input[name=file]').setInputFiles({
+    name: 'fixture.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.4\nfixture-only\n%%EOF'),
+  });
   await page.getByRole('button', { name: 'Save document' }).click();
   await expect(page.getByRole('alert')).toContainText('file upload is incomplete');
   const data = await page.evaluate(() => JSON.parse(sessionStorage.getItem('document-fixture')!));

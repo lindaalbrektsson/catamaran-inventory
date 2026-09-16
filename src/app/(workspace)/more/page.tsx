@@ -1,5 +1,5 @@
+import { MobilePwaOnly } from '@/components/mobile-pwa-only';
 import Link from 'next/link';
-import { InstallControls } from '@/components/pwa-support';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
 import { signOut } from '@/lib/actions';
@@ -47,6 +47,14 @@ export default async function More() {
       <Link href="/expenses" className="mt-5 flex min-h-14 items-center rounded-xl border p-4">
         {t.receipts}
       </Link>
+      <MobilePwaOnly>
+        <Link
+          href="/notifications"
+          className="mt-5 flex min-h-14 items-center rounded-xl border p-4"
+        >
+          {t.pushTitle}
+        </Link>
+      </MobilePwaOnly>
       <Link href="/tasks" className="mt-5 flex min-h-14 items-center rounded-xl border p-4">
         {t.tasksTitle}
       </Link>
@@ -61,7 +69,6 @@ export default async function More() {
           {t.staffManagement}
         </Link>
       )}
-      <InstallControls locale={locale} keepInstructions />
     </div>
   );
 }

@@ -12,6 +12,7 @@ export function TaskForm({
   id,
   requestId,
   actorId,
+  actorRole,
   initial,
   subtasks = [],
 }: {
@@ -20,6 +21,7 @@ export function TaskForm({
   id: string;
   requestId: string;
   actorId: string;
+  actorRole: string;
   initial?: Task;
   subtasks?: TaskSubtask[];
 }) {
@@ -29,6 +31,8 @@ export function TaskForm({
     [rows, setRows] = useState(subtasks.map((s) => ({ id: s.id, title: s.title }))),
     [reminder, setReminder] = useState(reminderToInput(initial?.remind_at ?? null)),
     ref = usePreservedForm();
+  const scopedReminder = Boolean(reminder || initial?.reminder_private);
+  const selfOnly = scopedReminder && actorRole !== 'OWNER';
   const control = 'min-h-12 w-full rounded-xl border bg-background p-3';
   function relation(
     name: 'product_id' | 'need_id' | 'receipt_id' | 'location_id' | 'related_task_id',
@@ -98,24 +102,30 @@ export function TaskForm({
                 ))}
             </select>
           </label>
-          <label className="grid gap-2">
-            {t.taskAssignee}
-            <select
-              name="assignee_id"
-              defaultValue={initial ? (initial.assignee_id ?? '') : actorId}
-              className={control}
-            >
-              <option value="">{t.taskUnassigned}</option>
-              {catalog.people
-                .filter((p) => p.active || p.id === initial?.assignee_id)
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.display_name}
-                    {!p.active ? ` (${t.taskInactive})` : ''}
-                  </option>
-                ))}
-            </select>
-          </label>
+          {selfOnly ? (
+            <input type="hidden" name="assignee_id" value={actorId} />
+          ) : (
+            <label className="grid gap-2">
+              {scopedReminder ? t.reminderAssignedTo : t.taskAssignee}
+              <select
+                key={String(scopedReminder)}
+                name="assignee_id"
+                defaultValue={initial?.assignee_id ?? actorId}
+                className={control}
+                required={scopedReminder}
+              >
+                {!scopedReminder && <option value="">{t.taskUnassigned}</option>}
+                {(scopedReminder ? catalog.reminderPeople : catalog.people)
+                  .filter((p) => p.active || (!scopedReminder && p.id === initial?.assignee_id))
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.display_name}
+                      {!p.active ? ` (${t.taskInactive})` : ''}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          )}
         </div>
         <label className="grid gap-2">
           {t.taskDueDate}

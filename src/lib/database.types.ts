@@ -32,6 +32,44 @@ export type DocumentFile = {
   created_at: string;
   uploaded_at: string | null;
 };
+export type MaintenanceRule = {
+  task_id: string;
+  recurrence: 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'CUSTOM';
+  custom_days: number | null;
+  due_time: string | null;
+  weekday: number | null;
+  monthday: number | null;
+  next_due: string | null;
+  last_completed: string | null;
+};
+export type MaintenanceOccurrence = {
+  id: string;
+  task_id: string;
+  plan_date: string;
+  status: 'PENDING' | 'IN_PROGRESS' | 'READY' | 'DONE';
+  assignee_id: string | null;
+  manual_assignee: string;
+  remaining: string;
+  version: number;
+  created_by: string;
+  created_at: string;
+  updated_by: string;
+  updated_at: string;
+  completed_by: string | null;
+  completed_at: string | null;
+};
+export type MaintenanceUpdate = {
+  id: string;
+  occurrence_id: string;
+  body: string;
+  photo_path: string | null;
+  content_type: string | null;
+  byte_size: number | null;
+  sha256: string | null;
+  photo_ready: boolean;
+  created_by: string;
+  created_at: string;
+};
 export type TaskStatus = 'NEED_REVIEW' | 'IN_PROGRESS' | 'DONE';
 export type Task = {
   id: string;
@@ -42,6 +80,7 @@ export type Task = {
   assignee_id: string | null;
   due_date: string | null;
   remind_at: string | null;
+  reminder_private: boolean;
   product_id: string | null;
   need_id: string | null;
   receipt_id: string | null;
@@ -182,6 +221,10 @@ type Table<Row, Insert = Partial<Row>> = {
 export type Database = {
   public: {
     Tables: {
+      maintenance_rules: Table<MaintenanceRule>;
+      maintenance_occurrences: Table<MaintenanceOccurrence>;
+      maintenance_updates: Table<MaintenanceUpdate>;
+      task_updates: Table<TaskUpdate>;
       documents: Table<OperationalDocument>;
       document_files: Table<DocumentFile>;
       tasks: Table<Task>;
@@ -230,6 +273,19 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      save_push_subscription: {
+        Args: { p_endpoint: string; p_p256dh: string; p_auth: string };
+        Returns: undefined;
+      };
+      remove_push_subscription: { Args: { p_endpoint: string }; Returns: undefined };
+      has_push_subscription: { Args: { p_endpoint: string }; Returns: boolean };
+      claim_push_test: { Args: { p_endpoint: string }; Returns: Json };
+      claim_due_push: { Args: Record<string, never>; Returns: Json };
+      finish_push: {
+        Args: { p_id: string; p_outcome: string; p_endpoint: string };
+        Returns: undefined;
+      };
+
       manage_catalog_item: {
         Args: {
           p_request: string;
@@ -269,6 +325,74 @@ export type Database = {
         };
         Returns: string;
       };
+      create_maintenance: {
+        Args: {
+          p_id: string;
+          p_title: string;
+          p_recurrence: string;
+          p_days: number | null;
+          p_due: string | null;
+          p_time: string | null;
+          p_weekday: number | null;
+          p_monthday: number | null;
+        };
+        Returns: string;
+      };
+      plan_maintenance: { Args: { p_tasks: string[] }; Returns: undefined };
+      update_maintenance: {
+        Args: {
+          p_id: string;
+          p_version: number;
+          p_status: string;
+          p_assignee: string | null;
+          p_manual: string;
+          p_remaining: string;
+        };
+        Returns: undefined;
+      };
+      add_maintenance_update: {
+        Args: { p_id: string; p_occurrence: string; p_body: string; p_photo: Json };
+        Returns: undefined;
+      };
+      prepare_task_update: {
+        Args: {
+          p_id: string;
+          p_task: string | null;
+          p_occurrence: string | null;
+          p_body: string;
+          p_photo: Json;
+          p_voice: Json;
+        };
+        Returns: undefined;
+      };
+      finish_task_update: {
+        Args: { p_id: string; p_actor: string; p_duration: number | null };
+        Returns: undefined;
+      };
+      finish_maintenance_photo: { Args: { p_id: string; p_actor: string }; Returns: undefined };
+      maintenance_history: {
+        Args: { p_task: string };
+        Returns: Database['public']['Tables']['audit_events']['Row'][];
+      };
+      maintenance_people: {
+        Args: Record<string, never>;
+        Returns: { id: string; display_name: string }[];
+      };
+      claim_due_maintenance_push: { Args: Record<string, never>; Returns: Json };
+      finish_maintenance_push: {
+        Args: { p_id: string; p_outcome: string; p_endpoint: string };
+        Returns: undefined;
+      };
+      confirm_mobile_push: { Args: { p_endpoint: string; p_user: string }; Returns: undefined };
+      snooze_reminder: {
+        Args: { p_id: string; p_version: number; p_minutes: number; p_time: string };
+        Returns: undefined;
+      };
+      reminder_people: {
+        Args: Record<string, never>;
+        Returns: { id: string; display_name: string; active: boolean }[];
+      };
+      reminder_delivery_status: { Args: { p_id: string }; Returns: Json };
       task_people: {
         Args: Record<string, never>;
         Returns: { id: string; display_name: string; active: boolean }[];
@@ -437,4 +561,22 @@ export type Database = {
     };
     CompositeTypes: Record<string, never>;
   };
+};
+
+export type UpdateFile = {
+  content_type: string;
+  byte_size: number;
+  sha256: string;
+  duration?: number;
+};
+export type TaskUpdate = {
+  id: string;
+  task_id: string;
+  occurrence_id: string | null;
+  body: string;
+  photo: Json;
+  voice: Json;
+  ready: boolean;
+  created_by: string;
+  created_at: string;
 };

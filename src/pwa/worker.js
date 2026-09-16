@@ -92,3 +92,44 @@ self.addEventListener('fetch', (event) => {
     fetch(request, url.pathname.startsWith('/_next/static/') ? {} : { cache: 'no-store' }),
   );
 });
+
+// Push payloads contain generic translated copy and an app-local destination.
+self.addEventListener('push', (event) => {
+  event.waitUntil(
+    (async () => {
+      let data;
+      try {
+        data = event.data?.json();
+      } catch {
+        return;
+      }
+      if (!data || typeof data.title !== 'string' || typeof data.body !== 'string') return;
+      const path =
+        /^\/tasks\/[0-9a-f-]{36}$/.test(data.url) ||
+        data.url === '/notifications' ||
+        data.url === '/tasks/maintenance?tab=recurring'
+          ? data.url
+          : '/';
+      await self.registration.showNotification(data.title.slice(0, 100), {
+        body: data.body.slice(0, 200),
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: typeof data.tag === 'string' ? data.tag.slice(0, 100) : 'reminder',
+        data: { url: path },
+        renotify: false,
+      });
+    })(),
+  );
+});
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const path = event.notification.data?.url;
+  const safe =
+    /^\/tasks\/[0-9a-f-]{36}$/.test(path) ||
+    path === '/notifications' ||
+    path === '/tasks/maintenance?tab=recurring'
+      ? path
+      : '/';
+  // Open a new app page: never navigate an existing unsaved form away.
+  event.waitUntil(self.clients.openWindow(new URL(safe, self.location.origin).href));
+});

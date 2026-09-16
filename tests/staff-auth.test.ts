@@ -470,33 +470,39 @@ it('reserved username blocks duplicate provisioning, including after a failed at
     ).rows[0].v.target,
   ).toBeNull();
 });
-it('new username account finalization keeps first-login gate and cleanup removes reservation', async () => {
-  const request = '60000000-0000-4000-8000-000000000001',
-    fresh = '40000000-0000-4000-8000-000000000003';
-  await db.query("select public.begin_username_creation($1,'fresh')", [request]);
-  await db.exec('reset role');
-  await db.query(
-    "insert into auth.users(id,email,raw_app_meta_data) values($1,'opaque@example.test',jsonb_build_object('account_operation',$2::text))",
-    [fresh, request],
-  );
-  await db.exec('set constraints all immediate');
-  await db.query('select public.finish_username_creation($1,$2,$3,null)', [
-    request,
-    fresh,
-    { name: 'New staff', role: 'MANAGER', language: 'en', active: true },
-  ]);
-  const profile = (
-    await db.query<{ username: string; must_change_password: boolean }>(
-      'select username,must_change_password from public.profiles where id=$1',
-      [fresh],
-    )
-  ).rows[0];
-  expect(profile).toEqual({ username: 'fresh', must_change_password: true });
-  await db.query('delete from auth.users where id=$1', [fresh]);
-  expect(
-    (await db.query("select * from private.username_reservations where username='fresh'")).rows,
-  ).toHaveLength(0);
-});
+it.each(['OWNER', 'MANAGER'])(
+  'phone-free %s finalization keeps first-login gate and cleanup removes reservation',
+  async (role) => {
+    const request = '60000000-0000-4000-8000-000000000001',
+      fresh = '40000000-0000-4000-8000-000000000003';
+    await db.query("select public.begin_username_creation($1,'fresh')", [request]);
+    await db.exec('reset role');
+    await db.query(
+      "insert into auth.users(id,email,raw_app_meta_data) values($1,'opaque@example.test',jsonb_build_object('account_operation',$2::text))",
+      [fresh, request],
+    );
+    await db.exec('set constraints all immediate');
+    await db.query('select public.finish_username_creation($1,$2,$3,null)', [
+      request,
+      fresh,
+      { name: 'New staff', role, language: 'en', active: true },
+    ]);
+    const profile = (
+      await db.query<{ username: string; must_change_password: boolean }>(
+        'select username,must_change_password from public.profiles where id=$1',
+        [fresh],
+      )
+    ).rows[0];
+    expect(profile).toEqual({ username: 'fresh', must_change_password: true });
+    expect((await db.query('select phone from auth.users where id=$1', [fresh])).rows).toEqual([
+      { phone: null },
+    ]);
+    await db.query('delete from auth.users where id=$1', [fresh]);
+    expect(
+      (await db.query("select * from private.username_reservations where username='fresh'")).rows,
+    ).toHaveLength(0);
+  },
+);
 it('historical usernames remain reserved and resolver is not accessible to authenticated users', async () => {
   await db.query("select public.set_staff_username($1,'history.user')", [manager]);
   await db.exec('reset role');

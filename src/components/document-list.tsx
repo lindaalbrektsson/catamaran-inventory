@@ -8,12 +8,14 @@ export function DocumentList({
   documents,
   locale,
   owner = false,
+  canUpload = owner,
   home = false,
   now,
 }: {
   documents: OperationalDocument[];
   locale: Locale;
   owner?: boolean;
+  canUpload?: boolean;
   home?: boolean;
   now: string;
 }) {
@@ -43,9 +45,9 @@ export function DocumentList({
         ) : (
           <h1 className="text-2xl font-semibold">{t.documents}</h1>
         )}
-        {owner && !home && (
+        {canUpload && !home && (
           <Link
-            className="hidden min-h-12 items-center rounded-xl bg-primary px-4 font-semibold text-primary-foreground md:inline-flex"
+            className="inline-flex min-h-12 items-center rounded-xl bg-primary px-4 font-semibold text-primary-foreground"
             href="/documents/new"
           >
             {t.docUpload}
