@@ -13,6 +13,7 @@ export async function archiveInventoryItem(
   const { error } = await (await supabase()).rpc('archive_inventory_item', { p_id: id });
   if (error) return { error: 'UNKNOWN' };
   revalidatePath('/inventory', 'layout');
+  revalidatePath('/items', 'layout');
   revalidatePath('/');
   revalidatePath('/add');
   return { success: true };
@@ -35,6 +36,7 @@ export async function updateCatalogItem(
       error: error.message.includes('ITEM_UNIT_CONFLICT') ? 'ITEM_UNIT_CONFLICT' : 'ITEM_INVALID',
     };
   revalidatePath('/inventory', 'layout');
+  revalidatePath('/items', 'layout');
   return { success: true };
 }
 export async function saveCategory(
@@ -58,5 +60,6 @@ export async function saveCategory(
     .upsert({ ...parsed.data, active: form.get('active') === 'on' });
   if (error) return { error: 'UNKNOWN' };
   revalidatePath('/inventory', 'layout');
+  revalidatePath('/items', 'layout');
   return { success: true };
 }

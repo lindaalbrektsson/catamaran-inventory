@@ -17,6 +17,7 @@ export function Navigation({ locale }: { locale: Locale }) {
     path = usePathname();
   const links = [
     { href: '/', label: t.home, icon: House },
+    { href: '/items', label: t.catalogTitle, icon: Package, desktop: true },
     { href: '/inventory', label: t.inventory, icon: Package, desktop: true },
     { href: '/add', label: t.add, icon: Plus },
     { href: '/needs', label: t.needNav, icon: ShoppingBag, desktop: true },

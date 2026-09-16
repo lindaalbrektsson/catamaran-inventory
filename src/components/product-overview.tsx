@@ -57,6 +57,14 @@ export function ProductOverview({
           )}
         </CardContent>
       </Card>
+      {item.product.active && (
+        <Link
+          className="mb-4 inline-flex min-h-12 items-center rounded-xl border p-3"
+          href={`/items/${item.product_id}`}
+        >
+          {t.catalogTitle} · {t.editItem}
+        </Link>
+      )}
       {['OWNER', 'MANAGER'].includes(role) && (
         <div className="mb-4 flex flex-wrap gap-3">
           <Link

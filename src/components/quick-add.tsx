@@ -39,6 +39,7 @@ export function QuickAdd({
   const matches =
     query || category
       ? catalog.products
+          .filter((p) => p.active)
           .filter(
             (p) =>
               (!category ||
@@ -49,8 +50,12 @@ export function QuickAdd({
           )
           .slice(0, 12)
       : [];
-  const exact = catalog.products.some((p) => p.name.trim().toLocaleLowerCase() === query);
-  const similar = catalog.products.some((p) => normalizedName(p.name) === normalizedName(name));
+  const exact = catalog.products.some(
+    (p) => p.active && p.name.trim().toLocaleLowerCase() === query,
+  );
+  const similar = catalog.products.some(
+    (p) => p.active && normalizedName(p.name) === normalizedName(name),
+  );
   const canCreate = !!query && !exact;
   const count = matches.length + (canCreate ? 1 : 0);
   const changed = () => {
@@ -270,7 +275,7 @@ export function QuickAdd({
           <p>{t.quickSimilar}</p>
           <div className="mt-2 grid gap-2">
             {matches
-              .filter((p) => normalizedName(p.name) === normalizedName(name))
+              .filter((p) => p.active && normalizedName(p.name) === normalizedName(name))
               .map((p) => (
                 <button
                   type="button"
@@ -279,7 +284,7 @@ export function QuickAdd({
                   className="min-h-12 rounded-xl border bg-card p-3 text-left"
                   onClick={() => choose(matches.findIndex((m) => m.id === p.id))}
                 >
-                  {p.name}
+                  {t.catalogUse} · {p.name}
                   {!p.active && ` (${t.inactive})`}
                 </button>
               ))}
@@ -294,7 +299,7 @@ export function QuickAdd({
                 setConfirm(e.target.checked);
               }}
             />
-            {t.quickConfirm}
+            {t.catalogCreateNew}
           </label>
         </div>
       )}

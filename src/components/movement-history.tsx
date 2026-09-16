@@ -107,6 +107,7 @@ export function MovementHistory({
                       </details>
                       {m.reversed && <p className="mt-2 text-xs">{t.reversed}</p>}
                       {viewer &&
+                        m.reason !== 'ITEM_MERGE' &&
                         !m.reverses_transaction_id &&
                         !m.reversed &&
                         (viewer.role === 'OWNER' ||

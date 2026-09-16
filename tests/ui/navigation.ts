@@ -4,5 +4,8 @@ export function usePathname() {
 }
 
 export function useRouter() {
-  return { refresh: () => sessionStorage.setItem('refreshed-fixture', 'yes') };
+  return {
+    push: (url: string) => sessionStorage.setItem('navigation-fixture', url),
+    refresh: () => sessionStorage.setItem('refreshed-fixture', 'yes'),
+  };
 }

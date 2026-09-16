@@ -1,3 +1,4 @@
+import { GlobalItems, GlobalItemEditor } from '@/components/global-items';
 import { ItemChangeHistory } from '@/components/item-change-history';
 import { MovementHistory } from '@/components/movement-history';
 import { TasksFixture } from './tasks';
@@ -124,6 +125,25 @@ createRoot(document.getElementById('root')!).render(
           />
         ) : params.get('view')?.startsWith('task-') ? (
           <TasksFixture locale={locale} view={params.get('view')!} />
+        ) : params.get('view') === 'global-items' ? (
+          <GlobalItems
+            locale={locale}
+            catalog={{
+              categories: [item.category],
+              locations,
+              products: items.map((i) => i.product),
+            }}
+          />
+        ) : params.get('view') === 'global-edit' ? (
+          <GlobalItemEditor
+            locale={locale}
+            item={params.has('new') ? undefined : item.product}
+            catalog={{
+              categories: [item.category],
+              locations,
+              products: items.map((i) => i.product),
+            }}
+          />
         ) : params.get('view') === 'account' ? (
           <AccountForm locale={locale} configured={!params.has('unconfigured')} />
         ) : params.get('view') === 'password' ? (

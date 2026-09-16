@@ -1,5 +1,26 @@
 export type Locale = 'en' | 'es';
 export const en = {
+  ITEM_SIMILAR: 'A similar item already exists. Choose the existing item or confirm a new item.',
+  catalogTitle: 'Items',
+  catalogSearch: 'Search items',
+  catalogEmpty: 'No matching items.',
+  catalogDelete: 'Delete item',
+  catalogDeleteConfirm: 'Are you sure you want to delete this item from the list?',
+  catalogMerge: 'Merge with…',
+  catalogMergeAction: 'Merge items',
+  catalogMergeConfirm:
+    'Combine these items? Stock stays in its current location. The selected item keeps its settings and both histories are preserved.',
+  catalogChoose: 'Choose an item',
+  catalogUse: 'Use / Merge with existing',
+  catalogCreateNew: 'Create as new item',
+  catalogKeepSeparate: 'Keep as a separate item',
+  catalogUnitConflict: 'These units cannot be combined or changed after stock movements.',
+  catalogNeedConflict: 'Both items have an open Need. Resolve one Need before merging.',
+  catalogStale: 'This item changed. Reload the page before saving.',
+  catalogGone: 'This item is no longer in the list.',
+  catalogFailed: 'Could not save. Check the fields and try again.',
+  ITEM_MERGE: 'Items merged',
+
   documents: 'Documents',
   docSearch: 'Search documents',
   docHome: 'Favorites / Documents',
@@ -582,6 +603,29 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const es: Record<Key, string> = {
+  ITEM_SIMILAR: 'Ya existe un artículo similar. Elige el existente o confirma uno nuevo.',
+  catalogTitle: 'Artículos',
+  catalogSearch: 'Buscar artículos',
+  catalogEmpty: 'No hay artículos coincidentes.',
+  catalogDelete: 'Eliminar artículo',
+  catalogDeleteConfirm: '¿Seguro que quieres eliminar este artículo de la lista?',
+  catalogMerge: 'Combinar con…',
+  catalogMergeAction: 'Combinar artículos',
+  catalogMergeConfirm:
+    '¿Combinar estos artículos? El inventario permanece en su ubicación actual. Se conservan la configuración del artículo seleccionado y ambos historiales.',
+  catalogChoose: 'Selecciona un artículo',
+  catalogUse: 'Usar / Combinar con existente',
+  catalogCreateNew: 'Crear como artículo nuevo',
+  catalogKeepSeparate: 'Mantener como artículo separado',
+  catalogUnitConflict:
+    'Estas unidades no se pueden combinar ni cambiar después de registrar movimientos.',
+  catalogNeedConflict:
+    'Ambos artículos tienen una compra pendiente. Resuelve una antes de combinarlos.',
+  catalogStale: 'Este artículo cambió. Recarga la página antes de guardar.',
+  catalogGone: 'Este artículo ya no está en la lista.',
+  catalogFailed: 'No se pudo guardar. Revisa los campos e inténtalo de nuevo.',
+  ITEM_MERGE: 'Artículos combinados',
+
   documents: 'Documentos',
   docSearch: 'Buscar documentos',
   docHome: 'Favoritos / Documentos',

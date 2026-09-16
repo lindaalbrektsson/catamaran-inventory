@@ -32,6 +32,9 @@ export default async function More() {
           </form>
         </CardContent>
       </Card>
+      <Link href="/items" className="mt-5 flex min-h-14 items-center rounded-xl border p-4">
+        {t.catalogTitle}
+      </Link>
       {['OWNER', 'MANAGER'].includes(profile.role) && (
         <Link href="/needs" className="mt-5 flex min-h-14 items-center rounded-xl border p-4">
           {t.needsTitle}

@@ -1,3 +1,4 @@
+import { normalizedName } from './quick-domain';
 import { z } from 'zod';
 import { units } from './domain';
 import type { Category, Location, Product, Balance, PurchaseNeed } from './database.types';
@@ -22,6 +23,7 @@ export const itemSchema = z
     quantity: stock,
     notes: z.string().max(1000),
     active: z.boolean(),
+    confirmDuplicate: z.boolean().optional(),
     mode: z.enum(['create', 'skip', 'update']),
   })
   .refine((r) => !r.minimum || !r.target || Number(r.target) >= Number(r.minimum))
@@ -36,12 +38,19 @@ export type ItemCatalog = {
 };
 export type ItemError =
   | 'ITEM_INVALID'
+  | 'ITEM_SIMILAR'
   | 'ITEM_DUPLICATE'
   | 'ITEM_STOCK_CONFLICT'
   | 'ITEM_UNIT_CONFLICT'
   | 'ITEM_FILE'
   | 'ITEM_FAILED';
-export type PreviewRow = { row: number; value: ItemInput; errors: ItemError[]; duplicate: boolean };
+export type PreviewRow = {
+  row: number;
+  value: ItemInput;
+  errors: ItemError[];
+  duplicate: boolean;
+  similar?: Product[];
+};
 export function validateItems(values: ItemInput[], catalog: ItemCatalog): PreviewRow[] {
   const names = values.map((r) => r.name.trim().toLowerCase());
   return values.map((value, index) => {
@@ -60,12 +69,32 @@ export function validateItems(values: ItemInput[], catalog: ItemCatalog): Previe
       (matches.length === 0 && value.mode !== 'create')
     )
       errors.push('ITEM_DUPLICATE');
+    const similar = catalog.products.filter(
+      (p) =>
+        p.active &&
+        normalizedName(p.name) === normalizedName(value.name) &&
+        p.name.trim().toLowerCase() !== names[index],
+    );
+    const batchSimilar = values.some(
+      (r, i) =>
+        i !== index &&
+        normalizedName(r.name) === normalizedName(value.name) &&
+        names[i] !== names[index],
+    );
+    if (value.mode === 'create' && !value.confirmDuplicate && (similar.length || batchSimilar))
+      errors.push('ITEM_SIMILAR');
     if (matches.length && value.mode === 'create') errors.push('ITEM_DUPLICATE');
     if (matches.length && value.mode === 'update') {
       if (Number(value.quantity)) errors.push('ITEM_STOCK_CONFLICT');
       if (matches[0].unit !== value.unit) errors.push('ITEM_UNIT_CONFLICT');
     }
-    return { row: value.sourceRow ?? index + 2, value, errors, duplicate: matches.length > 0 };
+    return {
+      row: value.sourceRow ?? index + 2,
+      value,
+      errors,
+      duplicate: matches.length > 0,
+      similar,
+    };
   });
 }
 

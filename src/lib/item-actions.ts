@@ -49,6 +49,7 @@ export async function saveItems(
       error: [
         'ITEM_INVALID',
         'ITEM_DUPLICATE',
+        'ITEM_SIMILAR',
         'ITEM_STOCK_CONFLICT',
         'ITEM_UNIT_CONFLICT',
       ].includes(error.message)
@@ -56,6 +57,7 @@ export async function saveItems(
         : 'ITEM_FAILED',
     };
   revalidatePath('/inventory', 'layout');
+  revalidatePath('/items', 'layout');
   return { success: true };
 }
 export async function previewItems(values: ItemInput[]) {

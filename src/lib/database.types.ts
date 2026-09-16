@@ -229,6 +229,16 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      manage_catalog_item: {
+        Args: {
+          p_request: string;
+          p_action: string;
+          p_id: string | null;
+          p_values: Json;
+          p_expected: string | null;
+        };
+        Returns: string;
+      };
       save_document: {
         Args: {
           p_request: string;

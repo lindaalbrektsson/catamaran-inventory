@@ -12,12 +12,14 @@ export default async function Items({
   searchParams: Promise<{ import?: string; product?: string; location?: string }>;
 }) {
   const profile = await requireProfile();
-  if (!['OWNER', 'MANAGER'].includes(profile.role)) redirect('/inventory');
   const locale = await getLocale(),
     t = dictionary(locale),
     search = await searchParams,
     importing = !!search.import;
-  if (profile.role !== 'OWNER' && (importing || !search.product)) redirect('/add');
+  if (importing && profile.role !== 'OWNER') redirect('/items');
+  if (!importing && !search.product) redirect('/items/new');
+  if (!importing && !['OWNER', 'MANAGER'].includes(profile.role))
+    redirect(`/items/${search.product}`);
   const item =
     search.product && search.location
       ? await getItem(search.location, search.product, true)

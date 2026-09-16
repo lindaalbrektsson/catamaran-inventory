@@ -156,6 +156,42 @@ export function ItemManager({
                     );
                   })}
               </dl>
+              {(!!row.similar?.length || row.errors.includes('ITEM_SIMILAR')) && (
+                <div className="grid gap-2 rounded-xl border p-3">
+                  <p>{t.quickSimilar}</p>
+                  {row.similar?.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={control}
+                      disabled={pending}
+                      onClick={() => {
+                        const values = rows.map((r) => ({ ...r.value }));
+                        values[i].name = p.name;
+                        values[i].mode = 'update';
+                        setRows(validateItems(values, catalog));
+                        setId(crypto.randomUUID());
+                      }}
+                    >
+                      {t.catalogUse} · {p.name}
+                    </button>
+                  ))}
+                  <label className="flex min-h-12 items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={!!row.value.confirmDuplicate}
+                      disabled={pending}
+                      onChange={(e) => {
+                        const values = rows.map((r) => ({ ...r.value }));
+                        values[i].confirmDuplicate = e.target.checked;
+                        setRows(validateItems(values, catalog));
+                        setId(crypto.randomUUID());
+                      }}
+                    />
+                    {t.catalogCreateNew}
+                  </label>
+                </div>
+              )}
               {row.duplicate && (
                 <label>
                   {t.ITEM_DUPLICATE}

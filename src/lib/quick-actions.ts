@@ -47,6 +47,7 @@ export async function quickAdd(_previous: ActionState, form: FormData): Promise<
   });
   if (error || !data) return { error: errorKey(error?.message ?? '') };
   revalidatePath('/inventory', 'layout');
+  revalidatePath('/items', 'layout');
   redirect(`/inventory/${v.location}/${data}?saved=1`);
 }
 export async function saveNeed(
@@ -130,6 +131,7 @@ export async function saveNeed(
   }
   revalidatePath('/needs', 'layout');
   revalidatePath('/inventory', 'layout');
+  revalidatePath('/items', 'layout');
   redirect(`/needs/${v.id}`);
 }
 
@@ -162,5 +164,6 @@ export async function advanceNeed(_previous: ActionState, form: FormData): Promi
   if (saveError) return { error: errorKey(saveError.message) };
   revalidatePath('/needs', 'layout');
   revalidatePath('/inventory', 'layout');
+  revalidatePath('/items', 'layout');
   return {};
 }

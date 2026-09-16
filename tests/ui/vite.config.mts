@@ -8,6 +8,10 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: '@/lib/global-items-actions',
+        replacement: path.join(root, 'tests/ui/global-items-actions.ts'),
+      },
+      {
         find: '@/lib/document-upload',
         replacement: path.join(root, 'tests/ui/document-upload.ts'),
       },
