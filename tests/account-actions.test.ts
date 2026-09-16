@@ -19,7 +19,6 @@ vi.mock('@/lib/supabase/admin', () => ({
 }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 import { accountChange } from '../src/lib/account-actions';
-import { temporaryPassword } from '../src/lib/temporary-password';
 const target = '40000000-0000-4000-8000-000000000002';
 function form(kind = 'CREATE') {
   const f = new FormData();
@@ -28,6 +27,7 @@ function form(kind = 'CREATE') {
     kind,
     target: kind === 'CREATE' ? '' : target,
     name: 'Isolated staff',
+    username: 'staff.test',
     role: 'MANAGER',
     language: 'es',
     active: 'on',
@@ -36,14 +36,17 @@ function form(kind = 'CREATE') {
     verified: 'on',
   }))
     f.set(key, value);
-  if (kind === 'CREATE') f.set('temporaryPassword', 'Manually-Chosen-Only');
+  if (kind !== 'PHONE') f.set('temporaryPassword', 'Manually-Chosen-Only');
   return f;
 }
 beforeEach(() => {
   vi.resetAllMocks();
   m.profile.mockResolvedValue({ role: 'OWNER', account_admin: true });
   m.configured.mockReturnValue(true);
-  m.rpc.mockResolvedValue({ data: { target: null, completed: false } });
+  process.env.AUTH_INTERNAL_EMAIL_DOMAIN = 'auth.example.test';
+  m.rpc.mockResolvedValue({
+    data: { target: null, completed: false, identity: 'u_123456781234123412341234567890ab' },
+  });
   m.create.mockResolvedValue({ data: { user: { id: target } }, error: null });
   m.update.mockResolvedValue({ error: null });
   m.finish.mockResolvedValue({ error: null });
@@ -62,18 +65,19 @@ it('stops at missing server configuration', async () => {
   expect(await accountChange(form())).toEqual({ error: 'accountAdminSetup' });
   expect(m.rpc).not.toHaveBeenCalled();
 });
-it('creates a phone-only staff account with the manually entered temporary password', async () => {
+it('creates a username staff account with an opaque email with the manually entered temporary password', async () => {
   const f = form(),
     result = await accountChange(f);
   expect(result.success).toBe(true);
   expect(m.create).toHaveBeenCalledWith({
-    phone: '+5011234567',
-    phone_confirm: true,
+    email: 'u_123456781234123412341234567890ab@auth.example.test',
+    email_confirm: true,
     password: result.temporary,
     app_metadata: { account_operation: f.get('request') },
   });
-  expect(m.finish).toHaveBeenCalledWith('finish_account_change', {
+  expect(m.finish).toHaveBeenCalledWith('finish_username_creation', {
     p_request: f.get('request'),
+    p_contact: '+5011234567',
     p_target: target,
     p_values: { name: 'Isolated staff', role: 'MANAGER', language: 'es', active: true },
   });
@@ -81,26 +85,28 @@ it('creates a phone-only staff account with the manually entered temporary passw
     result.temporary,
   );
 });
-it('rejects unverified phone ownership before starting an operation', async () => {
+it('allows creation without a contact phone', async () => {
   const f = form();
+  f.delete('phone');
   f.delete('verified');
-  expect(await accountChange(f)).toEqual({ error: 'INVALID_INPUT' });
+  expect((await accountChange(f)).success).toBe(true);
+  expect(m.create.mock.calls[0][0]).not.toHaveProperty('phone');
+});
+it('reset uses the existing UUID and the manually entered password', async () => {
+  m.rpc.mockResolvedValue({ data: { target, completed: false } });
+  const result = await accountChange(form('RESET'));
+  expect(result.temporary).toBe('Manually-Chosen-Only');
+  expect(m.update).toHaveBeenCalledWith(target, { password: result.temporary });
   expect(m.create).not.toHaveBeenCalled();
 });
-it('reset uses the existing UUID and generates a fresh password', async () => {
-  m.rpc.mockResolvedValue({ data: { target, completed: false } });
-  const a = await accountChange(form('RESET')),
-    b = await accountChange(form('RESET'));
-  expect(a.temporary).not.toEqual(b.temporary);
-  expect(m.update).toHaveBeenCalledWith(target, { password: a.temporary });
+it('contact updates never change the Auth identity', async () => {
+  expect((await accountChange(form('CONTACT'))).success).toBe(true);
+  expect(m.rpc).toHaveBeenCalledWith('set_staff_contact', {
+    p_target: target,
+    p_phone: '+5011234567',
+  });
+  expect(m.update).not.toHaveBeenCalled();
   expect(m.create).not.toHaveBeenCalled();
-});
-it('phone recovery updates identity without replacing the user or changing profile metadata', async () => {
-  m.rpc.mockResolvedValue({ data: { target, completed: false } });
-  const result = await accountChange(form('PHONE'));
-  expect(m.update).toHaveBeenCalledWith(target, { phone: '+5011234567', phone_confirm: true });
-  expect(m.create).not.toHaveBeenCalled();
-  expect(result.temporary).toBeUndefined();
 });
 it('replayed completed requests cannot retrieve a password', async () => {
   m.rpc.mockResolvedValue({ data: { target, completed: true } });
@@ -110,12 +116,6 @@ it('replayed completed requests cannot retrieve a password', async () => {
 it('never returns a credential when profile finalization fails', async () => {
   m.finish.mockResolvedValue({ error: { message: 'failed' } });
   expect(await accountChange(form())).toEqual({ error: 'accountChangeFailed' });
-});
-it('generates readable random credentials without a shared preset', () => {
-  const passwords = Array.from({ length: 100 }, temporaryPassword);
-  expect(new Set(passwords).size).toBe(100);
-  for (const password of passwords)
-    expect(password).toMatch(/^Cat-(?:[A-HJ-NP-Z2-9]{4}-){3}[A-HJ-NP-Z2-9]{4}$/);
 });
 it('rejects creation of roles outside the operational onboarding choices', async () => {
   const value = form();
@@ -134,7 +134,7 @@ it.each(['CREATE', 'RESET'])(
     expect(result.temporary).toBe('Chosen-Temporary-Only');
     if (kind === 'CREATE')
       expect(m.create).toHaveBeenCalledWith(
-        expect.objectContaining({ phone_confirm: true, password: result.temporary }),
+        expect.objectContaining({ email_confirm: true, password: result.temporary }),
       );
     else expect(m.update).toHaveBeenCalledWith(target, { password: result.temporary });
     expect(JSON.stringify(m.rpc.mock.calls) + JSON.stringify(m.finish.mock.calls)).not.toContain(
@@ -142,7 +142,7 @@ it.each(['CREATE', 'RESET'])(
     );
   },
 );
-it.each(['short', 'x'.repeat(129)])(
+it.each(['', 'short'])(
   'rejects invalid chosen passwords before acquiring an account lock',
   async (password) => {
     const f = form('RESET');
@@ -161,4 +161,23 @@ it('creation never falls back to generation when the password is missing', async
   expect(await accountChange(f)).toEqual({ error: 'passwordRules' });
   expect(m.rpc).not.toHaveBeenCalled();
   expect(m.create).not.toHaveBeenCalled();
+});
+
+it.each(['CREATE', 'RESET'])('accepts six lowercase characters for %s', async (kind) => {
+  const f = form(kind);
+  f.set('temporaryMode', 'CHOOSE');
+  f.set('temporaryPassword', 'abcdef');
+  if (kind === 'RESET') m.rpc.mockResolvedValue({ data: { target, completed: false } });
+  expect((await accountChange(f)).temporary).toBe('abcdef');
+});
+
+it('releases failed setup and retries the same linked Auth UUID', async () => {
+  const f = form();
+  m.finish.mockResolvedValueOnce({ error: { message: 'setup failed' } });
+  expect(await accountChange(f)).toEqual({ error: 'accountChangeFailed' });
+  expect(m.finish).toHaveBeenCalledWith('release_account_change', { p_request: f.get('request') });
+  m.rpc.mockResolvedValue({ data: { target, completed: false } });
+  expect((await accountChange(f)).success).toBe(true);
+  expect(m.create).toHaveBeenCalledTimes(1);
+  expect(m.update).toHaveBeenCalledWith(target, { password: 'Manually-Chosen-Only' });
 });

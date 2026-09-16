@@ -1,9 +1,10 @@
 'use client';
 import { useActionState } from 'react';
 import { changeFirstPassword } from '@/lib/staff-actions';
+import { PasswordInput } from './password-input';
+import { PASSWORD_MIN_LENGTH } from '@/lib/password-policy';
 import { dictionary, type Locale } from '@/lib/i18n';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 export function PasswordChangeForm({ locale }: { locale: Locale }) {
   const t = dictionary(locale),
     [state, action, pending] = useActionState(changeFirstPassword, {});
@@ -11,24 +12,22 @@ export function PasswordChangeForm({ locale }: { locale: Locale }) {
     <form action={action} className="mt-6 grid gap-4">
       <label className="grid gap-2">
         {t.newPasswordTitle}
-        <Input
+        <PasswordInput
+          locale={locale}
           name="password"
-          type="password"
           autoComplete="new-password"
-          minLength={12}
-          maxLength={128}
+          minLength={PASSWORD_MIN_LENGTH}
           required
           disabled={pending}
         />
       </label>
       <label className="grid gap-2">
         {t.confirmPassword}
-        <Input
+        <PasswordInput
+          locale={locale}
           name="confirm"
-          type="password"
           autoComplete="new-password"
-          minLength={12}
-          maxLength={128}
+          minLength={PASSWORD_MIN_LENGTH}
           required
           disabled={pending}
         />

@@ -1,3 +1,4 @@
+import { DeleteUserButton } from '@/components/delete-user-button';
 import { timed } from '@/lib/performance';
 import { AccountForm } from '@/components/account-form';
 import { accountAdminConfigured } from '@/lib/supabase/admin';
@@ -22,15 +23,37 @@ async function renderStaff() {
       db.from('profiles').select('*').order('display_name').order('id').range(a, b),
     ),
   );
+  const pending = await db.rpc('pending_username_creations', {});
+  if (pending.error) throw new Error('ACCOUNT_SETUP_LOAD_FAILED');
+  const resumable = (pending.data ?? []) as {
+    request: string;
+    username: string;
+    running: boolean;
+  }[];
   return (
     <DesktopOnly locale={locale}>
       <div className="page max-w-4xl">
         <h1 className="mb-5 text-2xl font-semibold">{t.staffManagement}</h1>
         <AccountForm locale={locale} configured={accountAdminConfigured()} />
+        {resumable.map((r) => (
+          <section key={r.request}>
+            <p>{t.accountSetupPending}</p>
+            <AccountForm
+              locale={locale}
+              initialRequest={r.request}
+              initialUsername={r.username}
+              configured={accountAdminConfigured() && !r.running}
+            />
+          </section>
+        ))}
         <div className="grid gap-5 lg:grid-cols-2">
           {profiles.map((p) => (
             <section key={p.id} className="grid content-start gap-4">
               <StaffProfileForm profile={p} locale={locale} />
+              {p.credential_pending && <p role="status">{t.accountSetupPending}</p>}
+              {p.id !== profile.id && !p.account_admin && (
+                <DeleteUserButton target={p.id} locale={locale} />
+              )}
               {
                 <AccountForm
                   profile={p}

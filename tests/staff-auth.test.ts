@@ -12,7 +12,7 @@ async function user(id: string) {
 beforeAll(async () => {
   db = new PGlite();
   await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;create schema storage;
- create table auth.users(id uuid primary key,raw_app_meta_data jsonb default '{}',raw_user_meta_data jsonb default '{}',phone text,encrypted_password text);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+ create table auth.users(id uuid primary key,email text,raw_app_meta_data jsonb default '{}',raw_user_meta_data jsonb default '{}',phone text,encrypted_password text);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
  create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text,metadata jsonb,unique(bucket_id,name));alter table storage.objects enable row level security;
  grant usage on schema auth,storage,public to authenticated,anon;grant execute on function auth.uid() to authenticated,anon;grant all on storage.objects to authenticated,anon;`);
@@ -65,7 +65,8 @@ it('accepts phone credentials and rejects email login submissions', () => {
   form.delete('email');
   form.set('country', '501');
   form.set('phone', '1234567');
-  expect(loginCredentials(form)).toEqual({ phone: '+5011234567', password: 'test-only-password' });
+  form.set('username', ' LINDA ');
+  expect(loginCredentials(form)).toEqual({ username: 'linda', password: 'test-only-password' });
   expect(newPasswordSchema.safeParse({ password: 'short', confirm: 'short' }).success).toBe(false);
 });
 it('new users default to password pending and cannot bypass operational RPCs', async () => {
@@ -314,4 +315,223 @@ it.each(['CAPTAIN', 'CREW'])('staff RPC rejects assigning legacy role %s', async
   await expect(
     db.query("select public.manage_staff($1,'Staff',$2,'en',true)", [manager, role]),
   ).rejects.toThrow('INVALID_INPUT');
+});
+
+it('reproduces the original profiles FK blocker and cleans an unused profile atomically', async () => {
+  await db.exec(
+    'reset role; alter table auth.users disable trigger cleanup_unused_auth_user; savepoint deletion_check',
+  );
+  await expect(db.query('delete from auth.users where id=$1', [manager])).rejects.toThrow(
+    /profiles_id_fkey/,
+  );
+  await db.exec(
+    'rollback to savepoint deletion_check; alter table auth.users enable trigger cleanup_unused_auth_user',
+  );
+  await db.query('delete from auth.users where id=$1', [manager]);
+  expect(
+    (await db.query('select id from public.profiles where id=$1', [manager])).rows,
+  ).toHaveLength(0);
+  expect((await db.query('select id from auth.users where id=$1', [manager])).rows).toHaveLength(0);
+});
+it('cleans setup references and deletes Auth/profile while retaining audit events', async () => {
+  await db.exec('reset role');
+  await db.query(
+    "insert into private.account_changes(id,actor_id,target_id,kind) values(gen_random_uuid(),$1,$2,'CREATE')",
+    [owner, manager],
+  );
+  await user(owner);
+  expect(
+    (
+      await db.query<{ result: string }>('select public.prepare_user_deletion($1) as result', [
+        manager,
+      ])
+    ).rows[0].result,
+  ).toBe('DELETE');
+  await db.exec('reset role');
+  await db.query('delete from auth.users where id=$1', [manager]);
+  expect(
+    (await db.query('select id from private.account_changes where target_id=$1', [manager])).rows,
+  ).toHaveLength(0);
+  expect(
+    (
+      await db.query(
+        "select id from public.audit_events where entity_id=$1 and action='AUTH_USER_DELETED'",
+        [manager],
+      )
+    ).rows,
+  ).toHaveLength(1);
+});
+it('preserves a historical actor and blocks destructive direct Auth deletion', async () => {
+  await db.exec('reset role');
+  await db.query(
+    "insert into public.audit_events(actor_id,entity_type,entity_id,action) values($1,'test','history','TEST_HISTORY')",
+    [manager],
+  );
+  await user(owner);
+  expect(
+    (
+      await db.query<{ result: string }>('select public.prepare_user_deletion($1) as result', [
+        manager,
+      ])
+    ).rows[0].result,
+  ).toBe('PRESERVED');
+  await db.exec('reset role');
+  expect(
+    (
+      await db.query<{ active: boolean }>('select active from public.profiles where id=$1', [
+        manager,
+      ])
+    ).rows[0].active,
+  ).toBe(false);
+  await expect(db.query('delete from auth.users where id=$1', [manager])).rejects.toThrow(
+    /USER_HAS_HISTORY/,
+  );
+});
+it('cannot delete self or an account administrator and rejects operational callers', async () => {
+  await db.exec('savepoint protection');
+  await expect(db.query('select public.prepare_user_deletion($1)', [owner])).rejects.toThrow(
+    /ACCOUNT_ADMIN_PROTECTED/,
+  );
+  await db.exec('rollback to savepoint protection');
+  await user(manager);
+  await expect(db.query('select public.prepare_user_deletion($1)', [owner])).rejects.toThrow(
+    /FORBIDDEN/,
+  );
+});
+
+it('marks partial Auth creation as pending and permits unused-account cleanup', async () => {
+  const request = '60000000-0000-4000-8000-000000000001';
+  const fresh = '40000000-0000-4000-8000-000000000003';
+  await db.query("select public.begin_account_change($1,null,'CREATE')", [request]);
+  await db.exec('reset role');
+  await db.query(
+    "insert into auth.users(id,raw_app_meta_data) values($1,jsonb_build_object('account_operation',$2::text))",
+    [fresh, request],
+  );
+  await db.exec('set constraints all immediate');
+  expect(
+    (
+      await db.query<{ credential_pending: boolean }>(
+        'select credential_pending from public.profiles where id=$1',
+        [fresh],
+      )
+    ).rows[0].credential_pending,
+  ).toBe(true);
+  await db.query('delete from auth.users where id=$1', [fresh]);
+  expect((await db.query('select id from public.profiles where id=$1', [fresh])).rows).toHaveLength(
+    0,
+  );
+  expect(
+    (await db.query('select id from private.account_changes where id=$1', [request])).rows,
+  ).toHaveLength(0);
+});
+
+it('assigns normalized usernames, resolves the same UUID, and renames without changing Auth', async () => {
+  await db.exec('reset role');
+  await db.query("update auth.users set email='opaque@example.test' where id=$1", [manager]);
+  await user(owner);
+  await db.query('select public.set_staff_username($1,$2)', [manager, ' Test.Manager ']);
+  await db.exec('reset role');
+  let resolved = (
+    await db.query<{ v: { id: string; email: string } }>(
+      "select public.resolve_username(' TEST.MANAGER ') v",
+    )
+  ).rows[0].v;
+  expect(resolved.id).toBe(manager);
+  await user(owner);
+  await db.query('select public.set_staff_username($1,$2)', [manager, 'renamed.manager']);
+  await db.exec('reset role');
+  expect(
+    (await db.query<{ v: unknown }>("select public.resolve_username('test.manager') v")).rows[0].v,
+  ).toBeNull();
+  resolved = (
+    await db.query<{ v: { id: string; email: string } }>(
+      "select public.resolve_username('renamed.manager') v",
+    )
+  ).rows[0].v;
+  expect(resolved).toEqual({ id: manager, email: 'opaque@example.test' });
+});
+it('reserved username blocks duplicate provisioning, including after a failed attempt', async () => {
+  const request = '60000000-0000-4000-8000-000000000001';
+  await db.query("select public.begin_username_creation($1,' Reserved ')", [request]);
+  await db.exec('savepoint duplicate');
+  await expect(
+    db.query("select public.begin_username_creation(gen_random_uuid(),'RESERVED')"),
+  ).rejects.toThrow(/USERNAME_UNAVAILABLE/);
+  await db.exec('rollback to savepoint duplicate; reset role');
+  await db.query('select public.release_account_change($1)', [request]);
+  await user(owner);
+  expect(
+    (
+      await db.query<{ v: { target: unknown } }>(
+        "select public.begin_username_creation($1,'reserved') v",
+        [request],
+      )
+    ).rows[0].v.target,
+  ).toBeNull();
+});
+it('new username account finalization keeps first-login gate and cleanup removes reservation', async () => {
+  const request = '60000000-0000-4000-8000-000000000001',
+    fresh = '40000000-0000-4000-8000-000000000003';
+  await db.query("select public.begin_username_creation($1,'fresh')", [request]);
+  await db.exec('reset role');
+  await db.query(
+    "insert into auth.users(id,email,raw_app_meta_data) values($1,'opaque@example.test',jsonb_build_object('account_operation',$2::text))",
+    [fresh, request],
+  );
+  await db.exec('set constraints all immediate');
+  await db.query('select public.finish_username_creation($1,$2,$3,null)', [
+    request,
+    fresh,
+    { name: 'New staff', role: 'MANAGER', language: 'en', active: true },
+  ]);
+  const profile = (
+    await db.query<{ username: string; must_change_password: boolean }>(
+      'select username,must_change_password from public.profiles where id=$1',
+      [fresh],
+    )
+  ).rows[0];
+  expect(profile).toEqual({ username: 'fresh', must_change_password: true });
+  await db.query('delete from auth.users where id=$1', [fresh]);
+  expect(
+    (await db.query("select * from private.username_reservations where username='fresh'")).rows,
+  ).toHaveLength(0);
+});
+it('historical usernames remain reserved and resolver is not accessible to authenticated users', async () => {
+  await db.query("select public.set_staff_username($1,'history.user')", [manager]);
+  await db.exec('reset role');
+  await db.query(
+    "insert into public.audit_events(actor_id,entity_type,entity_id,action) values($1,'test','history','TEST')",
+    [manager],
+  );
+  await user(owner);
+  await db.query('select public.prepare_user_deletion($1)', [manager]);
+  await db.exec('savepoint reserved');
+  await expect(
+    db.query("select public.begin_username_creation(gen_random_uuid(),'history.user')"),
+  ).rejects.toThrow(/USERNAME_UNAVAILABLE/);
+  await db.exec('rollback to savepoint reserved');
+  await expect(db.query("select public.resolve_username('history.user')")).rejects.toThrow(
+    /permission denied/,
+  );
+});
+it('rate limiting applies equally before identity lookup', async () => {
+  await db.exec('reset role');
+  for (let i = 0; i < 15; i++)
+    expect(
+      (
+        await db.query<{ v: boolean }>('select public.consume_login_limit($1,$2) v', [
+          'a'.repeat(64),
+          'b'.repeat(64),
+        ])
+      ).rows[0].v,
+    ).toBe(true);
+  expect(
+    (
+      await db.query<{ v: boolean }>('select public.consume_login_limit($1,$2) v', [
+        'a'.repeat(64),
+        'b'.repeat(64),
+      ])
+    ).rows[0].v,
+  ).toBe(false);
 });

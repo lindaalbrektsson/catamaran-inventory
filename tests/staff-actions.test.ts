@@ -7,7 +7,9 @@ const m = vi.hoisted(() => ({
   maybeSingle: vi.fn(),
   rpc: vi.fn(),
   cookie: vi.fn(),
+  authenticate: vi.fn(),
 }));
+vi.mock('@/lib/username-auth', () => ({ authenticateUsername: m.authenticate }));
 vi.mock('@/lib/auth', () => ({ getProfile: m.profile, requireProfile: m.profile }));
 vi.mock('@/lib/supabase/config', () => ({ isConfigured: () => true }));
 vi.mock('@/lib/supabase/server', () => ({
@@ -39,31 +41,23 @@ beforeEach(() => {
     must_change_password: true,
   });
 });
-it.each(['phone', 'email'])(
-  'handles %s submissions under the phone-only login policy',
-  async (method) => {
-    const f = new FormData();
-    f.set('method', method);
-    f.set('country', '501');
-    f.set('phone', '1234567');
-    f.set('email', 'staff@example.test');
-    f.set('password', 'test-only-password');
-    m.signIn.mockResolvedValue({ data: { user: { id: 'staff-id' } }, error: null });
-    m.maybeSingle.mockResolvedValue({ data: { language: 'es', must_change_password: true } });
-    if (method === 'email') {
-      expect(await signIn({}, f)).toEqual({ error: 'authError' });
-      expect(m.signIn).not.toHaveBeenCalled();
-      return;
-    }
-    await expect(signIn({}, f)).rejects.toThrow('REDIRECT:/change-password');
-    expect(m.signIn).toHaveBeenCalledWith(
-      method === 'phone'
-        ? { phone: '+5011234567', password: 'test-only-password' }
-        : { email: 'staff@example.test', password: 'test-only-password' },
-    );
-    expect(m.cookie).toHaveBeenCalledWith('coral-language', 'es', expect.any(Object));
-  },
-);
+it('username login keeps the existing first-password redirect and locale', async () => {
+  const f = new FormData();
+  f.set('username', ' LINDA ');
+  f.set('password', 'test-only-password');
+  m.authenticate.mockResolvedValue('staff-id');
+  m.maybeSingle.mockResolvedValue({ data: { language: 'es', must_change_password: true } });
+  await expect(signIn({}, f)).rejects.toThrow('REDIRECT:/change-password');
+  expect(m.authenticate).toHaveBeenCalledWith(expect.anything(), {
+    username: 'linda',
+    password: 'test-only-password',
+  });
+  expect(m.cookie).toHaveBeenCalledWith('coral-language', 'es', expect.any(Object));
+});
+it('failed username authentication returns the generic error', async () => {
+  m.authenticate.mockResolvedValue(null);
+  expect(await signIn({}, new FormData())).toEqual({ error: 'authError' });
+});
 it('fails closed when the Auth password update fails', async () => {
   const f = new FormData();
   f.set('password', 'new-test-password');
@@ -128,3 +122,16 @@ it.each(['CAPTAIN', 'CREW'])(
     expect(m.rpc).not.toHaveBeenCalled();
   },
 );
+
+it('accepts six-character new passwords only after confirmation and trusted gate completion', async () => {
+  const f = new FormData();
+  f.set('password', 'abcdef');
+  f.set('confirm', 'abcdeg');
+  expect(await changeFirstPassword({}, f)).toEqual({ error: 'passwordMismatch' });
+  expect(m.password).not.toHaveBeenCalled();
+  f.set('confirm', 'abcdef');
+  m.password.mockResolvedValue({ error: null });
+  m.single.mockResolvedValue({ data: { must_change_password: false }, error: null });
+  await expect(changeFirstPassword({}, f)).rejects.toThrow('REDIRECT:/');
+  expect(m.password).toHaveBeenCalledWith({ password: 'abcdef' });
+});

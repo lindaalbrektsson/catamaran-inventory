@@ -1,12 +1,9 @@
 import { test, expect } from '@playwright/test';
-test('private login is phone-only without registration links', async ({ page }) => {
+test('private login uses username without registration links', async ({ page }) => {
   await page.goto('/login');
   await expect(page.getByLabel('Email address', { exact: true })).toHaveCount(0);
-  await expect(page.getByLabel('Phone number', { exact: true })).toBeVisible();
-  const country = page.getByRole('combobox', { name: 'Country code', exact: true });
-  await expect(country.locator('option')).toHaveText(['Belize +501', 'Colombia +57', 'Sweden +46']);
-  await country.selectOption('57');
-  await page.getByLabel('Phone number', { exact: true }).fill('3001234567');
+  await expect(page.getByLabel('Phone number', { exact: true })).toHaveCount(0);
+  await page.getByLabel('Username', { exact: true }).fill('linda');
   await expect(page.getByRole('link', { name: /sign up|create account|register/i })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /sign up|create account|register/i })).toHaveCount(
     0,
@@ -24,17 +21,13 @@ test('isolated account provisioning shows the temporary password once and clears
 }) => {
   await page.goto('http://127.0.0.1:4174/?view=account');
   await page.getByLabel('Display name', { exact: true }).fill('Isolated staff');
-  await page.getByLabel('Phone number', { exact: true }).fill('1234567');
-  await page
-    .getByRole('checkbox', {
-      name: 'I have verified that this number belongs to this staff member.',
-    })
-    .check();
+  await page.getByLabel('Username', { exact: true }).fill('staff.test');
   await page.locator('input[name="temporaryPassword"]').fill('Isolated-UI-Example-Only');
   await page.getByRole('button', { name: 'Add user', exact: true }).click();
-  await expect(page.locator('output')).toHaveText('Isolated-UI-Example-Only');
+  await expect(page.locator('input[readonly]')).toHaveValue('Isolated-UI-Example-Only');
+  await expect(page.locator('input[readonly]')).toHaveAttribute('type', 'password');
   await page.getByRole('button', { name: 'Done — hide password' }).click();
-  await expect(page.locator('output')).toHaveCount(0);
+  await expect(page.locator('input[readonly]')).toHaveCount(0);
   await page.goto('http://127.0.0.1:4174/?view=account&unconfigured=1');
   await expect(page.getByRole('button', { name: 'Add user', exact: true })).toBeDisabled();
 });
@@ -48,12 +41,12 @@ test('isolated first-password form has confirmation and fails closed', async ({ 
   await expect(page).toHaveURL(/view=password/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
-test('phone controls translate and private staff/password routes require authentication', async ({
+test('username controls translate and private staff/password routes require authentication', async ({
   page,
 }) => {
   await page.goto('/login');
   await page.getByRole('button', { name: 'Language', exact: true }).click();
-  await expect(page.getByLabel('Número de teléfono', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Usuario', { exact: true })).toBeVisible();
   for (const route of ['/staff', '/change-password']) {
     await page.goto(route);
     await expect(page).toHaveURL(/\/login$/);
@@ -75,5 +68,70 @@ test('manual temporary password is required, masked and cleared when the page hi
   });
   await expect(password).toHaveValue('');
   await expect(password).toHaveAttribute('required', '');
-  await expect(page.getByRole('option', { name: 'Generate password', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('option', { name: 'Generate a password', exact: true })).toHaveCount(
+    0,
+  );
+});
+
+for (const locale of ['en', 'es']) {
+  test(`password toggles are independent and never submit (${locale})`, async ({ page }) => {
+    await page.goto(`http://127.0.0.1:4174/?view=password&lang=${locale}`);
+    const inputs = page.locator('input');
+    const show = locale === 'en' ? 'Show password' : 'Mostrar contraseña';
+    const hide = locale === 'en' ? 'Hide password' : 'Ocultar contraseña';
+    await inputs.nth(0).fill('abcdef');
+    await inputs.nth(1).fill('abcdef');
+    await expect(inputs.nth(0)).toHaveAttribute('minlength', '6');
+    await expect(inputs.nth(0)).not.toHaveAttribute('maxlength');
+    await page.getByRole('button', { name: show, exact: true }).first().click();
+    await expect(inputs.nth(0)).toHaveAttribute('type', 'text');
+    await expect(inputs.nth(1)).toHaveAttribute('type', 'password');
+    await expect(page.locator('form').getByRole('alert')).toHaveCount(0);
+    await page.getByRole('button', { name: hide, exact: true }).click();
+    await expect(inputs.nth(0)).toHaveAttribute('type', 'password');
+    await expect(inputs.nth(0)).toHaveValue('abcdef');
+    await expect(page.locator('form').getByRole('alert')).toHaveCount(0);
+  });
+}
+test('login and temporary passwords support reveal without submitting', async ({ page }) => {
+  for (const route of ['/login', 'http://127.0.0.1:4174/?view=account']) {
+    await page.goto(route);
+    const field = page.locator('input[type="password"]');
+    await field.fill('abcdef');
+    await page.getByRole('button', { name: 'Show password', exact: true }).click();
+    await expect(page.locator('input[type="text"]').filter({ visible: true }).last()).toBeVisible();
+    await page.getByRole('button', { name: 'Hide password', exact: true }).click();
+    await expect(field).toHaveValue('abcdef');
+    await expect(page.locator('form').getByRole('alert')).toHaveCount(0);
+  }
+});
+
+test('reset requires a manually chosen password with visibility control', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4174/?view=account&reset=1');
+  await expect(page.getByRole('option', { name: 'Generate a password', exact: true })).toHaveCount(
+    0,
+  );
+  const field = page.locator('input[name="temporaryPassword"]');
+  await field.fill('abcdef');
+  await expect(field).toHaveAttribute('minlength', '6');
+  await page.getByRole('button', { name: 'Show password', exact: true }).click();
+  await expect(field).toHaveAttribute('type', 'text');
+  await page.getByRole('button', { name: 'Hide password', exact: true }).click();
+  await expect(field).toHaveAttribute('type', 'password');
+  await expect(page.locator('form').getByRole('alert')).toHaveCount(0);
+});
+
+test('Delete user requires confirmation and supports cancel', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4174/?view=delete-user');
+  await page.getByRole('button', { name: 'Delete user', exact: true }).click();
+  await expect(
+    page.getByText('Are you sure you want to delete this user?', { exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByRole('status')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Delete user', exact: true }).click();
+  await page.getByRole('button', { name: 'Delete user', exact: true }).click();
+  await expect(page.getByRole('status')).toHaveText(
+    'User deactivated. Historical records have been preserved.',
+  );
 });

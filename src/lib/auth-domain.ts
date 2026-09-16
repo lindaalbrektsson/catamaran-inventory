@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { passwordSchema } from './password-policy';
 export const phoneCountries = ['501', '57', '46'] as const;
 export function phoneIdentity(country: string, number: string) {
   if (!phoneCountries.includes(country as (typeof phoneCountries)[number])) return null;
@@ -8,14 +9,17 @@ export function phoneIdentity(country: string, number: string) {
   return `+${country}${digits}`;
 }
 export const newPasswordSchema = z
-  .object({ password: z.string().min(12).max(128), confirm: z.string() })
+  .object({ password: passwordSchema, confirm: z.string() })
   .refine((v) => v.password === v.confirm);
+export const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9._-]{1,40}$/);
 export function loginCredentials(form: FormData) {
+  const username = usernameSchema.safeParse(form.get('username'));
   const password = form.get('password');
-  if (typeof password !== 'string' || !password || password.length > 1024) return null;
-  if (form.get('method') === 'phone') {
-    const phone = phoneIdentity(String(form.get('country') ?? ''), String(form.get('phone') ?? ''));
-    return phone ? { phone, password } : null;
-  }
-  return null;
+  if (!username.success || typeof password !== 'string' || !password || password.length > 1024)
+    return null;
+  return { username: username.data, password };
 }

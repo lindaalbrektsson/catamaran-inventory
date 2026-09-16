@@ -13,6 +13,11 @@ export function StaffProfileForm({ profile, locale }: { profile: Profile; locale
     <form action={action} className="grid gap-4 rounded-xl border bg-card p-5">
       <input name="id" type="hidden" value={profile.id} />
       <h2 className="text-lg font-semibold">{profile.display_name}</h2>
+      {profile.username && (
+        <p>
+          {t.username}: {profile.username}
+        </p>
+      )}
       <p className="break-all text-xs">
         {t.staffIdentity}: {profile.id}
       </p>

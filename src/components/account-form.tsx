@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState, useTransition } from 'react';
 import { accountChange, type AccountResult } from '@/lib/account-actions';
+import { PasswordInput } from './password-input';
+import { PASSWORD_MIN_LENGTH } from '@/lib/password-policy';
 import { dictionary, type Locale } from '@/lib/i18n';
 import { phoneCountries } from '@/lib/auth-domain';
 import { staffRoles } from '@/lib/domain';
@@ -10,18 +12,21 @@ export function AccountForm({
   profile,
   configured,
   self = false,
+  initialRequest = '',
+  initialUsername = '',
 }: {
   locale: Locale;
   profile?: Profile;
   configured: boolean;
   self?: boolean;
+  initialRequest?: string;
+  initialUsername?: string;
 }) {
   const t = dictionary(locale),
-    [kind, setKind] = useState<'CREATE' | 'RESET' | 'PHONE'>(
-      profile ? (self ? 'PHONE' : 'RESET') : 'CREATE',
+    [kind, setKind] = useState<'CREATE' | 'RESET' | 'CONTACT' | 'USERNAME'>(
+      profile ? (self ? 'USERNAME' : 'RESET') : 'CREATE',
     ),
-    [request, setRequest] = useState(''),
-    [temporaryMode, setTemporaryMode] = useState('GENERATE'),
+    [request, setRequest] = useState(initialRequest),
     [chosenPassword, setChosenPassword] = useState(''),
     [result, setResult] = useState<AccountResult>({}),
     [pending, start] = useTransition();
@@ -48,9 +53,14 @@ export function AccountForm({
         {result.temporary && (
           <>
             <p className="mt-3">{t.temporaryOnce}</p>
-            <output className="my-4 block select-all break-all rounded-xl bg-card p-4 font-mono text-lg">
-              {result.temporary}
-            </output>
+            <PasswordInput
+              locale={locale}
+              aria-label={t.temporaryPasswordLabel}
+              readOnly
+              value={result.temporary}
+              autoComplete="off"
+              className="my-4 font-mono"
+            />
           </>
         )}
         <button
@@ -91,14 +101,15 @@ export function AccountForm({
               disabled={pending}
               value={kind}
               onChange={(e) => {
-                setKind(e.target.value as 'RESET' | 'PHONE');
+                setKind(e.target.value as 'RESET' | 'CONTACT' | 'USERNAME');
                 setRequest('');
                 setResult({});
                 setChosenPassword('');
               }}
             >
               {!self && <option value="RESET">{t.resetStaffPassword}</option>}
-              <option value="PHONE">{t.changeStaffPhone}</option>
+              <option value="USERNAME">{t.changeUsername}</option>
+              <option value="CONTACT">{t.changeContact}</option>
             </select>
           </label>
         )}
@@ -137,7 +148,22 @@ export function AccountForm({
             <input type="hidden" name="language" value={profile.language} />
           </>
         )}
-        {kind !== 'RESET' && (
+        {(kind === 'CREATE' || kind === 'USERNAME') && (
+          <label className="grid gap-2">
+            {t.username}
+            <input
+              name="username"
+              required
+              maxLength={40}
+              autoCapitalize="none"
+              autoComplete="off"
+              defaultValue={profile?.username ?? initialUsername}
+              readOnly={Boolean(initialRequest)}
+              className={c}
+            />
+          </label>
+        )}
+        {(kind === 'CREATE' || kind === 'CONTACT') && (
           <>
             <label className="grid gap-2">
               {t.phoneCountry}
@@ -150,56 +176,36 @@ export function AccountForm({
               </select>
             </label>
             <label className="grid gap-2">
-              {t.phoneNumber}
-              <input type="tel" name="phone" required maxLength={20} className={c} />
-            </label>
-            <label className="flex min-h-12 items-start gap-3">
-              <input type="checkbox" name="verified" required />
-              {t.phoneVerified}
+              {t.optionalContactPhone}
+              <input type="tel" name="phone" maxLength={20} className={c} />
             </label>
           </>
         )}
-        {kind !== 'PHONE' && (
+        {(kind === 'CREATE' || kind === 'RESET') && (
           <>
-            {kind === 'CREATE' ? (
-              <input type="hidden" name="temporaryMode" value="CHOOSE" />
-            ) : (
-              <label className="grid gap-2">
-                {t.temporaryPasswordLabel}
-                <select
-                  name="temporaryMode"
-                  className={c}
-                  value={temporaryMode}
-                  onChange={(e) => {
-                    setTemporaryMode(e.target.value);
-                    setChosenPassword('');
-                  }}
-                >
-                  <option value="GENERATE">{t.temporaryGenerate}</option>
-                  <option value="CHOOSE">{t.temporaryChoose}</option>
-                </select>
-              </label>
-            )}
-            {(kind === 'CREATE' || temporaryMode === 'CHOOSE') && (
-              <label className="grid gap-2">
-                {t.temporaryPasswordLabel}
-                <input
-                  type="password"
-                  name="temporaryPassword"
-                  autoComplete={kind === 'CREATE' ? 'off' : 'new-password'}
-                  required
-                  minLength={12}
-                  maxLength={128}
-                  className={c}
-                  value={chosenPassword}
-                  onChange={(e) => setChosenPassword(e.target.value)}
-                />
-              </label>
-            )}
+            <label className="grid gap-2">
+              {t.temporaryPasswordLabel}
+              <PasswordInput
+                locale={locale}
+                name="temporaryPassword"
+                autoComplete={kind === 'CREATE' ? 'off' : 'new-password'}
+                required
+                minLength={PASSWORD_MIN_LENGTH}
+                className={c}
+                value={chosenPassword}
+                onChange={(e) => setChosenPassword(e.target.value)}
+              />
+            </label>
+            <p className="text-sm">{t.passwordRules}</p>
           </>
         )}
         {!configured && <p role="status">{t.accountAdminSetup}</p>}
-        {result.error && <p role="alert">{t[result.error]}</p>}
+        {result.error && (
+          <p role="alert">
+            {t[result.error]}
+            {result.error === 'accountChangeFailed' && <> {t.accountRetry}</>}
+          </p>
+        )}
         <button
           disabled={!configured || pending}
           className="min-h-12 rounded-xl bg-primary p-3 font-semibold text-primary-foreground"
@@ -210,7 +216,9 @@ export function AccountForm({
               ? t.staffProvision
               : kind === 'RESET'
                 ? t.resetStaffPassword
-                : t.changeStaffPhone}
+                : kind === 'USERNAME'
+                  ? t.changeUsername
+                  : t.changeContact}
         </button>
       </fieldset>
     </form>

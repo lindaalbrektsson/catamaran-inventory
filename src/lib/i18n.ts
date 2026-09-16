@@ -1,3 +1,4 @@
+import { PASSWORD_MIN_LENGTH } from './password-config.mjs';
 export type Locale = 'en' | 'es';
 export const en = {
   taskMyTasks: 'My tasks',
@@ -136,13 +137,13 @@ export const en = {
   accountAction: 'Account action',
   accountCompleted: 'Account updated.',
   temporaryOnce:
-    'Send this temporary password privately with the app link. It is shown only now and disappears when you leave or hide this page.',
+    'Send the username and temporary password privately with the app link. It is shown only now and disappears when you leave or hide this page.',
   temporaryDismiss: 'Done — hide password',
   resetStaffPassword: 'Issue new temporary password',
-  changeStaffPhone: 'Change login phone',
+  changeStaffPhone: 'Update contact phone',
   phoneVerified: 'I have verified that this number belongs to this staff member.',
   accountChangeFailed:
-    'The account change could not be confirmed. Contact the project administrator before trying again. Incomplete credential changes keep access blocked.',
+    'The account change could not be completed. Check the username and retry. Incomplete accounts remain blocked.',
   accountAdminProtected:
     'Remove the account administrator permission before changing this role or deactivating this user. Keep at least one active account administrator.',
   accountAlreadyCompleted:
@@ -161,13 +162,23 @@ export const en = {
   newPasswordTitle: 'Create your new password',
   newPasswordHint: 'Replace your temporary password before opening the workspace.',
   confirmPassword: 'Confirm new password',
-  passwordRules: 'Use 12–128 characters and enter the same new password twice.',
+  passwordRules: `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`,
+  passwordMismatch: 'Passwords do not match.',
+  accountSetupPending:
+    'Account setup is incomplete. Retry the original form or delete this unused account and create it again.',
+  deleteUser: 'Delete user',
+  deleteUserConfirm: 'Are you sure you want to delete this user?',
+  userDeleted: 'User deleted.',
+  userHistoryPreserved: 'User deactivated. Historical records have been preserved.',
+  userDeleteFailed: 'Could not delete this user. The account remains blocked; you can retry.',
+  accountRetry:
+    'Setup was not completed. Re-enter the temporary password and retry this form to continue with the same account.',
+  showPassword: 'Show password',
+  hidePassword: 'Hide password',
   passwordChangeFailed:
     'The password could not be changed. Try a different password or contact your owner.',
   savePassword: 'Save new password',
   temporaryPasswordLabel: 'Temporary password',
-  temporaryGenerate: 'Generate a password',
-  temporaryChoose: 'Choose a password',
   adminRole: 'Admin',
   staffManagement: 'Users',
   staffName: 'Display name',
@@ -187,7 +198,7 @@ export const en = {
     'Enter the temporary password only in the secure Auth administrator tool. Share it privately with the staff member; never put it in notes, metadata, audit records or chat.',
   staffManualDocs: 'Detailed administrator instructions',
   staffIdentity: 'Permanent user ID',
-  staffContact: 'Login identity and recovery',
+  staffContact: 'Account access',
 
   quickSearch: 'Type an item name',
   quickCreate: 'Create as a new item',
@@ -520,12 +531,16 @@ export const en = {
   signIn: 'Sign in',
   signInHint: 'Your daily operations, all in one place.',
   email: 'Email address',
+  username: 'Username',
+  changeUsername: 'Change username',
+  changeContact: 'Update contact phone',
+  optionalContactPhone: 'Contact phone (optional)',
   password: 'Password',
   signingIn: 'Signing in…',
   signOut: 'Sign out',
   welcome: 'Welcome aboard.',
   authHint: 'Use the account provided by your company owner.',
-  authError: 'Unable to sign in. Check your email and password and try again.',
+  authError: 'Invalid username or password.',
   setupTitle: 'Your workspace is almost ready.',
   setupHint: 'Connect your Supabase project to start managing real inventory.',
   setupStep1: 'Create a Supabase project.',
@@ -748,17 +763,17 @@ export const es: Record<Key, string> = {
   accountAction: 'Acción de cuenta',
   accountCompleted: 'Cuenta actualizada.',
   temporaryOnce:
-    'Envía esta contraseña temporal en privado junto con el enlace de la app. Solo se muestra ahora y desaparece al salir u ocultar esta página.',
+    'Envía el usuario y la contraseña temporal en privado junto con el enlace de la app. Solo se muestra ahora y desaparece al salir u ocultar esta página.',
   temporaryDismiss: 'Listo — ocultar contraseña',
-  resetStaffPassword: 'Generar nueva contraseña temporal',
+  resetStaffPassword: 'Establecer contraseña temporal',
   changeStaffPhone: 'Cambiar teléfono de acceso',
   phoneVerified: 'He verificado que este número pertenece a esta persona.',
   accountChangeFailed:
-    'No se pudo confirmar el cambio. Contacta al administrador del proyecto antes de reintentar. El acceso permanece bloqueado si el cambio de credenciales está incompleto.',
+    'No se pudo completar el cambio. Revisa el usuario y reintenta. Las cuentas incompletas permanecen bloqueadas.',
   accountAdminProtected:
     'Quita el permiso de administrador de cuentas antes de cambiar el rol o desactivar a esta persona. Mantén al menos un administrador de cuentas activo.',
   accountAlreadyCompleted:
-    'Esta operación ya se completó. No se puede recuperar la contraseña temporal. Genera otra si es necesario.',
+    'Esta operación ya se completó. No se puede recuperar la contraseña temporal. Establece otra si es necesario.',
   accountPermissionFailed:
     'No se pudo cambiar el permiso. Conserva al menos un administrador de cuentas activo.',
 
@@ -773,13 +788,23 @@ export const es: Record<Key, string> = {
   newPasswordTitle: 'Crea tu nueva contraseña',
   newPasswordHint: 'Cambia tu contraseña temporal antes de abrir la aplicación.',
   confirmPassword: 'Confirma la nueva contraseña',
-  passwordRules: 'Usa entre 12 y 128 caracteres e ingresa la misma contraseña nueva dos veces.',
+  passwordRules: `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`,
+  passwordMismatch: 'Las contraseñas no coinciden.',
+  accountSetupPending:
+    'La configuración está incompleta. Reintenta el formulario original o elimina esta cuenta sin uso y créala de nuevo.',
+  deleteUser: 'Eliminar usuario',
+  deleteUserConfirm: '¿Seguro que quieres eliminar este usuario?',
+  userDeleted: 'Usuario eliminado.',
+  userHistoryPreserved: 'Usuario desactivado. Se conservó el historial.',
+  userDeleteFailed: 'No se pudo eliminar el usuario. La cuenta sigue bloqueada; puedes reintentar.',
+  accountRetry:
+    'No se completó la configuración. Ingresa de nuevo la contraseña temporal y reintenta este formulario para continuar con la misma cuenta.',
+  showPassword: 'Mostrar contraseña',
+  hidePassword: 'Ocultar contraseña',
   passwordChangeFailed:
     'No se pudo cambiar la contraseña. Prueba otra contraseña o contacta a tu propietario.',
   savePassword: 'Guardar nueva contraseña',
   temporaryPasswordLabel: 'Contraseña temporal',
-  temporaryGenerate: 'Generar una contraseña',
-  temporaryChoose: 'Elegir una contraseña',
   adminRole: 'Administrador',
   staffManagement: 'Usuarios',
   staffName: 'Nombre',
@@ -1141,12 +1166,16 @@ export const es: Record<Key, string> = {
   signIn: 'Iniciar sesión',
   signInHint: 'Tus operaciones diarias, en un solo lugar.',
   email: 'Correo electrónico',
+  username: 'Usuario',
+  changeUsername: 'Cambiar usuario',
+  changeContact: 'Actualizar teléfono de contacto',
+  optionalContactPhone: 'Teléfono de contacto (opcional)',
   password: 'Contraseña',
   signingIn: 'Iniciando sesión…',
   signOut: 'Cerrar sesión',
   welcome: 'Bienvenido a bordo.',
   authHint: 'Usa la cuenta proporcionada por un propietario.',
-  authError: 'No se pudo iniciar sesión. Revisa tu correo y contraseña e inténtalo de nuevo.',
+  authError: 'Usuario o contraseña incorrectos.',
   setupTitle: 'Tu espacio de trabajo está casi listo.',
   setupHint: 'Conecta tu proyecto de Supabase para empezar a gestionar el inventario real.',
   setupStep1: 'Crea un proyecto de Supabase.',

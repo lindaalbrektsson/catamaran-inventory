@@ -88,6 +88,7 @@ export type PurchaseNeed = {
   photo_ready: boolean;
 };
 export type Profile = {
+  username?: string | null;
   must_change_password: boolean;
   account_admin: boolean;
   credential_pending: boolean;
@@ -299,6 +300,18 @@ export type Database = {
         Args: { p_request: string; p_target: string | null; p_kind: string };
         Returns: Json;
       };
+      pending_username_creations: { Args: Record<string, never>; Returns: Json };
+      consume_login_limit: { Args: { p_ip: string; p_username: string }; Returns: boolean };
+      resolve_username: { Args: { p_username: string }; Returns: Json };
+      begin_username_creation: { Args: { p_request: string; p_username: string }; Returns: Json };
+      finish_username_creation: {
+        Args: { p_request: string; p_target: string; p_values: Json; p_contact: string | null };
+        Returns: undefined;
+      };
+      set_staff_username: { Args: { p_target: string; p_username: string }; Returns: undefined };
+      set_staff_contact: { Args: { p_target: string; p_phone: string | null }; Returns: undefined };
+      prepare_user_deletion: { Args: { p_target: string }; Returns: string };
+      release_account_change: { Args: { p_request: string }; Returns: undefined };
       finish_account_change: {
         Args: { p_request: string; p_target: string; p_values: Json };
         Returns: undefined;

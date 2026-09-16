@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [tailwindcss()],
   resolve: {
     alias: [
+      { find: '@/lib/delete-user', replacement: path.join(root, 'tests/ui/delete-user.ts') },
       {
         find: '@/lib/global-items-actions',
         replacement: path.join(root, 'tests/ui/global-items-actions.ts'),

@@ -1,3 +1,4 @@
+import { DeleteUserButton } from '@/components/delete-user-button';
 import { GlobalItems, GlobalItemEditor } from '@/components/global-items';
 import { ItemChangeHistory } from '@/components/item-change-history';
 import { MovementHistory } from '@/components/movement-history';
@@ -144,8 +145,30 @@ createRoot(document.getElementById('root')!).render(
               products: items.map((i) => i.product),
             }}
           />
+        ) : params.get('view') === 'delete-user' ? (
+          <DeleteUserButton target="40000000-0000-4000-8000-000000000002" locale={locale} />
         ) : params.get('view') === 'account' ? (
-          <AccountForm locale={locale} configured={!params.has('unconfigured')} />
+          <AccountForm
+            locale={locale}
+            configured={!params.has('unconfigured')}
+            profile={
+              params.has('reset')
+                ? {
+                    id: '40000000-0000-4000-8000-000000000002',
+                    display_name: 'Isolated staff',
+                    role: 'MANAGER',
+                    language: 'en',
+                    active: true,
+                    account_admin: false,
+                    must_change_password: false,
+                    credential_pending: false,
+                    credential_epoch: 0,
+                    created_at: '2026-09-16T00:00:00Z',
+                    updated_at: '2026-09-16T00:00:00Z',
+                  }
+                : undefined
+            }
+          />
         ) : params.get('view') === 'password' ? (
           <PasswordChangeForm locale={locale} />
         ) : params.get('view') === 'history' ? (

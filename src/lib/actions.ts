@@ -7,6 +7,7 @@ import { isConfigured } from './supabase/config';
 import { requireProfile } from './auth';
 import { can, movementType, stockSchema, transferSchema } from './domain';
 import type { Key } from './i18n';
+import { authenticateUsername } from './username-auth';
 import { loginCredentials } from './auth-domain';
 export type ActionState = {
   error?: Key;
@@ -36,14 +37,13 @@ export async function setLanguage(form: FormData) {
 export async function signIn(_previous: ActionState, form: FormData): Promise<ActionState> {
   if (!isConfigured()) redirect('/setup');
   const credentials = loginCredentials(form);
-  if (!credentials) return { error: 'authError' };
   const db = await supabase();
-  const { data, error } = await db.auth.signInWithPassword(credentials);
-  if (error) return { error: 'authError' };
+  const userId = await authenticateUsername(db, credentials);
+  if (!userId) return { error: 'authError' };
   const { data: profile } = await db
     .from('profiles')
     .select('language,must_change_password')
-    .eq('id', data.user.id)
+    .eq('id', userId)
     .maybeSingle();
   if (profile) (await cookies()).set('coral-language', profile.language, cookieOptions);
   if (profile?.must_change_password) redirect('/change-password');

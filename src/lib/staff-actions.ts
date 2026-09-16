@@ -15,7 +15,12 @@ export async function changeFirstPassword(
   if (!profile || profile.credential_pending) return { error: 'authError' };
   if (!profile.must_change_password) redirect('/');
   const value = newPasswordSchema.safeParse(Object.fromEntries(form));
-  if (!value.success) return { error: 'passwordRules' };
+  if (!value.success)
+    return {
+      error: value.error.issues.some((issue) => issue.code === 'custom')
+        ? 'passwordMismatch'
+        : 'passwordRules',
+    };
   const db = await supabase();
   const { error } = await db.auth.updateUser({ password: value.data.password });
   if (error) return { error: 'passwordChangeFailed' };
