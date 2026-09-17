@@ -1,6 +1,7 @@
 'use client';
 import Image from 'next/image';
 import { useActionState, useEffect, useRef, useState } from 'react';
+import type { ActionState } from '@/lib/actions';
 import { uploadReceipt } from '@/lib/spending-actions';
 import { uploadOriginalReceipt } from '@/lib/original-upload';
 import { dictionary, type Locale } from '@/lib/i18n';
@@ -30,7 +31,7 @@ export function ReceiptUploader({
   const [stage, setStage] = useState<'uploading' | 'checking'>('uploading');
   const [state, action, pending] = useActionState(
     intakeType
-      ? (previous, form: FormData) => uploadOriginalReceipt(previous, form, setStage)
+      ? (previous: ActionState, form: FormData) => uploadOriginalReceipt(previous, form, setStage)
       : uploadReceipt,
     {},
   );
