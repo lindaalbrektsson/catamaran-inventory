@@ -398,3 +398,34 @@ it.each([crew, other])(
     ).toBeTruthy();
   },
 );
+
+it('historical merge relationship names survive archiving the target', async () => {
+  const source = await manage('CREATE', null, { ...values, name: 'Previous fixture' });
+  const target = await manage('CREATE', null, { ...values, name: 'Surviving fixture' });
+  const updated = (
+    await db.query<{ updated_at: string }>(
+      'select updated_at::text from public.products where id=$1',
+      [target],
+    )
+  ).rows[0].updated_at;
+  await manage('MERGE', source, { target, targetUpdatedAt: updated });
+  const relationship = async () =>
+    (
+      await db.query<{ r: Record<string, unknown> }>(
+        'select public.item_merge_relationship($1) r',
+        [source],
+      )
+    ).rows[0].r;
+  expect(await relationship()).toMatchObject({
+    source_name: 'Previous fixture',
+    target_name: 'Surviving fixture',
+    target_id: target,
+    target_active: true,
+  });
+  await manage('DELETE', target, {});
+  expect(await relationship()).toMatchObject({
+    source_name: 'Previous fixture',
+    target_name: 'Surviving fixture',
+    target_active: false,
+  });
+});

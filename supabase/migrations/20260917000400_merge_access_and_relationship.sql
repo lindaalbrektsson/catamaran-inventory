@@ -11,7 +11,7 @@ revoke all on function public.manage_catalog_item(uuid,text,uuid,jsonb,timestamp
 grant execute on function public.manage_catalog_item(uuid,text,uuid,jsonb,timestamptz) to authenticated;
 -- Read-only relationship for historical references; never rewrite a task.
 create function public.item_merge_relationship(p_id uuid) returns jsonb language plpgsql stable security definer set search_path='' as $$
-declare target_id uuid:=p_id;next_id uuid;source_name text;target_name text;begin
+declare target_id uuid:=p_id;next_id uuid;source_name text;target_name text;target_active boolean;begin
  if private.current_role() is null then raise exception 'FORBIDDEN';end if;
  select name into source_name from public.products where id=p_id;
  loop
@@ -19,8 +19,8 @@ declare target_id uuid:=p_id;next_id uuid;source_name text;target_name text;begi
   exit when next_id is null;target_id:=next_id;
  end loop;
  if target_id=p_id then return null;end if;
- select name into target_name from public.products where id=target_id;
- return jsonb_build_object('source_name',source_name,'target_name',target_name,'target_id',target_id);
+ select name,active into target_name,target_active from public.products where id=target_id;
+ return jsonb_build_object('source_name',source_name,'target_name',target_name,'target_id',target_id,'target_active',target_active);
 end;$$;
 revoke all on function public.item_merge_relationship(uuid) from public,anon,authenticated;
 grant execute on function public.item_merge_relationship(uuid) to authenticated;

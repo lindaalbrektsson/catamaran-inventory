@@ -1,3 +1,4 @@
+import { MergedItemNotice, type MergedItemReference } from '@/components/merged-item-reference';
 import { TaskUpdateHistory } from '@/components/task-update-history';
 import { TaskUpdateForm } from '@/components/task-update-form';
 import { ReminderSnooze } from '@/components/reminder-snooze';
@@ -45,11 +46,7 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
       : Promise.resolve({ data: null, error: null }),
   ]);
   if (merged.error) throw new Error('ITEM_RELATIONSHIP_LOAD_FAILED');
-  const relationship = merged.data as {
-    source_name: string;
-    target_name: string;
-    target_id: string;
-  } | null;
+  const relationship = merged.data as MergedItemReference | null;
   if (delivery.error) throw new Error('REMINDER_STATUS_LOAD_FAILED');
   if (history.error) throw new Error('TASK_HISTORY_LOAD_FAILED');
   const name = (id: string | null) =>
@@ -117,14 +114,7 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
     <div className="page max-w-5xl">
       <PageHeader title={task.title} locale={locale} back="/tasks" />
       <div className="mb-5 grid gap-2">
-        {relationship && (
-          <p className="text-sm">
-            {t.mergePreviousItem}: {relationship.source_name} · {t.mergeInto}{' '}
-            <Link className="underline" href={`/items/${relationship.target_id}`}>
-              {relationship.target_name}
-            </Link>
-          </p>
-        )}
+        {relationship && <MergedItemNotice value={relationship} locale={locale} />}
         {task.remind_at && (
           <p className="text-sm">
             {t.pushTitle}:{' '}
@@ -164,7 +154,7 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
       </div>
       {canManage && (
         <div className="mb-5 flex flex-wrap gap-3">
-          {task.product_id && (
+          {task.product_id && (!relationship || relationship.target_active) && (
             <Link
               className="min-h-12 rounded-xl border p-3"
               href={

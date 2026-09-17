@@ -53,7 +53,7 @@ This is bounded at-least-once behavior: a provider may accept a notification bef
 
 ## Merge confirmation and historical references
 
-Shows Source -> Surviving item, target category/unit, per-location resulting quantities, minimum/target consequences, an explicit warning when target has no minimum, and the inactive-source/no ordinary Undo notice. Preview uses location-specific sums at database stock precision. Stock remains freshly calculated by the unchanged transaction when confirmed; concurrent changes can make the earlier preview stale. Task history is not rewritten; linked tasks show Previous item X / merged into Y and link to the survivor. A linked-task detail performs one small relationship RPC; item editing loads balances in parallel with its catalogue. No Home/location blocking calls are introduced.
+Shows Source -> Surviving item, target category/unit, per-location resulting quantities, minimum/target consequences, an explicit warning when target has no minimum, and the inactive-source/no ordinary Undo notice. Preview uses location-specific sums at database stock precision. Stock remains freshly calculated by the unchanged transaction when confirmed; concurrent changes can make the earlier preview stale. Task/Maintenance history is not rewritten; linked tasks show Previous item X / merged into Y and link to an active survivor (plain text if archived). A linked-task detail performs one small relationship RPC; item editing loads balances in parallel with its catalogue. No Home/location blocking calls are introduced.
 
 ## Verification and remaining boundaries
 

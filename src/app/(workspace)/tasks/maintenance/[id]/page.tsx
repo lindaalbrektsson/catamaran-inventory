@@ -1,3 +1,4 @@
+import { MergedItemNotice, type MergedItemReference } from '@/components/merged-item-reference';
 import { AssigneeLabel } from '@/components/assignee-label';
 import { StatusBadge } from '@/components/status-badge';
 import { compactDate } from '@/lib/list-presentation';
@@ -50,7 +51,7 @@ export default async function MaintenanceDetail({
   if (!task || !rule) notFound();
   const occurrences = [...(completed.data ?? []).slice(0, 20).reverse(), ...catalog.occurrences],
     ids = occurrences.map((x) => x.id);
-  const [updates, history, people, subtasks] = await Promise.all([
+  const [updates, history, people, subtasks, merged] = await Promise.all([
     ids.length
       ? collect((a, b) =>
           db
@@ -73,6 +74,9 @@ export default async function MaintenanceDetail({
         .order('id')
         .range(a, b),
     ),
+    task.product_id
+      ? db.rpc('item_merge_relationship', { p_id: task.product_id })
+      : Promise.resolve({ data: null, error: null }),
   ]);
   if (history.error || people.error) throw new Error('MAINTENANCE_HISTORY_FAILED');
   const name = (uid: string | null) =>
@@ -86,8 +90,11 @@ export default async function MaintenanceDetail({
           ['PENDING', 'IN_PROGRESS', 'READY', 'DONE'].includes(v)
         ? t[`maintenance${v}` as Key]
         : String(v ?? t.notSet);
+  if (merged.error) throw new Error('ITEM_RELATIONSHIP_LOAD_FAILED');
+  const relationship = merged.data as MergedItemReference | null;
   return (
     <div className="page max-w-3xl">
+      {relationship && <MergedItemNotice value={relationship} locale={locale} />}
       <PageHeader title={task.title} locale={locale} back="/tasks/maintenance" />
       <p>
         {t[`maintenance${rule.recurrence}`]}
