@@ -1,5 +1,6 @@
 'use client';
 import { useActionState, useState, useRef } from 'react';
+import { SlowOperationNotice } from './slow-operation-notice';
 import { uploadDocument } from '@/lib/document-upload';
 import { dictionary, type Locale } from '@/lib/i18n';
 import { documentAccess } from '@/lib/document-domain';
@@ -25,6 +26,7 @@ export function DocumentForm({
   const t = dictionary(locale),
     [state, action, pending] = useActionState(uploadDocument, {}),
     [request, setRequest] = useState(requestId),
+    [draftId, setDraftId] = useState(id),
     [access, setAccess] = useState(initial?.access_level ?? (owner ? 'OWNERS' : 'MANAGERS')),
     ref = usePreservedForm(),
     c = 'min-h-12 w-full rounded-xl border bg-background p-3';
@@ -38,12 +40,16 @@ export function DocumentForm({
         if (selected) data.set('file', selected);
         action(data);
       }}
-      onChange={() => setRequest(crypto.randomUUID())}
+      onChange={() => {
+        setRequest(crypto.randomUUID());
+        if (!initial && state.error === 'docInvalidFile') setDraftId(crypto.randomUUID());
+      }}
       className="grid max-w-3xl gap-4"
     >
-      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="id" value={draftId} />
       <input type="hidden" name="requestId" value={request} />
       <input type="hidden" name="version" value={initial?.version ?? 0} />
+      <SlowOperationNotice pending={pending} locale={locale} />
       <fieldset className="contents" disabled={pending}>
         <label className="grid gap-2">
           {t.docTitle}
@@ -134,10 +140,8 @@ export function DocumentForm({
         </div>
         {owner ? (
           <>
-            <label className="flex min-h-12 items-center gap-3">
-              <input type="checkbox" name="favorite" defaultChecked={initial?.favorite} />
-              {t.docFavorite}
-            </label>
+            {/* Preserve legacy metadata without exposing a manual Favorites workflow. */}
+            <input type="hidden" name="favorite" value={initial?.favorite ? 'on' : ''} />
             <label className="grid gap-2">
               {t.docAccess}
               <select

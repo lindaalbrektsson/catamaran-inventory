@@ -1,4 +1,5 @@
 import 'server-only';
+import { timeDatabaseRead } from '../performance';
 
 // Bound hung reads so the existing error/retry screen can render. Never retry or
 // abort a mutation here: a timed-out write might already have committed.
@@ -6,6 +7,7 @@ export const READ_TIMEOUT_MS = 15_000;
 // These RPCs only SELECT. Supabase transports them using POST by default.
 // Keep this allowlist narrow: writes must never inherit the read timeout.
 const readRpcs = new Set([
+  'item_merge_relationship',
   'task_people',
   'task_history',
   'reminder_people',
@@ -31,5 +33,7 @@ export const readFetch: typeof fetch = (input, init) => {
   if (method !== 'GET' && method !== 'HEAD' && !readRpc) return fetch(input, init);
   const signal = init?.signal ?? request?.signal;
   const timeout = AbortSignal.timeout(READ_TIMEOUT_MS);
-  return fetch(input, { ...init, signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
+  return timeDatabaseRead(request?.url ?? String(input), () =>
+    fetch(input, { ...init, signal: signal ? AbortSignal.any([signal, timeout]) : timeout }),
+  );
 };

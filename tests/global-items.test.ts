@@ -156,7 +156,7 @@ it('merge records both stock legs in each location and preserves original moveme
       [target],
     )
   ).rows[0].updated_at;
-  await user(crew);
+  await user(manager);
   await manage('MERGE', source, { target, targetUpdatedAt: updated });
   await db.exec('reset role');
   expect(
@@ -192,7 +192,7 @@ it('merge records both stock legs in each location and preserves original moveme
     )
   ).rows;
   expect(moves).toHaveLength(4);
-  expect(moves.every((m) => m.performed_by_user_id === crew)).toBe(true);
+  expect(moves.every((m) => m.performed_by_user_id === manager)).toBe(true);
   const mergeLeg = (
     await db.query<{ id: string }>(
       "select id from public.inventory_transactions where product_id=$1 and reason='ITEM_MERGE' limit 1",
@@ -383,3 +383,18 @@ it('Excel detects similar names before approval and enforces confirmation in the
     JSON.stringify([{ ...row, confirmDuplicate: true }]),
   ]);
 });
+
+it.each([crew, other])(
+  'legacy role %s cannot merge but retains normal catalog access',
+  async (actor) => {
+    const source = await manage('CREATE', null, { ...values, name: 'Source' });
+    const target = await manage('CREATE', null, { ...values, name: 'Target' });
+    await user(actor);
+    await db.exec('savepoint denied');
+    await expect(manage('MERGE', source, { target })).rejects.toThrow('FORBIDDEN');
+    await db.exec('rollback to savepoint denied');
+    expect(
+      await manage('CREATE', null, { ...values, name: 'Legacy catalog fixture' }),
+    ).toBeTruthy();
+  },
+);

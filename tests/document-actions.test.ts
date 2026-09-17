@@ -1,3 +1,4 @@
+vi.mock('@/lib/supabase/admin', () => ({ authAdmin: () => ({ rpc: m.rpc }) }));
 import { beforeEach, it, expect, vi } from 'vitest';
 const m = vi.hoisted(() => ({
   profile: vi.fn(),
@@ -81,3 +82,25 @@ it('manager can create but cannot administer document metadata', async () => {
   expect(m.rpc).toHaveBeenCalledWith('save_document', expect.anything());
   expect(await prepareDocument(values(), null)).toEqual({ error: 'FORBIDDEN' });
 });
+
+it.each(['OWNER', 'MANAGER'])(
+  '%s server validates bytes before privileged finalization',
+  async (role) => {
+    const bytes = Buffer.from('%PDF-1.4\nfixture\n%%EOF');
+    const actor = '40000000-0000-4000-8000-000000000001';
+    m.profile.mockResolvedValue({ role, id: actor });
+    m.maybeSingle.mockResolvedValue({
+      data: {
+        object_path: 'fixture',
+        document_id: 'document',
+        byte_size: bytes.length,
+        sha256: (await import('node:crypto')).createHash('sha256').update(bytes).digest('hex'),
+        content_type: 'application/pdf',
+      },
+    });
+    m.download.mockResolvedValue({ data: new Blob([bytes]), error: null });
+    const id = crypto.randomUUID();
+    expect(await finishDocument(id)).toEqual({ id: 'document' });
+    expect(m.rpc).toHaveBeenCalledWith('complete_document_file', { p_file: id, p_actor: actor });
+  },
+);

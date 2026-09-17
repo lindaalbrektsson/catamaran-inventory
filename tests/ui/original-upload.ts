@@ -1,3 +1,1 @@
-export async function uploadOriginalReceipt() {
-  return { error: 'RECEIPT_UPLOAD_INCOMPLETE' as const };
-}
+export { uploadReceipt as uploadOriginalReceipt } from './spending-actions';

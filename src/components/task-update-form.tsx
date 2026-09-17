@@ -131,7 +131,10 @@ export function TaskUpdateForm({
         />
         {state.error && <p role="alert">{t[state.error]}</p>}
         {state.saved && <p role="status">{t.maintenanceSaved}</p>}
-        <button disabled={busy} className={cls}>
+        <button
+          disabled={busy}
+          className="min-h-12 rounded-xl bg-primary p-3 font-semibold text-primary-foreground"
+        >
           {pending ? t.saving : t.maintenanceUpdate}
         </button>
       </fieldset>

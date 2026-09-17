@@ -1,6 +1,6 @@
 'use client';
 import { useSyncExternalStore, type ReactNode } from 'react';
-import { isMobilePwa } from '@/lib/mobile-pwa';
+import { isMobilePwa, mobilePlatform } from '@/lib/mobile-pwa';
 function subscribe(fn: () => void) {
   const media = matchMedia('(display-mode: standalone)');
   media.addEventListener('change', fn);
@@ -10,7 +10,20 @@ function subscribe(fn: () => void) {
     window.removeEventListener('focus', fn);
   };
 }
-export function MobilePwaOnly({ children }: { children: ReactNode }) {
-  const show = useSyncExternalStore(subscribe, isMobilePwa, () => false);
+function isMobile() {
+  return Boolean(mobilePlatform(navigator.userAgent, navigator.maxTouchPoints));
+}
+export function MobilePwaOnly({
+  children,
+  includeBrowser = false,
+}: {
+  children: ReactNode;
+  includeBrowser?: boolean;
+}) {
+  const show = useSyncExternalStore(
+    subscribe,
+    includeBrowser ? isMobile : isMobilePwa,
+    () => false,
+  );
   return show ? children : null;
 }

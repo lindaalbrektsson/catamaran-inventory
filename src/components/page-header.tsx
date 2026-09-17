@@ -7,15 +7,20 @@ export function PageHeader({
   description,
   back,
   locale,
+  locationType,
 }: {
   title: string;
   description?: string;
   back?: string;
   locale: Locale;
+  locationType?: string;
 }) {
   const t = dictionary(locale);
   return (
-    <header className="mb-7">
+    <header
+      data-location={locationType}
+      className={`mb-7 ${locationType ? 'location-header' : ''}`}
+    >
       {back && (
         <Link
           href={back}

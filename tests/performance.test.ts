@@ -1,11 +1,24 @@
 import { afterEach, expect, it, vi } from 'vitest';
 vi.mock('server-only', () => ({}));
-import { timed } from '@/lib/performance';
+import { timed, timeDatabaseRead } from '@/lib/performance';
 import { readFetch, READ_TIMEOUT_MS } from '@/lib/supabase/read-fetch';
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
+});
+it('database timing labels exclude host, filters, identities and response content', async () => {
+  vi.stubEnv('PERFORMANCE_LOGGING', '1');
+  const log = vi.spyOn(console, 'info').mockImplementation(() => {});
+  await timeDatabaseRead('https://PRIVATE.test/rest/v1/profiles?id=eq.PRIVATE', async () => ({
+    secret: 'PRIVATE',
+  }));
+  expect(log).toHaveBeenCalledTimes(1);
+  expect(log.mock.calls[0][0]).not.toContain('PRIVATE');
+  expect(JSON.parse(log.mock.calls[0][0]).operation).toBe('db.profiles');
+  await timeDatabaseRead('relative-path', async () => true);
+  await timeDatabaseRead('https://PRIVATE.test/unlisted', async () => true);
+  expect(log).toHaveBeenCalledTimes(1);
 });
 it.each([
   'task_people',

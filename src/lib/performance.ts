@@ -1,6 +1,13 @@
 import 'server-only';
 
 type Operation =
+  | 'auth.proxy'
+  | 'db.profiles'
+  | 'db.locations'
+  | 'db.products'
+  | 'db.categories'
+  | 'db.inventory_balances'
+  | 'db.purchase_needs'
   | 'updates.page'
   | 'maintenance.catalog'
   | 'auth.claims'
@@ -17,6 +24,27 @@ type Operation =
   | 'documents.list'
   | 'route.home'
   | 'route.location';
+
+// Deliberately exclude filters, query strings, identifiers, headers and payloads.
+export function timeDatabaseRead<T>(url: string, read: () => Promise<T>): Promise<T> {
+  let table: string | undefined;
+  try {
+    table = new URL(url).pathname.split('/').at(-1);
+  } catch {
+    return read();
+  }
+  switch (table) {
+    case 'profiles':
+    case 'locations':
+    case 'products':
+    case 'categories':
+    case 'inventory_balances':
+    case 'purchase_needs':
+      return timed(`db.${table}`, read);
+    default:
+      return read();
+  }
+}
 
 // Static operation labels only. Never serialize arguments, results or exceptions.
 export async function timed<T>(operation: Operation, read: () => PromiseLike<T>): Promise<T> {

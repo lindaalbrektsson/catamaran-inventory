@@ -18,7 +18,7 @@ export default async function Expenses({
   if (!can(profile.role, 'expenses.read'))
     return (
       <div className="page">
-        <EmptyState title={t.expenses} hint={t.spendingAccess} />
+        <EmptyState domain="receipts" title={t.expenses} hint={t.spendingAccess} />
       </div>
     );
   const search = await searchParams,
@@ -29,7 +29,7 @@ export default async function Expenses({
     <div className="page max-w-3xl">
       <PageHeader title={t.expenses} description={t.spendingIntro} locale={locale} />
       {result === null ? (
-        <EmptyState title={t.spendingSetup} hint={t.spendingSetupHint} />
+        <EmptyState domain="receipts" title={t.spendingSetup} hint={t.spendingSetupHint} />
       ) : (
         <>
           <div className="mb-5 grid gap-3 sm:grid-cols-2">
@@ -49,7 +49,7 @@ export default async function Expenses({
             </Button>
           </div>
           {!result.rows.length ? (
-            <EmptyState title={t.noExpenses} hint={t.noExpensesHint} />
+            <EmptyState domain="receipts" title={t.noExpenses} hint={t.noExpensesHint} />
           ) : (
             <div className="grid gap-3">
               {result.rows.map((row) => (

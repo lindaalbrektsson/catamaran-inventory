@@ -1,4 +1,9 @@
 'use client';
+import { EmptyState } from '@/components/empty-state';
+
+import { AssigneeLabel } from './assignee-label';
+import { StatusBadge } from './status-badge';
+import { compactDate } from '@/lib/list-presentation';
 import { TaskUpdateForm } from './task-update-form';
 import Link from 'next/link';
 import { useActionState, useState } from 'react';
@@ -129,12 +134,12 @@ export function MaintenanceList({
   const groups = planner ? ['due', 'pending'] : [tab];
   return (
     <div className="grid gap-4">
-      <nav aria-label={t.maintenance} className="flex gap-2">
+      <nav aria-label={t.maintenance} className="flex flex-wrap gap-2">
         {(['today', 'pending', 'recurring'] as const).map((x) => (
           <Link
             key={x}
             href={'/tasks/maintenance?tab=' + x}
-            className="min-h-12 rounded-xl border px-3 py-3"
+            className="selection-control min-h-12 rounded-xl border px-3 py-3"
             aria-current={!planner && tab === x ? 'page' : undefined}
           >
             {x === 'today'
@@ -175,7 +180,7 @@ export function MaintenanceList({
                   {group === 'due' ? t.maintenanceDue : t.maintenancePending}
                 </h2>
               )}
-              {!selected.length && <p>{t.maintenanceEmpty}</p>}
+              {!selected.length && <EmptyState domain="maintenance" title={t.maintenanceEmpty} />}
               {selected.map((task) => {
                 const r = rule(task.id),
                   o = open.find((x) => x.task_id === task.id);
@@ -201,12 +206,23 @@ export function MaintenanceList({
                     </Link>
                     {o && (
                       <>
-                        <p>
-                          {o.manual_assignee ||
-                            catalog.people.find((p) => p.id === o.assignee_id)?.display_name ||
-                            t.taskUnassigned}{' '}
-                          · {t[`maintenance${o.status}`]}
-                        </p>
+                        <div className="grid gap-2">
+                          <AssigneeLabel
+                            name={
+                              o.manual_assignee ||
+                              catalog.people.find((p) => p.id === o.assignee_id)?.display_name ||
+                              t.taskUnassigned
+                            }
+                            external={!!o.manual_assignee}
+                            assigned={!!(o.assignee_id || o.manual_assignee)}
+                            locale={locale}
+                          />
+                          <div>
+                            <StatusBadge tone={o.status === 'PENDING' ? 'attention' : 'active'}>
+                              {t[`maintenance${o.status}`]}
+                            </StatusBadge>
+                          </div>
+                        </div>
                         {o.remaining && (
                           <p className="break-words">
                             {t.maintenanceRemaining} {o.remaining}
@@ -219,7 +235,7 @@ export function MaintenanceList({
                       <p className="text-sm">
                         {t[`maintenance${r.recurrence}`]}
                         {r.custom_days ? ' · ' + r.custom_days : ''} · {t.maintenanceNext}:{' '}
-                        {r.next_due}
+                        {r.next_due ? compactDate(r.next_due, locale) : t.notSet}
                         {r.due_time ? ' · ' + r.due_time.slice(0, 5) : ''}
                         {r.last_completed && (
                           <>
@@ -267,7 +283,7 @@ export function MaintenanceWork({
     DONE: ['DONE'],
   } as const;
   return (
-    <form action={action} className="grid gap-3">
+    <form action={action} className="grid gap-3 rounded-xl bg-muted/40 p-3">
       <input type="hidden" name="id" value={o.id} />
       <input type="hidden" name="version" value={o.version} />
       <fieldset disabled={pending} className="contents">
@@ -288,6 +304,11 @@ export function MaintenanceWork({
             <option value="manual">{t.maintenanceManual}</option>
           </select>
         </label>
+        {assignee && (
+          <p className="text-xs text-muted-foreground">
+            {assignee === 'manual' ? t.uxExternal : t.uxAppUser}
+          </p>
+        )}
         {assignee === 'manual' ? (
           <label className="grid gap-2">
             {t.maintenancePerson}
@@ -322,7 +343,7 @@ export function MaintenanceWork({
           />
         </label>
         {state.error && <p role="alert">{t[state.error]}</p>}
-        <button className={control}>{pending ? t.saving : t.maintenanceSave}</button>
+        <button className={control}>{pending ? t.saving : t.uxSaveChanges}</button>
       </fieldset>
     </form>
   );

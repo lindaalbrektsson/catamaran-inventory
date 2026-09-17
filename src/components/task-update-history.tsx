@@ -81,6 +81,9 @@ export function TaskUpdateHistory({
         </article>
       ))}
       {busy && <p role="status">{t.loading}</p>}
+      {page && !page.rows.length && !busy && !error && (
+        <p className="py-2 text-sm text-muted-foreground">{t.uxNoUpdates}</p>
+      )}
       {error && <p role="alert">{t.updatesLoadFailed}</p>}
       {!busy && (error || page?.more) && (
         <button

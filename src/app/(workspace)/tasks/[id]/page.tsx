@@ -27,7 +27,7 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
     const r = await db.from('maintenance_rules').select('task_id').eq('task_id', id).maybeSingle();
     if (r.data) redirect('/tasks/maintenance/' + id);
   }
-  const [catalog, subtasks, history, delivery] = await Promise.all([
+  const [catalog, subtasks, history, delivery, merged] = await Promise.all([
     taskCatalog(),
     collect((a, b) =>
       db
@@ -40,7 +40,16 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
     ),
     db.rpc('task_history', { p_id: id }),
     db.rpc('reminder_delivery_status', { p_id: id }),
+    task.product_id
+      ? db.rpc('item_merge_relationship', { p_id: task.product_id })
+      : Promise.resolve({ data: null, error: null }),
   ]);
+  if (merged.error) throw new Error('ITEM_RELATIONSHIP_LOAD_FAILED');
+  const relationship = merged.data as {
+    source_name: string;
+    target_name: string;
+    target_id: string;
+  } | null;
   if (delivery.error) throw new Error('REMINDER_STATUS_LOAD_FAILED');
   if (history.error) throw new Error('TASK_HISTORY_LOAD_FAILED');
   const name = (id: string | null) =>
@@ -108,6 +117,14 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
     <div className="page max-w-5xl">
       <PageHeader title={task.title} locale={locale} back="/tasks" />
       <div className="mb-5 grid gap-2">
+        {relationship && (
+          <p className="text-sm">
+            {t.mergePreviousItem}: {relationship.source_name} · {t.mergeInto}{' '}
+            <Link className="underline" href={`/items/${relationship.target_id}`}>
+              {relationship.target_name}
+            </Link>
+          </p>
+        )}
         {task.remind_at && (
           <p className="text-sm">
             {t.pushTitle}:{' '}
@@ -151,10 +168,16 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
             <Link
               className="min-h-12 rounded-xl border p-3"
               href={
-                productLocation ? `/inventory/${productLocation}/${task.product_id}` : '/inventory'
+                relationship
+                  ? `/items/${relationship.target_id}`
+                  : productLocation
+                    ? `/inventory/${productLocation}/${task.product_id}`
+                    : '/inventory'
               }
             >
-              {catalog.products.find((x) => x.id === task.product_id)?.name ?? t.inventory}
+              {relationship?.target_name ??
+                catalog.products.find((x) => x.id === task.product_id)?.name ??
+                t.inventory}
             </Link>
           )}
           {task.need_id && (
@@ -214,7 +237,12 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
         )}
       <section className="my-5 min-w-0">
         <h2 className="mb-3 text-xl font-semibold">{t.updatesTitle}</h2>
-        <TaskUpdateHistory key={crypto.randomUUID()} task={id} locale={locale} people={catalog.people} />
+        <TaskUpdateHistory
+          key={crypto.randomUUID()}
+          task={id}
+          locale={locale}
+          people={catalog.people}
+        />
         {canManage && !task.archived && task.status !== 'DONE' && (
           <details>
             <summary className="min-h-12 cursor-pointer py-3">{t.maintenanceUpdate}</summary>

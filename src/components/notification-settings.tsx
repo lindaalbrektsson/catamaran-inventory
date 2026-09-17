@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useSyncExternalStore } from 'react';
+import Link from 'next/link';
 import { dictionary, type Locale } from '@/lib/i18n';
 import { MobilePwaOnly } from './mobile-pwa-only';
 import { isMobilePwa, mobilePlatform } from '@/lib/mobile-pwa';
@@ -21,9 +22,24 @@ function subscribePermission(callback: () => void) {
 }
 export function NotificationSettings(props: { locale: Locale; publicKey: string }) {
   return (
-    <MobilePwaOnly>
-      <MobileNotificationSettings {...props} />
+    <MobilePwaOnly includeBrowser>
+      <NotificationAccess {...props} />
     </MobilePwaOnly>
+  );
+}
+function NotificationAccess(props: { locale: Locale; publicKey: string }) {
+  const installed = useSyncExternalStore(subscribePermission, isMobilePwa, () => false);
+  const t = dictionary(props.locale);
+  return installed ? (
+    <MobileNotificationSettings {...props} />
+  ) : (
+    <section className="grid gap-4">
+      <h1 className="text-2xl font-semibold">{t.pushTitle}</h1>
+      <p>{t.uxInstallNotifications}</p>
+      <Link href="/install" className="inline-flex min-h-12 items-center underline">
+        {t.uxInstallGuide}
+      </Link>
+    </section>
   );
 }
 function MobileNotificationSettings({ locale, publicKey }: { locale: Locale; publicKey: string }) {

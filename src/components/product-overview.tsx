@@ -1,8 +1,10 @@
+import { stockStatus } from '@/lib/stock-status';
 import Link from 'next/link';
 import { ArchiveItem } from './archive-item';
-import { Plus, Minus, TriangleAlert } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 import { dictionary, number, type Locale } from '@/lib/i18n';
-import { isLowStock, can, type Role } from '@/lib/domain';
+import { StockBadge } from './stock-badge';
+import { can, type Role } from '@/lib/domain';
 import type { InventoryItem } from '@/lib/inventory';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
@@ -17,25 +19,24 @@ export function ProductOverview({
   locale: Locale;
   basePath: string;
 }) {
-  const t = dictionary(locale),
-    low = isLowStock(item.quantity, item.minimum_stock);
+  const t = dictionary(locale);
   return (
     <div>
       <Card className="mb-5 shadow-none">
         <CardContent className="p-6">
           <p className="eyebrow">{t.currentStock}</p>
           <p className="my-5">
-            <span className="text-5xl font-semibold tabular-nums tracking-tight break-all">
+            <span
+              data-stock={stockStatus(item.quantity, item.minimum_stock)}
+              className="stock-quantity text-5xl font-semibold tabular-nums tracking-tight break-all"
+            >
               {number(item.quantity, locale)}
             </span>
             <span className="ml-3 text-sm text-muted-foreground">{t[item.product.unit]}</span>
           </p>
-          {low && (
-            <p className="mb-5 flex items-center gap-2 rounded-lg bg-warning-soft p-3 text-sm text-warning">
-              <TriangleAlert className="size-4" aria-hidden="true" />
-              {t.lowStock}
-            </p>
-          )}
+          <div className="mb-5">
+            <StockBadge quantity={item.quantity} minimum={item.minimum_stock} locale={locale} />
+          </div>
           <dl className="grid grid-cols-2 gap-5 border-t pt-5">
             <div>
               <dt className="text-xs text-muted-foreground">{t.minimum}</dt>

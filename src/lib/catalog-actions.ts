@@ -1,5 +1,6 @@
 'use server';
 import { z } from 'zod';
+import { categoryIcons, categoryAccents } from './category-visuals';
 import { requireProfile } from './auth';
 import { supabase } from './supabase/server';
 import { revalidatePath } from 'next/cache';
@@ -50,6 +51,8 @@ export async function saveCategory(
       id: z.uuid(),
       name_en: z.string().trim().min(1).max(100),
       name_es: z.string().trim().min(1).max(100),
+      icon_key: z.enum(categoryIcons).or(z.literal('')).optional(),
+      accent_key: z.enum(categoryAccents).or(z.literal('')).optional(),
     })
     .safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: 'INVALID_INPUT' };
@@ -57,7 +60,12 @@ export async function saveCategory(
     await supabase()
   )
     .from('categories')
-    .upsert({ ...parsed.data, active: form.get('active') === 'on' });
+    .upsert({
+      ...parsed.data,
+      icon_key: parsed.data.icon_key || null,
+      accent_key: parsed.data.accent_key || null,
+      active: form.get('active') === 'on',
+    });
   if (error) return { error: 'UNKNOWN' };
   revalidatePath('/inventory', 'layout');
   revalidatePath('/items', 'layout');

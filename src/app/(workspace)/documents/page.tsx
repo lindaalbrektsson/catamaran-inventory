@@ -7,6 +7,7 @@ export default async function Documents() {
   return (
     <div className="page">
       <DocumentList
+        userId={p.id}
         documents={await getDocuments()}
         locale={locale}
         owner={p.role === 'OWNER'}

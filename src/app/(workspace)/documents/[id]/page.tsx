@@ -1,3 +1,4 @@
+import { DocumentOpened } from '@/components/document-opened';
 import { notFound } from 'next/navigation';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { supabase } from '@/lib/supabase/server';
@@ -45,7 +46,7 @@ export default async function DocumentDetail({ params }: { params: Promise<{ id:
     description: 'docDescription',
     category: 'docCategory',
     expiry_date: 'docExpiry',
-    favorite: 'docFavorite',
+    favorite: 'docLegacyPreference',
     archived: 'docArchived',
     access_level: 'docAccess',
     selected_users: 'docSelectPeople',
@@ -72,6 +73,7 @@ export default async function DocumentDetail({ params }: { params: Promise<{ id:
   const due = documentExpiry(d.expiry_date);
   return (
     <div className="page max-w-5xl">
+      {!d.archived && d.current_file_id && <DocumentOpened userId={p.id} documentId={d.id} />}
       <PageHeader title={d.title} back="/documents" locale={locale} />
       {d.archived && <p className="mb-4 font-semibold">{t.docArchived}</p>}
       {d.description && <p className="mb-4 whitespace-pre-wrap">{d.description}</p>}

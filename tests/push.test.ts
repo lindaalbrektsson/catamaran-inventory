@@ -41,7 +41,7 @@ it.each([404, 410])('cleans expired subscription outcome %s', async (statusCode)
   mocks.send.mockRejectedValue({ statusCode });
   expect(await deliverPush(sub, 'en')).toBe('EXPIRED');
 });
-it('ambiguous failures are terminal and never automatically retried', async () => {
+it('ambiguous failure is reported once for scheduler-controlled retry', async () => {
   mocks.send.mockRejectedValue(new Error('timeout'));
   expect(await deliverPush(sub, 'en')).toBe('FAILED');
   expect(mocks.send).toHaveBeenCalledTimes(1);
@@ -56,7 +56,7 @@ it('scheduler claims a delivery before sending and records expired endpoint', as
     error: null,
   }));
   mocks.rpc.mockResolvedValueOnce({
-    data: { ...sub, id: 'delivery', task: 'task', locale: 'en' },
+    data: { ...sub, id: 'delivery', claim_token: 'lease', task: 'task', locale: 'en' },
     error: null,
   });
   mocks.send.mockRejectedValue({ statusCode: 410 });
@@ -70,6 +70,7 @@ it('scheduler claims a delivery before sending and records expired endpoint', as
   expect(await response.json()).toEqual({ sent: 0, failed: 0, expired: 1 });
   expect(mocks.rpc).toHaveBeenCalledWith('finish_push', {
     p_id: 'delivery',
+    p_token: 'lease',
     p_outcome: 'EXPIRED',
     p_endpoint: sub.endpoint,
   });
@@ -142,4 +143,9 @@ it('grouped maintenance push reuses sender without task names or manual assignee
   const payload = JSON.parse(mocks.send.mock.calls[0][1]);
   expect(payload.body).toBe('3 maintenance checks are due.');
   expect(payload.url).toBe('/tasks/maintenance?tab=recurring');
+});
+
+it.each([429, 500, 502, 503])('provider %s is a retryable failure', async (statusCode) => {
+  mocks.send.mockRejectedValue({ statusCode });
+  expect(await deliverPush(sub, 'en')).toBe('FAILED');
 });

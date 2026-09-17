@@ -1,3 +1,7 @@
+import { CategoryEditor } from '@/components/category-editor';
+import { ListSkeleton } from '@/components/list-skeleton';
+import { NeedFilters } from '@/components/need-filters';
+import { NeedWorkflowFixture } from './need-workflow';
 import { VoiceFixture } from './voice';
 import { NotificationSettings } from '@/components/notification-settings';
 import { DeleteUserButton } from '@/components/delete-user-button';
@@ -121,7 +125,19 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.get('view')?.startsWith('document-') ? (
+        {params.get('view') === 'need-workflow' ? (
+          <NeedWorkflowFixture locale={locale} />
+        ) : params.get('view') === 'need-filters' ? (
+          <NeedFilters
+            locale={locale}
+            filters={{
+              status: params.get('status') ?? 'PENDING',
+              country: params.get('country') ?? '',
+            }}
+            locations={locations}
+            products={items.map((i) => i.product)}
+          />
+        ) : params.get('view')?.startsWith('document-') ? (
           <DocumentsFixture
             locale={locale}
             view={params.get('view')!}
@@ -137,7 +153,7 @@ createRoot(document.getElementById('root')!).render(
           <GlobalItems
             locale={locale}
             catalog={{
-              categories: [item.category],
+              categories: [item.category, items[2].category],
               locations,
               products: items.map((i) => i.product),
             }}
@@ -336,12 +352,30 @@ createRoot(document.getElementById('root')!).render(
           />
         ) : params.get('view') === 'receipt' || params.get('view') === 'intake' ? (
           <ReceiptUploader
-            intakeType={params.get('view') === 'intake' ? 'FUEL' : undefined}
+            intakeType={
+              params.get('view') === 'intake'
+                ? params.get('type') === 'STORE'
+                  ? 'STORE'
+                  : 'FUEL'
+                : undefined
+            }
             locale={locale}
             kind="EXPENSE"
             parentId="70000000-0000-4000-8000-000000000001"
             requestId="80000000-0000-4000-8000-000000000001"
           />
+        ) : params.get('view') === 'category-polish' ? (
+          <CategoryEditor
+            category={{
+              id: '90000000-0000-4000-8000-000000000001',
+              name_en: '',
+              name_es: '',
+              active: true,
+            }}
+            locale={locale}
+          />
+        ) : params.get('view') === 'skeleton-polish' ? (
+          <ListSkeleton label={t.loading} />
         ) : params.get('view') === 'locations' ? (
           <LocationCards locations={locations} locale={locale} canAdd />
         ) : params.get('view') === 'detail' ? (
@@ -374,7 +408,17 @@ createRoot(document.getElementById('root')!).render(
           </div>
         ) : (
           <InventoryList
-            items={items}
+            items={
+              params.has('statuses')
+                ? items.map((i, index) =>
+                    index === 1
+                      ? { ...i, quantity: 3 }
+                      : index === 2
+                        ? { ...i, minimum_stock: null }
+                        : i,
+                  )
+                : items
+            }
             locale={locale}
             action={params.get('action') as 'add' | 'remove' | 'transfer' | undefined}
           />

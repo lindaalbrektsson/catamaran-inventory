@@ -1,3 +1,6 @@
+import { AssigneeLabel } from '@/components/assignee-label';
+import { StatusBadge } from '@/components/status-badge';
+import { compactDate } from '@/lib/list-presentation';
 import { TaskUpdateHistory } from '@/components/task-update-history';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
@@ -130,13 +133,30 @@ export default async function MaintenanceDetail({
       {occurrences
         .slice()
         .reverse()
-        .map((o) => (
-          <section key={o.id} className="my-5 grid gap-4 rounded-xl border p-4">
+        .map((o, index, rows) => (
+          <section key={o.id} className="my-5 grid gap-4 rounded-xl border bg-card p-4">
+            {o.status === 'DONE' && (index === 0 || rows[index - 1].status !== 'DONE') && (
+              <h2 className="border-b pb-3 text-xl font-semibold">{t.uxPreviousWork}</h2>
+            )}
             <h2 className="text-lg font-semibold">
-              {t.maintenancePlanDate}: {o.plan_date} · {t[`maintenance${o.status}`]}
+              {t.maintenancePlanDate}:{' '}
+              <time dateTime={o.plan_date}>{compactDate(o.plan_date, locale)}</time> ·{' '}
+              <StatusBadge
+                tone={
+                  o.status === 'DONE' ? 'positive' : o.status === 'PENDING' ? 'attention' : 'active'
+                }
+              >
+                {t[`maintenance${o.status}`]}
+              </StatusBadge>
             </h2>
             <p>
-              {t.taskAssignee}: {o.manual_assignee || name(o.assignee_id)}
+              {t.taskAssignee}:{' '}
+              <AssigneeLabel
+                name={o.manual_assignee || name(o.assignee_id)}
+                external={!!o.manual_assignee}
+                assigned={!!(o.assignee_id || o.manual_assignee)}
+                locale={locale}
+              />
             </p>
             {o.remaining && (
               <p className="whitespace-pre-wrap font-medium">
@@ -182,10 +202,10 @@ export default async function MaintenanceDetail({
               people={people.data ?? []}
             />
             {o.status !== 'DONE' && !task.archived && (
-              <details>
-                <summary className="min-h-12 cursor-pointer py-3">{t.maintenanceUpdate}</summary>
+              <section className="grid gap-3 border-t pt-4">
+                <h3 className="font-semibold">{t.maintenanceUpdate}</h3>
                 <MaintenanceUpdateForm occurrence={o.id} locale={locale} />
-              </details>
+              </section>
             )}
           </section>
         ))}
@@ -202,7 +222,9 @@ export default async function MaintenanceDetail({
         )}
       </nav>
       <details className="my-5">
-        <summary className="min-h-12 cursor-pointer py-3">{t.maintenanceHistory}</summary>
+        <summary className="min-h-12 cursor-pointer py-3 font-semibold">
+          {t.maintenanceHistory}
+        </summary>
         {history.data?.map((a) => {
           const before = obj(a.before_data),
             after = obj(a.after_data);

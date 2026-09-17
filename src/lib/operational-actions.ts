@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireProfile } from './auth';
 import { supabase } from './supabase/server';
-import { validateOriginalReceipt, normalizeReceipt } from './receipt-image';
+import { authAdmin } from './supabase/admin';
+import { validateOriginalReceipt, validateProcessedReceipt } from './receipt-image';
 import type { ActionState } from './actions';
 import type { Key } from './i18n';
 export async function reverseStock(request: string, original: string): Promise<ActionState> {
@@ -47,7 +48,7 @@ export async function captureSimpleReceipt(
     return { error: 'RECEIPT_INVALID' };
   let bytes: Buffer;
   try {
-    bytes = await normalizeReceipt(new Uint8Array(await file.arrayBuffer()));
+    bytes = await validateProcessedReceipt(new Uint8Array(await file.arrayBuffer()));
   } catch {
     return { error: 'RECEIPT_INVALID' };
   }
@@ -81,7 +82,7 @@ export async function captureSimpleReceipt(
     )
       return { error: 'RECEIPT_UPLOAD_INCOMPLETE' };
   }
-  const completed = await db.rpc('complete_intake', { p_id: v.requestId });
+  const completed = await authAdmin().rpc('complete_intake', { p_id: v.requestId, p_actor: p.id });
   if (completed.error) return { error: 'RECEIPT_UPLOAD_INCOMPLETE' };
   revalidatePath('/expenses', 'layout');
   redirect('/expenses?saved=1');
@@ -130,20 +131,19 @@ export async function prepareOriginalReceipt(input: {
       type: z.enum(['FUEL', 'STORE']),
       payment: z.enum(['CASH', 'CARD', 'CREDIT']),
       hash: z.string().regex(/^[a-f0-9]{64}$/),
-      size: z.number().int().min(1).max(20971520),
-      mime: z.enum(['image/jpeg', 'image/png', 'image/webp']),
+      size: z.number().int().min(1).max(3145728),
+      mime: z.literal('image/jpeg'),
     })
     .safeParse(input);
   if (!parsed.success) return { error: 'RECEIPT_INVALID' as const };
   const v = parsed.data,
     db = await supabase();
-  const reserved = await db.rpc('reserve_original_receipt', {
+  const reserved = await db.rpc('capture_receipt', {
     p_id: v.id,
     p_type: v.type,
     p_payment: v.payment,
     p_hash: v.hash,
     p_size: v.size,
-    p_mime: v.mime,
   });
   if (reserved.error || !reserved.data) return { error: 'RECEIPT_UPLOAD_INCOMPLETE' as const };
   return { path: reserved.data };
@@ -159,7 +159,7 @@ export async function finishOriginalReceipt(id: string): Promise<ActionState> {
     .eq('id', id)
     .eq('uploaded_by', p.id)
     .single();
-  if (!r || !r.original_preserved) return { error: 'RECEIPT_INVALID' };
+  if (!r) return { error: 'RECEIPT_UPLOAD_INCOMPLETE' };
   const file = await db.storage.from('receipts').download(r.object_path);
   if (file.error || !file.data) return { error: 'RECEIPT_UPLOAD_INCOMPLETE' };
   const bytes = new Uint8Array(await file.data.arrayBuffer());
@@ -169,11 +169,12 @@ export async function finishOriginalReceipt(id: string): Promise<ActionState> {
   )
     return { error: 'RECEIPT_INVALID' };
   try {
-    await validateOriginalReceipt(bytes, r.content_type);
+    if (r.original_preserved) await validateOriginalReceipt(bytes, r.content_type);
+    else await validateProcessedReceipt(bytes);
   } catch {
     return { error: 'RECEIPT_INVALID' };
   }
-  const done = await db.rpc('complete_intake', { p_id: id });
+  const done = await authAdmin().rpc('complete_intake', { p_id: id, p_actor: p.id });
   if (done.error) return { error: 'RECEIPT_UPLOAD_INCOMPLETE' };
   revalidatePath('/expenses', 'layout');
   redirect('/expenses?saved=1');

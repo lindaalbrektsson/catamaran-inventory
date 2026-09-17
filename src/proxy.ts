@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { config as supabaseConfig, isConfigured } from '@/lib/supabase/config';
 import type { Database } from '@/lib/database.types';
+import { timed } from '@/lib/performance';
 export async function proxy(request: NextRequest) {
   if (!isConfigured()) return NextResponse.next();
   let response = NextResponse.next({ request });
@@ -16,7 +17,7 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  await client.auth.getClaims();
+  await timed('auth.proxy', () => client.auth.getClaims());
   response.headers.set('Cache-Control', 'private, no-store');
   return response;
 }

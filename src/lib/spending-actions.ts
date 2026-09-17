@@ -5,8 +5,9 @@ import { revalidatePath } from 'next/cache';
 import { requireProfile } from './auth';
 import { can } from './domain';
 import { supabase } from './supabase/server';
+import { authAdmin } from './supabase/admin';
 import { spendingSchema, receiptSchema, spendingPath, MAX_RECEIPT_BYTES } from './spending-domain';
-import { normalizeReceipt } from './receipt-image';
+import { validateProcessedReceipt } from './receipt-image';
 import type { ActionState } from './actions';
 
 export async function recordSpending(_previous: ActionState, form: FormData): Promise<ActionState> {
@@ -51,7 +52,7 @@ export async function uploadReceipt(_previous: ActionState, form: FormData): Pro
     return { error: 'RECEIPT_INVALID' };
   let bytes: Buffer;
   try {
-    bytes = await normalizeReceipt(new Uint8Array(await file.arrayBuffer()));
+    bytes = await validateProcessedReceipt(new Uint8Array(await file.arrayBuffer()));
   } catch {
     return { error: 'RECEIPT_INVALID' };
   }
@@ -90,7 +91,10 @@ export async function uploadReceipt(_previous: ActionState, form: FormData): Pro
     )
       return { error: 'RECEIPT_UPLOAD_INCOMPLETE' };
   }
-  const completed = await db.rpc('complete_receipt', { p_id: value.requestId });
+  const completed = await authAdmin().rpc('complete_receipt', {
+    p_id: value.requestId,
+    p_actor: profile.id,
+  });
   if (completed.error) return { error: 'RECEIPT_UPLOAD_INCOMPLETE' };
   revalidatePath('/expenses', 'layout');
   redirect(`${spendingPath(value.parentId, value.kind)}&receipt=1`);

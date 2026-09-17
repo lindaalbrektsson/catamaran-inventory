@@ -50,7 +50,7 @@ Subscriptions are private and tied to the authenticated UUID. Another account ca
 
 
 
-A unique task + reminder timestamp + user + endpoint claim is committed before sending. Concurrent cron calls cannot deliver the same occurrence twice. This favors at-most-once sends: a process crash or ambiguous network timeout can lose a notification; it is not automatically retried. Outcomes SENT/EXPIRED/FAILED are stored privately. HTTP 404/410 removes expired subscriptions. OS delivery, sound and timing are not guaranteed. Push TTL is one hour; in-app reminders remain available.
+A unique task + reminder timestamp + user + endpoint record deduplicates successful provider acceptance. The release-candidate migration `20260917000300_push_delivery_recovery.sql` replaces terminal claims with two-minute leases and per-attempt tokens. Temporary/ambiguous failures retry after 1, 5, 15 and 60 minutes, with five total attempts; abandoned leases recover. Confirmed SENT records are never reclaimed. HTTP 404/410 removes the matching user's expired subscription. A late old attempt cannot acknowledge a new lease. Ambiguous provider acceptance followed by a lost response can produce a bounded duplicate; this is at-least-once retry, not exactly-once delivery. OS delivery, sound and timing are not guaranteed. Push TTL is one hour; in-app reminders remain available. Apply the new migration and matching dispatcher together during the future approved rollout: old tokenless completion RPCs are intentionally revoked.
 
 
 

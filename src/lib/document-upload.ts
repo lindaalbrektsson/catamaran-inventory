@@ -55,16 +55,14 @@ export async function uploadDocument(
         process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
       );
       await uploadOnce('documents/' + prepared.path + '/' + metadata!.sha256, () =>
-        db.storage
-          .from('documents')
-          .upload(prepared.path!, file, {
-            contentType: file.type,
-            upsert: false,
-            cacheControl: '0',
-          }),
+        db.storage.from('documents').upload(prepared.path!, file, {
+          contentType: file.type,
+          upsert: false,
+          cacheControl: '0',
+        }),
       );
     } catch {
-      return { error: 'docUploadIncomplete' };
+      // A transport failure may hide accepted bytes; reconcile before retry.
     }
     const done = await finishDocument(prepared.file_id);
     if (done.error) return done;

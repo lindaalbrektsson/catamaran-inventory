@@ -1,4 +1,7 @@
 'use client';
+import { mergePreview } from '@/lib/merge-preview';
+import { CategoryMark } from './category-mark';
+import { EmptyState } from './empty-state';
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -8,43 +11,89 @@ import { dictionary, type Locale } from '@/lib/i18n';
 import { normalizedName } from '@/lib/quick-domain';
 import { units } from '@/lib/domain';
 import { manageGlobalItem } from '@/lib/global-items-actions';
+import { SearchField } from './search-field';
+import { ChevronRight } from 'lucide-react';
 import { Button } from './ui/button';
 
 const control = 'min-h-12 w-full rounded-xl border bg-background p-3';
 export function GlobalItems({ catalog, locale }: { catalog: ItemCatalog; locale: Locale }) {
   const t = dictionary(locale),
-    [query, setQuery] = useState('');
-  const items = catalog.products.filter(
-    (p) => p.active && normalizedName(p.name).includes(normalizedName(query)),
-  );
+    [query, setQuery] = useState(''),
+    [category, setCategory] = useState(''),
+    [sort, setSort] = useState('name');
+  const items = catalog.products
+    .filter(
+      (p) =>
+        p.active &&
+        (!category || p.category_id === category) &&
+        normalizedName(p.name).includes(normalizedName(query)),
+    )
+    .sort(
+      (a, b) =>
+        (sort === 'category'
+          ? (
+              catalog.categories.find((c) => c.id === a.category_id)?.[`name_${locale}`] ?? ''
+            ).localeCompare(
+              catalog.categories.find((c) => c.id === b.category_id)?.[`name_${locale}`] ?? '',
+              locale,
+            )
+          : sort === 'newest'
+            ? b.created_at.localeCompare(a.created_at)
+            : 0) || a.name.localeCompare(b.name, locale),
+    );
   return (
     <div className="grid gap-4">
       <Button asChild className="min-h-12">
         <Link href="/items/new">{t.addItem}</Link>
       </Button>
-      <label className="grid gap-2">
-        {t.catalogSearch}
-        <input
-          className={control}
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </label>
-      <ul className="grid gap-3 sm:grid-cols-2">
+      <SearchField label={t.catalogSearch} value={query} onChange={setQuery} />
+      <div className="grid grid-cols-2 gap-3">
+        <label className="grid gap-2 text-sm">
+          {t.category}
+          <select
+            className="selection-control"
+            data-active={!!category}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">{t.allCategories}</option>
+            {catalog.categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c[`name_${locale}`]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="grid gap-2 text-sm">
+          {t.uxSort}
+          <select value={sort} onChange={(e) => setSort(e.target.value)}>
+            <option value="name">{t.uxAlphabetical}</option>
+            <option value="category">{t.category}</option>
+            <option value="newest">{t.uxNewest}</option>
+          </select>
+        </label>
+      </div>
+      <ul className="grid gap-2 sm:grid-cols-2">
         {items.map((p) => (
           <li key={p.id}>
-            <Link href={`/items/${p.id}`} className="grid min-h-20 gap-1 rounded-xl border p-4">
-              <span className="break-words font-semibold">{p.name}</span>
-              <span className="text-sm text-muted-foreground">
-                {catalog.categories.find((c) => c.id === p.category_id)?.[`name_${locale}`]} ·{' '}
-                {t[p.unit]}
-              </span>
+            <Link
+              href={`/items/${p.id}`}
+              className="interactive-card flex min-h-20 items-center gap-3 rounded-xl border bg-card p-3"
+            >
+              <CategoryMark category={catalog.categories.find((c) => c.id === p.category_id)} />
+              <div className="min-w-0 flex-1">
+                <span className="block break-words font-semibold">{p.name}</span>
+                <span className="text-sm text-muted-foreground">
+                  {catalog.categories.find((c) => c.id === p.category_id)?.[`name_${locale}`]} ·{' '}
+                  {t[p.unit]}
+                </span>
+              </div>
+              <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
             </Link>
           </li>
         ))}
       </ul>
-      {!items.length && <p>{t.catalogEmpty}</p>}
+      {!items.length && <EmptyState title={t.catalogEmpty} />}
     </div>
   );
 }
@@ -261,19 +310,15 @@ export function GlobalItemEditor({
           </p>
           {dialog === 'MERGE' && (
             <>
-              <label className="grid gap-2">
-                {t.catalogSearch}
-                <input
-                  type="search"
-                  className={control}
-                  value={query}
-                  onChange={(e) => {
-                    setRequest(crypto.randomUUID());
-                    setQuery(e.target.value);
-                    setTarget('');
-                  }}
-                />
-              </label>
+              <SearchField
+                label={t.catalogSearch}
+                value={query}
+                onChange={(value) => {
+                  setRequest(crypto.randomUUID());
+                  setQuery(value);
+                  setTarget('');
+                }}
+              />
               <label className="grid gap-2">
                 {t.catalogMerge}
                 <select
@@ -293,9 +338,47 @@ export function GlobalItemEditor({
                 </select>
               </label>
               {selected && (
-                <p className="break-words">
-                  {item?.name} → {selected.name}
-                </p>
+                <div className="grid gap-3 text-sm">
+                  <p className="break-words font-semibold">
+                    {item?.name} → {selected.name}
+                  </p>
+                  <p>
+                    {t.category}:{' '}
+                    {
+                      catalog.categories.find((c) => c.id === selected.category_id)?.[
+                        `name_${locale}`
+                      ]
+                    }{' '}
+                    · {t.itemUnit}: {t[selected.unit]}
+                  </p>
+                  {selected.unit !== item?.unit && (
+                    <p role="alert" className="text-destructive">
+                      {t.catalogUnitConflict}
+                    </p>
+                  )}
+                  <p>{t.mergeTargetSettings}</p>
+                  {item &&
+                    catalog.balances &&
+                    mergePreview(item.id, selected.id, catalog.balances, catalog.locations).map(
+                      (row) => (
+                        <div key={row.location} className="rounded-lg border p-3">
+                          <p className="font-medium">
+                            {row.location}: {row.quantity} {t[selected.unit]}
+                          </p>
+                          <p>
+                            {t.minimum}: {row.minimum ?? t.uxNoMinimum}
+                          </p>
+                          {row.sourceMinimum !== null && row.minimum === null && (
+                            <p className="font-medium text-destructive">{t.mergeMinimumLost}</p>
+                          )}
+                          <p>
+                            {t.target}: {row.target ?? t.notSet}
+                          </p>
+                        </div>
+                      ),
+                    )}
+                  <p>{t.mergeNoUndo}</p>
+                </div>
               )}
             </>
           )}
@@ -314,7 +397,9 @@ export function GlobalItemEditor({
             <Button
               variant="destructive"
               className="min-h-12"
-              disabled={pending || (dialog === 'MERGE' && !selected)}
+              disabled={
+                pending || (dialog === 'MERGE' && (!selected || selected.unit !== item?.unit))
+              }
               onClick={() => save(dialog)}
             >
               {dialog === 'DELETE' ? t.catalogDelete : t.catalogMergeAction}

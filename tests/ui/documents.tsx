@@ -1,3 +1,4 @@
+import { DocumentOpened } from '@/components/document-opened';
 import { DocumentForm } from '@/components/document-form';
 import { DocumentList } from '@/components/document-list';
 import type { Locale } from '@/lib/i18n';
@@ -32,6 +33,7 @@ export function DocumentsFixture({
   view: string;
   owner: boolean;
 }) {
+  if (view === 'document-opened') return <DocumentOpened userId={person} documentId={id} />;
   return view === 'document-form' ? (
     <>
       <DocumentForm
@@ -45,6 +47,7 @@ export function DocumentsFixture({
     </>
   ) : (
     <DocumentList
+      userId={person}
       documents={[
         doc,
         {

@@ -10,6 +10,20 @@ async function user(id: string) {
     id,
   ]);
 }
+async function completeFile(id: string) {
+  const actor = (await db.query<{ id: string }>('select auth.uid() id')).rows[0].id;
+  await db.exec('reset role;set role service_role');
+  await db.exec('savepoint finalization');
+  try {
+    const result = await db.query('select public.complete_document_file($1,$2)', [id, actor]);
+    await user(actor);
+    return result;
+  } catch (error) {
+    await db.exec('rollback to savepoint finalization');
+    await user(actor);
+    throw error;
+  }
+}
 beforeAll(async () => {
   db = new PGlite();
   await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;create schema storage;
@@ -109,7 +123,7 @@ async function create(extra = {}) {
     id + '/' + file,
     JSON.stringify({ size: 100, mimetype: 'application/pdf' }),
   ]);
-  await db.query('select public.complete_document_file($1)', [file]);
+  await completeFile(file);
   return { id, file, path: id + '/' + file };
 }
 it('owner uploads and favorites a document with immutable server upload time', async () => {
@@ -212,7 +226,7 @@ it('replacement keeps original upload identity, versions and audits', async () =
     d.id + '/' + next,
     JSON.stringify({ size: 200, mimetype: 'image/png' }),
   ]);
-  await db.query('select public.complete_document_file($1)', [next]);
+  await completeFile(next);
   expect(
     (await db.query('select uploaded_by,uploaded_at from public.documents where id=$1', [d.id]))
       .rows[0],
@@ -268,9 +282,7 @@ it('file reservation is atomic and cannot publish missing bytes', async () => {
     byte_size: 100,
     sha256: 'a'.repeat(64),
   });
-  await expect(db.query('select public.complete_document_file($1)', [d])).rejects.toThrow(
-    'DOCUMENT_INCOMPLETE',
-  );
+  await expect(completeFile(d)).rejects.toThrow('DOCUMENT_INCOMPLETE');
 });
 
 it('manager uploads a private document, retries safely, completes and cannot elevate access', async () => {
@@ -290,7 +302,7 @@ it('manager uploads a private document, retries safely, completes and cannot ele
   ]);
   await operation('object.get_authenticated');
   expect((await db.query('select id from public.documents')).rows).toEqual([{ id }]);
-  await db.query('select public.complete_document_file($1)', [file]);
+  await completeFile(file);
   const r = await db.query<{ uploaded_by: string; uploaded_at: string }>(
     'select uploaded_by,uploaded_at from public.documents where id=$1',
     [id],
@@ -341,11 +353,17 @@ it('due task delivery claims are unique per device occurrence and exclude comple
     "insert into public.tasks(id,title,type_code,assignee_id,created_by,updated_by,remind_at) values($1,'Private title','TASK',$2,$2,$2,now())",
     [task, owner],
   );
-  const a = await db.query<{ r: { id: string; task: string } }>('select public.claim_due_push() r');
+  const a = await db.query<{ r: { id: string; task: string; claim_token: string } }>(
+    'select public.claim_due_push() r',
+  );
   expect(a.rows[0].r.task).toBe(task);
   expect(JSON.stringify(a.rows)).toContain('Private title');
   expect((await db.query('select public.claim_due_push() r')).rows).toEqual([{ r: null }]);
-  await db.query("select public.finish_push($1,'EXPIRED',$2)", [a.rows[0].r.id, endpoint]);
+  await db.query("select public.finish_push($1,'EXPIRED',$2,$3)", [
+    a.rows[0].r.id,
+    endpoint,
+    a.rows[0].r.claim_token,
+  ]);
   expect((await db.query('select * from private.push_subscriptions')).rows).toEqual([]);
 });
 it('unassigned reminders go to creator, completed and inactive users get no push', async () => {
@@ -360,4 +378,175 @@ it('unassigned reminders go to creator, completed and inactive users get no push
   await db.query("update public.tasks set status='IN_PROGRESS' where id=$1", [task]);
   await db.query('update public.profiles set active=false where id=$1', [owner]);
   expect((await db.query('select public.claim_due_push() r')).rows).toEqual([{ r: null }]);
+});
+
+it('category visual metadata is nullable, constrained, audited and Owner-only', async () => {
+  const before = await db.query<{
+    id: string;
+    name_en: string;
+    name_es: string;
+    active: boolean;
+    icon_key: string | null;
+    accent_key: string | null;
+  }>('select * from public.categories order by id');
+  expect(before.rows.length).toBeGreaterThan(0);
+  const c = before.rows[0];
+  expect(c.icon_key).toBeNull();
+  expect(c.accent_key).toBeNull();
+  await db.query("update public.categories set icon_key='waves',accent_key='teal' where id=$1", [
+    c.id,
+  ]);
+  const after = (
+    await db.query(
+      'select name_en,name_es,active,icon_key,accent_key from public.categories where id=$1',
+      [c.id],
+    )
+  ).rows[0];
+  expect(after).toEqual({
+    name_en: c.name_en,
+    name_es: c.name_es,
+    active: c.active,
+    icon_key: 'waves',
+    accent_key: 'teal',
+  });
+  const audit = await db.query<{ after_data: { icon_key?: string } }>(
+    "select after_data from public.audit_events where entity_type='categories' and entity_id=$1 order by created_at desc",
+    [c.id],
+  );
+  expect(
+    audit.rows.some((r) => (r.after_data as { icon_key?: string })?.icon_key === 'waves'),
+  ).toBe(true);
+  const created = await db.query<{ icon_key: string; accent_key: string }>(
+    "insert into public.categories(name_en,name_es,icon_key,accent_key) values('Equipment','Equipo','box','sand') returning icon_key,accent_key",
+  );
+  expect(created.rows[0]).toEqual({ icon_key: 'box', accent_key: 'sand' });
+  await user(manager);
+  const changed = await db.query(
+    "update public.categories set accent_key='coral' where id=$1 returning id",
+    [c.id],
+  );
+  expect(changed.rows).toHaveLength(0);
+});
+it('category whitelist rejects arbitrary icon names and CSS values', async () => {
+  await db.exec('savepoint invalid_visual');
+  await expect(
+    db.query(
+      "insert into public.categories(name_en,name_es,icon_key) values('Fixture','Ejemplo','javascript:alert(1)')",
+    ),
+  ).rejects.toThrow();
+  await db.exec('rollback to savepoint invalid_visual');
+  await expect(
+    db.query(
+      "insert into public.categories(name_en,name_es,accent_key) values('Fixture','Ejemplo','#ffffff')",
+    ),
+  ).rejects.toThrow();
+  await db.exec('rollback to savepoint invalid_visual');
+});
+
+it.each(['complete_document_file', 'complete_intake', 'complete_receipt'])(
+  'rejects direct authenticated %s even with a forged actor',
+  async (name) => {
+    for (const actor of [owner, manager]) {
+      await user(actor);
+      expect(
+        (
+          await db.query<{ allowed: boolean }>(
+            "select has_function_privilege('authenticated',$1,'EXECUTE') allowed",
+            ['public.' + name + '(uuid,uuid)'],
+          )
+        ).rows[0].allowed,
+      ).toBe(false);
+      await db.exec('savepoint denied');
+      await expect(
+        db.query(`select public.${name}($1,$2)`, [crypto.randomUUID(), actor]),
+      ).rejects.toThrow('permission denied');
+      await db.exec('rollback to savepoint denied');
+    }
+  },
+);
+
+type Delivery = { id: string; claim_token: string };
+async function dueDelivery() {
+  await subscribe();
+  await db.exec('reset role;update private.push_subscriptions set mobile_pwa=true');
+  await db.query(
+    "insert into public.tasks(id,title,type_code,created_by,updated_by,remind_at) values($1,'Retry fixture','TASK',$2,$2,now())",
+    [crypto.randomUUID(), owner],
+  );
+  return claimDelivery();
+}
+async function claimDelivery() {
+  return (await db.query<{ r: Delivery | null }>('select public.claim_due_push() r')).rows[0].r!;
+}
+async function finishDelivery(d: Delivery, outcome: string) {
+  await db.query('select public.finish_push($1,$2,$3,$4)', [
+    d.id,
+    outcome,
+    endpoint,
+    d.claim_token,
+  ]);
+}
+it('transient failure backs off, retries and never resends after success', async () => {
+  const first = await dueDelivery();
+  await finishDelivery(first, 'FAILED');
+  expect(await claimDelivery()).toBeNull();
+  await db.exec("update private.push_deliveries set next_attempt_at=now()-interval '1 second'");
+  const retry = await claimDelivery();
+  expect(retry.id).toBe(first.id);
+  expect(retry.claim_token).not.toBe(first.claim_token);
+  await finishDelivery(first, 'EXPIRED');
+  expect((await db.query('select * from private.push_subscriptions')).rows).toHaveLength(1);
+  await finishDelivery(retry, 'SENT');
+  expect(await claimDelivery()).toBeNull();
+});
+it('abandoned claims recover after lease and attempts are bounded', async () => {
+  let d = await dueDelivery();
+  for (let i = 1; i < 5; i++) {
+    expect(await claimDelivery()).toBeNull();
+    await db.exec("update private.push_deliveries set lease_until=now()-interval '1 second'");
+    const next = await claimDelivery();
+    expect(next.id).toBe(d.id);
+    expect(next.claim_token).not.toBe(d.claim_token);
+    d = next;
+  }
+  await db.exec("update private.push_deliveries set lease_until=now()-interval '1 second'");
+  expect(await claimDelivery()).toBeNull();
+  expect(
+    (await db.query('select delivery_state,attempts from private.push_deliveries')).rows,
+  ).toEqual([{ delivery_state: 'EXHAUSTED', attempts: 5 }]);
+});
+it('overlapping claims do not acquire the same live lease', async () => {
+  const first = await dueDelivery();
+  expect(first).toBeTruthy();
+  expect(await Promise.all([claimDelivery(), claimDelivery(), claimDelivery()])).toEqual([
+    null,
+    null,
+    null,
+  ]);
+});
+
+it('all old single-argument finalizers are inaccessible in the private schema', async () => {
+  await db.exec('reset role');
+  for (const name of ['complete_document_file', 'complete_intake', 'complete_receipt'])
+    expect(
+      (
+        await db.query<{ allowed: boolean }>(
+          "select has_function_privilege('authenticated',$1,'EXECUTE') allowed",
+          ['private.' + name + '(uuid)'],
+        )
+      ).rows[0].allowed,
+    ).toBe(false);
+});
+
+it('one user with multiple devices gets an independent lease for each device', async () => {
+  const first = await dueDelivery();
+  await db.query(
+    "insert into private.push_subscriptions(endpoint,user_id,p256dh,auth_key,mobile_pwa,created_at) values($1,$2,$3,$4,true,now()-interval '1 hour')",
+    [endpoint + 'second', owner, 'a'.repeat(87), 'a'.repeat(22)],
+  );
+  const second = await claimDelivery();
+  expect(second.id).not.toBe(first.id);
+  expect(await claimDelivery()).toBeNull();
+  await finishDelivery(first, 'SENT');
+  expect(await claimDelivery()).toBeNull();
 });

@@ -1,6 +1,11 @@
 'use client';
+import { EmptyState } from './empty-state';
+import { ClipboardCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { StatusBadge } from './status-badge';
+import { CalendarClock, ChevronRight } from 'lucide-react';
+import { compactDate, relativeDue } from '@/lib/list-presentation';
 import { dictionary, type Locale } from '@/lib/i18n';
 import { taskIndicators, taskStatuses } from '@/lib/task-domain';
 import type { Task, TaskType } from '@/lib/database.types';
@@ -82,7 +87,12 @@ export function TaskList({
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         {home ? (
-          <h2 className="text-xl font-semibold">{t.tasksTitle}</h2>
+          <h2 className="flex items-center gap-3 text-xl font-semibold">
+            <span className="domain-mark">
+              <ClipboardCheck aria-hidden="true" className="size-5" />
+            </span>
+            {t.tasksTitle}
+          </h2>
         ) : (
           <h1 className="text-2xl font-semibold">{t.tasksTitle}</h1>
         )}
@@ -95,6 +105,16 @@ export function TaskList({
           </Link>
         )}
       </div>
+      {!home && canManage && (
+        <Link
+          href="/tasks/maintenance"
+          className="mb-4 flex min-h-12 items-center gap-3 rounded-xl border p-3"
+        >
+          <CalendarClock aria-hidden="true" className="size-5" />
+          <span className="flex-1">{t.maintenance}</span>
+          <ChevronRight aria-hidden="true" className="size-4" />
+        </Link>
+      )}
       {home ? (
         <>
           <p className="mb-3 text-sm">
@@ -102,17 +122,19 @@ export function TaskList({
             {t.taskDueCount.replace('{n}', String(soon.length))}
           </p>
           <Link
-            className="mb-4 inline-flex min-h-12 items-center underline"
+            className="mb-4 inline-flex min-h-12 items-center gap-2 rounded-xl border px-3"
             href="/tasks?assignee=me"
           >
             {t.taskViewMine}
+            <ChevronRight aria-hidden="true" className="size-4" />
           </Link>
           {canManage && (
             <Link
-              className="ml-4 inline-flex min-h-12 items-center underline"
+              className="mb-4 ml-2 inline-flex min-h-12 items-center gap-2 rounded-xl border px-3"
               href="/tasks?assignee="
             >
               {t.taskViewAll}
+              <ChevronRight aria-hidden="true" className="size-4" />
             </Link>
           )}
         </>
@@ -122,7 +144,7 @@ export function TaskList({
             <button
               type="button"
               aria-pressed={assignee === actorId}
-              className={`${c} ${assignee === actorId ? 'bg-secondary font-semibold' : ''}`}
+              className={`selection-control ${c} ${assignee === actorId ? 'bg-secondary font-semibold' : ''}`}
               onClick={() => setFilters({ ...filters, assignee: actorId })}
             >
               {t.taskMyTasks}
@@ -130,7 +152,7 @@ export function TaskList({
             <button
               type="button"
               aria-pressed={assignee === ''}
-              className={`${c} ${assignee === '' ? 'bg-secondary font-semibold' : ''}`}
+              className={`selection-control ${c} ${assignee === '' ? 'bg-secondary font-semibold' : ''}`}
               onClick={() => setFilters({ ...filters, assignee: '' })}
             >
               {t.taskAllTasks}
@@ -139,7 +161,8 @@ export function TaskList({
               type="button"
               aria-expanded={filterOpen}
               aria-controls="task-filters"
-              className={`${c} ml-auto`}
+              aria-pressed={filterCount > 0 || filterOpen}
+              className={`selection-control ${c} ml-auto`}
               onClick={() => {
                 setDraft(filters);
                 setFilterOpen(!filterOpen);
@@ -281,29 +304,45 @@ export function TaskList({
             >
               <h3 className="break-words font-semibold">{task.title}</h3>
               <p className="mt-2 text-sm">
-                {t[`taskStatus${task.status}`]} ·{' '}
-                {type ? (locale === 'es' ? type.name_es : type.name_en) : task.type_code}
+                <StatusBadge
+                  tone={
+                    task.status === 'DONE'
+                      ? 'positive'
+                      : task.status === 'IN_PROGRESS'
+                        ? 'active'
+                        : 'attention'
+                  }
+                >
+                  {t[`taskStatus${task.status}`]}
+                </StatusBadge>{' '}
+                <span className="rounded bg-muted px-2 py-1 text-xs">
+                  {type ? (locale === 'es' ? type.name_es : type.name_en) : task.type_code}
+                </span>
               </p>
               <p className="mt-1 text-sm">
+                {t.taskAssignee}:{' '}
                 {people.find((p) => p.id === task.assignee_id)?.display_name ?? t.taskUnassigned}
               </p>
-              {task.due_date && (
+              {task.due_date ? (
                 <p className="mt-1 text-sm">
-                  {t.taskDueDate}: <time dateTime={task.due_date}>{task.due_date}</time>
+                  <time dateTime={task.due_date}>{compactDate(task.due_date, locale)}</time>
+                  {task.status !== 'DONE' && <> · {relativeDue(task.due_date, clock, locale)}</>}
                 </p>
+              ) : (
+                <p className="mt-1 text-sm text-muted-foreground">{t.uxNoDue}</p>
               )}
               <div className="mt-2 flex flex-wrap gap-2">
                 {taskIndicators(task, clock).map((k) => (
-                  <span className="rounded-lg bg-secondary px-2 py-1 text-sm font-medium" key={k}>
+                  <StatusBadge key={k} tone={k === 'taskOverdue' ? 'problem' : 'attention'}>
                     {t[k]}
-                  </span>
+                  </StatusBadge>
                 ))}
               </div>
             </Link>
           );
         })}
       </div>
-      {!displayed.length && <p className="py-4 text-muted-foreground">{t.taskEmpty}</p>}
+      {!displayed.length && <EmptyState domain="tasks" title={t.taskEmpty} />}
     </section>
   );
 }

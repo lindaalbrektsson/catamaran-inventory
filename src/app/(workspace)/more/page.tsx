@@ -6,7 +6,15 @@ import { signOut } from '@/lib/actions';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { LanguageSwitch } from '@/components/language-switch';
+import {
+  ReceiptText,
+  ClipboardPlus,
+  FilePlus2,
+  Package,
+  Bell,
+  Users,
+  ChevronRight,
+} from 'lucide-react';
 export default async function More() {
   const profile = await requireProfile(),
     locale = await getLocale(),
@@ -25,50 +33,54 @@ export default async function More() {
                   ? t[profile.role]
                   : t.roleReview}
             </p>
-            <p className="mt-4 text-sm text-muted-foreground">{t.scopeNote}</p>
-          </div>
-          <div className="flex items-center justify-between py-4">
-            <span className="text-sm font-medium">{t.language}</span>
-            <LanguageSwitch locale={locale} />
           </div>
           <form action={signOut} className="pt-5">
             <Button variant="outline">{t.signOut}</Button>
           </form>
         </CardContent>
       </Card>
-      <Link href="/items" className="mt-5 flex min-h-14 items-center rounded-xl border p-4">
-        {t.catalogTitle}
-      </Link>
-      {['OWNER', 'MANAGER'].includes(profile.role) && (
-        <Link href="/needs" className="mt-5 flex min-h-14 items-center rounded-xl border p-4">
-          {t.needsTitle}
-        </Link>
-      )}
-      <Link href="/expenses" className="mt-5 flex min-h-14 items-center rounded-xl border p-4">
-        {t.receipts}
-      </Link>
-      <MobilePwaOnly>
-        <Link
-          href="/notifications"
-          className="mt-5 flex min-h-14 items-center rounded-xl border p-4"
-        >
-          {t.pushTitle}
-        </Link>
+      <h2 className="mb-3 mt-6 font-semibold">{t.uxNavigation}</h2>
+      <nav className="grid gap-2" aria-label={t.uxNavigation}>
+        {[
+          { href: '/items', label: t.catalogTitle, icon: Package },
+          { href: '/expenses', label: t.receipts, icon: ReceiptText },
+          { href: '/tasks', label: t.tasksTitle, icon: ClipboardPlus },
+          { href: '/documents', label: t.documents, icon: FilePlus2 },
+        ].map(({ href, label, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className="flex min-h-14 items-center gap-3 rounded-xl border bg-card p-3"
+          >
+            <Icon aria-hidden="true" className="size-5 text-primary" />
+            <span className="flex-1">{label}</span>
+            <ChevronRight aria-hidden="true" className="size-4" />
+          </Link>
+        ))}
+
+        {profile.account_admin && (
+          <Link
+            href="/staff"
+            className="mt-5 hidden min-h-14 items-center rounded-xl border p-4 md:flex"
+          >
+            <Users aria-hidden="true" className="mr-3 size-5" />
+            {t.staffManagement}
+          </Link>
+        )}
+      </nav>
+      <MobilePwaOnly includeBrowser>
+        <section className="mt-6" aria-label={t.uxSettings}>
+          <h2 className="mb-3 font-semibold">{t.uxSettings}</h2>
+          <Link
+            href="/notifications"
+            className="flex min-h-14 items-center gap-3 rounded-xl border bg-card p-3"
+          >
+            <Bell aria-hidden="true" className="size-5 text-primary" />
+            <span className="flex-1">{t.pushTitle}</span>
+            <ChevronRight aria-hidden="true" className="size-4" />
+          </Link>
+        </section>
       </MobilePwaOnly>
-      <Link href="/tasks" className="mt-5 flex min-h-14 items-center rounded-xl border p-4">
-        {t.tasksTitle}
-      </Link>
-      <Link href="/documents" className="mt-5 flex min-h-14 items-center rounded-xl border p-4">
-        {t.documents}
-      </Link>
-      {profile.account_admin && (
-        <Link
-          href="/staff"
-          className="mt-5 hidden min-h-14 items-center rounded-xl border p-4 md:flex"
-        >
-          {t.staffManagement}
-        </Link>
-      )}
     </div>
   );
 }

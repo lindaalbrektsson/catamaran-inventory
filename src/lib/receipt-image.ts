@@ -35,3 +35,23 @@ export async function validateOriginalReceipt(input: Uint8Array, mime: string) {
     .jpeg()
     .toBuffer();
 }
+
+// Trusted validation of already-processed receipt bytes: fully decode, do not
+// JPEG-encode a second time. The exact validated bytes are stored and hashed.
+export async function validateProcessedReceipt(input: Uint8Array): Promise<Buffer> {
+  if (!input.length || input.length > MAX_RECEIPT_BYTES) throw new Error('RECEIPT_INVALID');
+  const image = sharp(input, { limitInputPixels: 40_000_000, animated: false });
+  const m = await image.metadata();
+  if (
+    m.format !== 'jpeg' ||
+    (m.pages ?? 1) !== 1 ||
+    !m.width ||
+    !m.height ||
+    m.width > 2400 ||
+    m.height > 4000 ||
+    (m.orientation && m.orientation !== 1)
+  )
+    throw new Error('RECEIPT_INVALID');
+  await image.stats();
+  return Buffer.from(input);
+}

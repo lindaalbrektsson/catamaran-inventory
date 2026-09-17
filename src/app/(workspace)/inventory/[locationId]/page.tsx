@@ -1,4 +1,9 @@
+import { ListSkeleton } from '@/components/list-skeleton';
 import { timed } from '@/lib/performance';
+import { Suspense } from 'react';
+import type { Locale } from '@/lib/i18n';
+import type { InventoryItem } from '@/lib/inventory';
+import type { Location } from '@/lib/database.types';
 import { QuickMove } from '@/components/quick-move';
 import { LowNeedSuggestions } from '@/components/low-need-suggestions';
 import { getLocations } from '@/lib/inventory';
@@ -30,6 +35,7 @@ async function renderLocationInventory({
     return (
       <div className="page">
         <PageHeader
+          locationType={location.type}
           title={`${t.addStock} · ${location.name}`}
           back={`/inventory/${locationId}`}
           locale={locale}
@@ -48,19 +54,23 @@ async function renderLocationInventory({
   const moving =
     ['remove', 'transfer'].includes(search.action ?? '') &&
     ['OWNER', 'MANAGER'].includes(profile.role);
-  const [location, allItems, destinations] = await Promise.all([
+  const inventory = getInventory(locationId, showInactive);
+  // Observe early failures while the authorized location loads. The original
+  // rejection still reaches the route error boundary when its section renders.
+  void inventory.catch(() => {});
+  const [location, destinations] = await Promise.all([
     getLocation(locationId),
-    getInventory(locationId, showInactive),
     moving ? getLocations() : Promise.resolve([]),
   ]);
-  const items = showInactive ? allItems.filter((i) => !i.product.active) : allItems;
   if (
     ['remove', 'transfer'].includes(search.action ?? '') &&
     ['OWNER', 'MANAGER'].includes(profile.role)
-  )
+  ) {
+    const items = await inventory;
     return (
       <div className="page">
         <PageHeader
+          locationType={location.type}
           title={`${t[search.action as 'remove' | 'transfer']} · ${location.name}`}
           back="/"
           locale={locale}
@@ -75,11 +85,13 @@ async function renderLocationInventory({
         />
       </div>
     );
+  }
   return (
     <div className="page">
       <PageHeader
+        locationType={location.type}
         title={location.name}
-        description={search.action ? t.chooseStockItem : t.inventoryIntro}
+        description={search.action ? t.chooseStockItem : undefined}
         back="/inventory"
         locale={locale}
       />
@@ -99,24 +111,17 @@ async function renderLocationInventory({
           </div>
         </>
       )}
-      {['OWNER', 'MANAGER'].includes(profile.role) && (
-        <LowNeedSuggestions
-          items={items.filter((i) => i.product.active)}
-          location={location}
-          locale={locale}
-        />
-      )}
       {!search.action && ['OWNER', 'MANAGER'].includes(profile.role) && (
         <div className="mb-4 flex gap-3">
           <Link
-            className="inline-flex min-h-12 items-center rounded-xl border p-3"
+            className="selection-control inline-flex min-h-12 items-center rounded-xl border p-3"
             aria-current={!showInactive ? 'page' : undefined}
             href={`/inventory/${locationId}`}
           >
             {t.itemActive}
           </Link>
           <Link
-            className="inline-flex min-h-12 items-center rounded-xl border p-3"
+            className="selection-control inline-flex min-h-12 items-center rounded-xl border p-3"
             aria-current={showInactive ? 'page' : undefined}
             href={`/inventory/${locationId}?inactive=1`}
           >
@@ -124,19 +129,64 @@ async function renderLocationInventory({
           </Link>
         </div>
       )}
+      <Suspense fallback={<ListSkeleton label={t.loading} />}>
+        <LocationInventoryContent
+          inventory={inventory}
+          location={location}
+          locale={locale}
+          inactive={showInactive}
+          low={search.low === '1'}
+          canUseNeeds={['OWNER', 'MANAGER'].includes(profile.role)}
+          action={
+            ['add', 'remove', 'transfer'].includes(search.action ?? '') &&
+            ['OWNER', 'MANAGER'].includes(profile.role)
+              ? (search.action as 'add' | 'remove' | 'transfer')
+              : undefined
+          }
+        />
+      </Suspense>
+    </div>
+  );
+}
+
+async function LocationInventoryContent({
+  inventory,
+  location,
+  locale,
+  inactive,
+  low,
+  canUseNeeds,
+  action,
+}: {
+  inventory: Promise<InventoryItem[]>;
+  location: Location;
+  locale: Locale;
+  inactive: boolean;
+  low: boolean;
+  canUseNeeds: boolean;
+  action?: 'add' | 'remove' | 'transfer';
+}) {
+  const allItems = await inventory;
+  const items = inactive ? allItems.filter((item) => !item.product.active) : allItems;
+  return (
+    <>
+      {canUseNeeds && (
+        <Suspense fallback={<ListSkeleton label={dictionary(locale).loading} rows={1} />}>
+          <LowNeedSuggestions
+            items={items.filter((item) => item.product.active)}
+            location={location}
+            locale={locale}
+          />
+        </Suspense>
+      )}
       <InventoryList
-        inactive={showInactive}
+        inactive={inactive}
         items={items}
         locale={locale}
-        initialLow={search.low === '1'}
-        action={
-          ['add', 'remove', 'transfer'].includes(search.action ?? '') &&
-          ['OWNER', 'MANAGER'].includes(profile.role)
-            ? (search.action as 'add' | 'remove' | 'transfer')
-            : undefined
-        }
+        initialLow={low}
+        action={action}
       />
-    </div>
+    </>
   );
 }
 

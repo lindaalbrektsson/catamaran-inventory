@@ -40,8 +40,8 @@ test('isolated inventory component searches, filters and fits mobile', async ({ 
   await expect(page.getByRole('heading', { name: 'Belikin Beer' })).toBeVisible();
   expect(
     await page
-      .locator('[data-slot="card"]')
-      .first()
+      .getByRole('link', { name: /Belikin Beer/ })
+      .locator(':scope > div')
       .evaluate((el) => parseFloat(getComputedStyle(el).borderRadius)),
   ).toBeGreaterThan(0);
   await page.getByRole('searchbox').fill('Water');
@@ -51,7 +51,7 @@ test('isolated inventory component searches, filters and fits mobile', async ({ 
   await page.getByRole('combobox', { name: 'Category' }).selectOption({ label: 'Boat supplies' });
   await expect(page.getByRole('heading', { name: 'Paper Towels' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Water', exact: true })).toHaveCount(0);
-  await page.getByRole('combobox').selectOption('');
+  await page.getByRole('combobox', { name: 'Category', exact: true }).selectOption('');
   await page.getByRole('button', { name: 'Low stock', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Belikin Beer' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Water', exact: true })).toHaveCount(0);

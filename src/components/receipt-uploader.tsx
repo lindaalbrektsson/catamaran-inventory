@@ -4,8 +4,10 @@ import { useActionState, useEffect, useRef, useState } from 'react';
 import { uploadReceipt } from '@/lib/spending-actions';
 import { uploadOriginalReceipt } from '@/lib/original-upload';
 import { dictionary, type Locale } from '@/lib/i18n';
-import { MAX_RECEIPT_BYTES, type SpendingKind } from '@/lib/spending-domain';
+import { type SpendingKind } from '@/lib/spending-domain';
 import { usePreservedForm } from './use-preserved-form';
+import { processReceiptImage } from '@/lib/receipt-image-client';
+import { SlowOperationNotice } from './slow-operation-notice';
 import { Button } from './ui/button';
 
 export function ReceiptUploader({
@@ -25,8 +27,11 @@ export function ReceiptUploader({
     formRef = usePreservedForm();
   const camera = useRef<HTMLInputElement>(null),
     gallery = useRef<HTMLInputElement>(null);
+  const [stage, setStage] = useState<'uploading' | 'checking'>('uploading');
   const [state, action, pending] = useActionState(
-    intakeType ? uploadOriginalReceipt : uploadReceipt,
+    intakeType
+      ? (previous, form: FormData) => uploadOriginalReceipt(previous, form, setStage)
+      : uploadReceipt,
     {},
   );
   const [id, setId] = useState(requestId);
@@ -46,42 +51,14 @@ export function ReceiptUploader({
     setInvalid(false);
     setFile(null);
     setPreview('');
-    let bitmap: ImageBitmap | undefined;
     try {
-      if (
-        !['image/jpeg', 'image/png', 'image/webp'].includes(selected.type) ||
-        selected.size > 20 * 1024 * 1024
-      )
-        throw new Error('INVALID');
-      bitmap = await createImageBitmap(selected);
-      if (bitmap.width * bitmap.height > 40_000_000) throw new Error('INVALID');
-      if (intakeType) {
-        setFile(selected);
-        setPreview(URL.createObjectURL(selected));
-        setId(crypto.randomUUID());
-        return;
-      }
-      const scale = Math.min(1, 2400 / bitmap.width, 4000 / bitmap.height);
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(bitmap.width * scale);
-      canvas.height = Math.round(bitmap.height * scale);
-      const context = canvas.getContext('2d');
-      if (!context) throw new Error('INVALID');
-      context.fillStyle = '#fff';
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, 'image/jpeg', 0.85),
-      );
-      if (!blob || blob.size > MAX_RECEIPT_BYTES) throw new Error('INVALID');
-      const normalized = new File([blob], 'receipt.jpg', { type: 'image/jpeg' });
+      const normalized = await processReceiptImage(selected);
       setFile(normalized);
       setPreview(URL.createObjectURL(normalized));
       setId(crypto.randomUUID());
     } catch {
       setInvalid(true);
     } finally {
-      bitmap?.close();
       setProcessing(false);
     }
   }
@@ -179,8 +156,15 @@ export function ReceiptUploader({
           ))}
         </fieldset>
       )}
+      <SlowOperationNotice pending={pending} locale={locale} />
       <Button type="submit" disabled={!file || pending || processing}>
-        {pending ? t.saving : t.uploadReceipt}
+        {pending
+          ? intakeType
+            ? stage === 'checking'
+              ? t.uploadChecking
+              : t.docUploading
+            : t.saving
+          : t.uploadReceipt}
       </Button>
       {!intakeType && <p className="text-xs text-muted-foreground">{t.receiptPrivate}</p>}
     </form>

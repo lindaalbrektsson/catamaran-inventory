@@ -31,8 +31,14 @@ export function QuickMove({
   return (
     <div className="grid max-w-xl gap-4">
       {mode === 'transfer' && destinations.length === 1 && (
-        <p className="rounded-xl bg-secondary p-4">
-          {location.name} → {destinations[0].name}
+        <p className="flex flex-wrap items-center gap-2 rounded-xl border p-3">
+          <span data-location={location.type} className="location-header">
+            {location.name}
+          </span>
+          <span aria-hidden="true">→</span>
+          <span data-location={destinations[0].type} className="location-header">
+            {destinations[0].name}
+          </span>
         </p>
       )}
       <label className="grid gap-2">

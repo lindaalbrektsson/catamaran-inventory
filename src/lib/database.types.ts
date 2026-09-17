@@ -147,7 +147,14 @@ export type Location = {
   active: boolean;
   created_at: string;
 };
-export type Category = { id: string; name_en: string; name_es: string; active: boolean };
+export type Category = {
+  id: string;
+  name_en: string;
+  name_es: string;
+  active: boolean;
+  icon_key?: string | null;
+  accent_key?: string | null;
+};
 export type Spending = {
   id: string;
   category_id: string;
@@ -282,7 +289,7 @@ export type Database = {
       claim_push_test: { Args: { p_endpoint: string }; Returns: Json };
       claim_due_push: { Args: Record<string, never>; Returns: Json };
       finish_push: {
-        Args: { p_id: string; p_outcome: string; p_endpoint: string };
+        Args: { p_id: string; p_outcome: string; p_endpoint: string; p_token: string };
         Returns: undefined;
       };
 
@@ -306,7 +313,8 @@ export type Database = {
         };
         Returns: Json;
       };
-      complete_document_file: { Args: { p_file: string }; Returns: string };
+      item_merge_relationship: { Args: { p_id: string }; Returns: Json };
+      complete_document_file: { Args: { p_file: string; p_actor: string }; Returns: string };
       document_people: {
         Args: Record<string, never>;
         Returns: { id: string; display_name: string; active: boolean }[];
@@ -380,7 +388,7 @@ export type Database = {
       };
       claim_due_maintenance_push: { Args: Record<string, never>; Returns: Json };
       finish_maintenance_push: {
-        Args: { p_id: string; p_outcome: string; p_endpoint: string };
+        Args: { p_id: string; p_outcome: string; p_endpoint: string; p_token: string };
         Returns: undefined;
       };
       confirm_mobile_push: { Args: { p_endpoint: string; p_user: string }; Returns: undefined };
@@ -487,7 +495,7 @@ export type Database = {
         Args: { p_id: string; p_type: string; p_payment: string; p_hash: string; p_size: number };
         Returns: string;
       };
-      complete_intake: { Args: { p_id: string }; Returns: undefined };
+      complete_intake: { Args: { p_id: string; p_actor: string }; Returns: undefined };
       review_intake: {
         Args: { p_id: string; p_status: string; p_details: Json };
         Returns: undefined;
@@ -518,7 +526,7 @@ export type Database = {
         };
         Returns: string;
       };
-      complete_receipt: { Args: { p_id: string }; Returns: undefined };
+      complete_receipt: { Args: { p_id: string; p_actor: string }; Returns: undefined };
       transfer_stock: {
         Args: {
           p_request_id: string;

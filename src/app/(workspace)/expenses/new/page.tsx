@@ -35,7 +35,7 @@ export default async function NewExpense({
           />
         </div>
       ) : (
-        <EmptyState title={t.spendingSetup} hint={t.spendingSetupHint} />
+        <EmptyState domain="receipts" title={t.spendingSetup} hint={t.spendingSetupHint} />
       )}
     </div>
   );

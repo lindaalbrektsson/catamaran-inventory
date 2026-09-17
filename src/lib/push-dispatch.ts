@@ -24,6 +24,7 @@ export async function dispatchDuePush() {
         }
         const d = r.data as {
           id: string;
+          claim_token: string;
           task: string;
           title: string;
           count?: number;
@@ -40,6 +41,7 @@ export async function dispatchDuePush() {
         );
         const done = await db.rpc(maintenance ? 'finish_maintenance_push' : 'finish_push', {
           p_id: d.id,
+          p_token: d.claim_token,
           p_outcome: outcome,
           p_endpoint: d.endpoint,
         });

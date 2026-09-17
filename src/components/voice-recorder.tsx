@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Mic, Square, Trash2 } from 'lucide-react';
 import { dictionary, type Locale, type Key } from '@/lib/i18n';
-import { RECORDING_TYPES, VOICE_MAX_BYTES, voiceTime } from '@/lib/voice-domain';
+import { RECORDING_TYPES, VOICE_MAX_BYTES, VOICE_MAX_SECONDS, voiceTime } from '@/lib/voice-domain';
 export type Recording = { file: File; duration: number };
 export function VoicePlayer({
   src,
@@ -136,7 +136,7 @@ export function VoiceRecorder({
         if (!alive.current) return;
         setPhase('ready');
         onBusy(false);
-        const duration = Math.min(180, (performance.now() - began) / 1000);
+        const duration = Math.min(VOICE_MAX_SECONDS, (performance.now() - began) / 1000);
         if (tooBig) {
           setError('voiceSize');
           return;
@@ -157,7 +157,7 @@ export function VoiceRecorder({
       timer.current = setInterval(() => {
         const elapsed = (performance.now() - began) / 1000;
         setSeconds(elapsed);
-        if (elapsed >= 179) {
+        if (elapsed >= VOICE_MAX_SECONDS - 1) {
           setError('voiceLimit');
           stop();
         }
@@ -182,9 +182,25 @@ export function VoiceRecorder({
         </button>
       ) : phase === 'recording' ? (
         <>
-          <p role="status" className="font-semibold text-red-700">
-            {t.voiceRecording} · {voiceTime(seconds)}
-          </p>
+          <div
+            className={`rounded-xl border p-3 ${seconds >= VOICE_MAX_SECONDS - 30 ? 'border-warning bg-warning-soft text-warning' : 'bg-muted'}`}
+          >
+            <p role="status" className="font-semibold">
+              {t.voiceRecording} ·{' '}
+              <span
+                role="timer"
+                aria-live="off"
+                aria-label={t.voiceElapsed}
+                className="tabular-nums"
+              >
+                {voiceTime(seconds).padStart(5, '0')} /{' '}
+                {voiceTime(VOICE_MAX_SECONDS).padStart(5, '0')}
+              </span>
+            </p>
+            {seconds >= VOICE_MAX_SECONDS - 30 && (
+              <p className="mt-1 text-sm">{t.voiceNearLimit}</p>
+            )}
+          </div>
           <button type="button" className={cls} onClick={stop}>
             <Square size={18} />
             {t.voiceStop}

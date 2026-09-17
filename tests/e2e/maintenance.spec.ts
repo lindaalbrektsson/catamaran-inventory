@@ -42,7 +42,7 @@ test('manual assignee, remaining summary and Ready status stay on one screen', a
   await expect(page.getByLabel("Person's name", { exact: true })).toHaveValue('Charlie');
   await page.getByRole('combobox', { name: 'Status', exact: true }).selectOption('READY');
   await page.getByRole('textbox', { name: 'What remains?', exact: true }).fill('Final inspection');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(page.getByRole('alert')).toBeVisible();
   const data = await page.evaluate(() =>
     JSON.parse(sessionStorage.getItem('maintenance-fixture')!),
@@ -93,7 +93,7 @@ test('Spanish maintenance and photo capture controls', async ({ page }) => {
 
 test('Add shortcut opens planner without creating a task', async ({ page }) => {
   await page.goto(base + 'maintenance-add');
-  await page.getByRole('link', { name: 'Today / Work plan', exact: true }).click();
+  await page.getByRole('link', { name: "Plan today's work", exact: true }).click();
   await expect(page).toHaveURL(/\/tasks\/maintenance\/plan$/);
   expect(await page.evaluate(() => sessionStorage.getItem('maintenance-fixture'))).toBeNull();
 });

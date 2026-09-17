@@ -220,7 +220,10 @@ it('private upload, completion and owner review preserve original data and restr
     `intake/${id}/receipt.jpg`,
     { mimetype: 'image/jpeg', size: 128 },
   ]);
-  await db.query('select public.complete_intake($1)', [id]);
+  const actor = (await db.query<{ id: string }>('select auth.uid() id')).rows[0].id;
+  await db.exec('reset role;set role service_role');
+  await db.query('select public.complete_intake($1,$2)', [id, actor]);
+  await user(actor);
   await db.exec('savepoint bad');
   await expect(db.query("select public.review_intake($1,'REVIEWED','{}')", [id])).rejects.toThrow(
     'FORBIDDEN',
@@ -273,7 +276,10 @@ it('preserves original receipt metadata and bytes path, retries exactly and deni
     first.rows[0].reserve_original_receipt,
     JSON.stringify({ mimetype: 'image/png', size: 5000000 }),
   ]);
-  await db.query('select public.complete_intake($1)', [id]);
+  const actor = (await db.query<{ id: string }>('select auth.uid() id')).rows[0].id;
+  await db.exec('reset role;set role service_role');
+  await db.query('select public.complete_intake($1,$2)', [id, actor]);
+  await user(actor);
   await user(other);
   expect(
     (await db.query('select * from public.receipt_intake where id=$1', [id])).rows,

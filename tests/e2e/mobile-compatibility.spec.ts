@@ -88,7 +88,9 @@ const views = [
 test('long new item names wrap in the Add suggestions at 320px', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.goto('http://127.0.0.1:4174/?view=quick-add&lang=es');
-  await page.getByRole('combobox').fill('SnorkelingEquipmentReplacement'.repeat(4));
+  await page
+    .getByRole('combobox', { name: 'Escribe el nombre del artículo' })
+    .fill('SnorkelingEquipmentReplacement'.repeat(4));
   await expect(page.getByRole('listbox')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const list = page.getByRole('listbox');

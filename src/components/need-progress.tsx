@@ -24,7 +24,7 @@ export function NeedProgress({
       <input type="hidden" name="requestId" value={request} />
       <button
         disabled={pending}
-        className="min-h-11 w-full rounded-lg border border-primary/20 bg-secondary px-2 py-2 text-sm font-medium leading-tight text-primary"
+        className="min-h-11 w-full rounded-lg border border-primary bg-background px-2 py-2 text-sm font-medium leading-tight text-primary"
       >
         {pending ? t.saving : status === 'PENDING' ? t.needMarkOrdered : t.needMarkDone}
       </button>

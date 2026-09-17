@@ -1,4 +1,6 @@
 'use client';
+import { stockStatus } from '@/lib/stock-status';
+import { SearchField } from './search-field';
 import { useState } from 'react';
 import Link from 'next/link';
 import type { InventoryItem } from '@/lib/inventory';
@@ -42,15 +44,9 @@ export function OwnerInventory({
   return (
     <div className="grid gap-6">
       <div className="grid grid-cols-3 gap-3">
-        <label>
-          {t.search}
-          <input
-            type="search"
-            className="mt-1 min-h-12 w-full rounded-xl border bg-background px-3"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </label>
+        <div className="self-end">
+          <SearchField label={t.search} value={query} onChange={setQuery} />
+        </div>
         <label>
           {t.itemLocation}
           <select value={location} onChange={(e) => setLocation(e.target.value)}>
@@ -105,7 +101,12 @@ export function OwnerInventory({
                 <td className="border-b p-3">
                   {locations.find((l) => l.id === i.location_id)?.name}
                 </td>
-                <td className="border-b p-3 font-semibold">{number(i.quantity, locale)}</td>
+                <td
+                  data-stock={stockStatus(i.quantity, i.minimum_stock)}
+                  className="stock-quantity border-b p-3 font-semibold tabular-nums"
+                >
+                  {number(i.quantity, locale)}
+                </td>
                 <td className="border-b p-3">{t[i.product.unit]}</td>
                 <td className="border-b p-3">{i.minimum_stock ?? t.notSet}</td>
                 <td className="border-b p-3">{i.target_stock ?? t.notSet}</td>
@@ -125,18 +126,14 @@ export function OwnerInventory({
       </div>
       <section>
         <h2 className="mb-3 text-xl font-semibold">{t.history}</h2>
-        <label>
-          {t.searchHistory}
-          <input
-            type="search"
-            className="mt-1 min-h-12 w-full rounded-xl border bg-background px-3"
-            value={historyQuery}
-            onChange={(e) => {
-              setHistoryQuery(e.target.value);
-              setLimit(50);
-            }}
-          />
-        </label>
+        <SearchField
+          label={t.searchHistory}
+          value={historyQuery}
+          onChange={(value) => {
+            setHistoryQuery(value);
+            setLimit(50);
+          }}
+        />
         <div className="mt-4 divide-y rounded-xl border">
           {history.slice(0, limit).map((m) => (
             <Link

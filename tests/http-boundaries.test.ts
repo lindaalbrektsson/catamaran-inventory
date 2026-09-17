@@ -1,3 +1,4 @@
+vi.mock('@/lib/supabase/admin', () => ({ authAdmin: () => ({ rpc: mock.rpc }) }));
 import { it, expect, vi, beforeEach } from 'vitest';
 import sharp from 'sharp';
 const mock = vi.hoisted(() => ({
@@ -103,7 +104,10 @@ it('does not complete an original with a mismatched hash', async () => {
 });
 it('completes a verified original and returns to the receipt queue', async () => {
   await expect(finishOriginalReceipt(id)).rejects.toThrow('REDIRECT:/expenses?saved=1');
-  expect(mock.rpc).toHaveBeenCalledWith('complete_intake', { p_id: id });
+  expect(mock.rpc).toHaveBeenCalledWith('complete_intake', {
+    p_id: id,
+    p_actor: '40000000-0000-4000-8000-000000000001',
+  });
 });
 it('denies manager receipt review before any database write', async () => {
   mock.profile.mockResolvedValue({ role: 'MANAGER', active: true });
@@ -130,4 +134,43 @@ it('reviews receipts with decimal-comma amounts', async () => {
       p_details: expect.objectContaining({ amount: '12.50' }),
     }),
   );
+});
+
+it.each([
+  ['OWNER', 'FUEL'],
+  ['MANAGER', 'FUEL'],
+  ['OWNER', 'STORE'],
+  ['MANAGER', 'STORE'],
+])('%s finalizes validated %s intake through server', async (role, type) => {
+  const actor = '40000000-0000-4000-8000-000000000001';
+  mock.profile.mockResolvedValue({ role, id: actor });
+  const jpeg = await sharp(bytes).jpeg().toBuffer();
+  mock.row.mockResolvedValue({
+    data: {
+      receipt_type: type,
+      object_path: 'fixture',
+      original_preserved: false,
+      byte_size: jpeg.length,
+      content_type: 'image/jpeg',
+      content_sha256: createHash('sha256').update(jpeg).digest('hex'),
+    },
+  });
+  mock.download.mockResolvedValue({ data: new Blob([new Uint8Array(jpeg)]), error: null });
+  await expect(finishOriginalReceipt(id)).rejects.toThrow('REDIRECT:');
+  expect(mock.rpc).toHaveBeenCalledWith('complete_intake', { p_id: id, p_actor: actor });
+});
+it('matching metadata/hash cannot finalize malformed bytes', async () => {
+  const invalid = Buffer.from('not jpeg');
+  mock.row.mockResolvedValue({
+    data: {
+      object_path: 'fixture',
+      original_preserved: false,
+      byte_size: invalid.length,
+      content_type: 'image/jpeg',
+      content_sha256: createHash('sha256').update(invalid).digest('hex'),
+    },
+  });
+  mock.download.mockResolvedValue({ data: new Blob([invalid]), error: null });
+  expect(await finishOriginalReceipt(id)).toEqual({ error: 'RECEIPT_INVALID' });
+  expect(mock.rpc).not.toHaveBeenCalled();
 });

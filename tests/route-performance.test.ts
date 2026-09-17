@@ -4,6 +4,8 @@ const state = vi.hoisted(() => ({
   peak: 0,
   starts: [] as string[],
   blockSecondary: false,
+  blockInventory: false,
+  failInventory: false,
 }));
 async function delay<T>(name: string, value: T): Promise<T> {
   state.starts.push(name);
@@ -21,7 +23,12 @@ vi.mock('@/lib/auth', () => ({
 vi.mock('@/lib/inventory', () => ({
   getLocations: () => delay('locations', []),
   getLocation: () => delay('location', { id: 'fixture', name: 'Bodega' }),
-  getInventory: () => delay('inventory', []),
+  getInventory: () =>
+    state.failInventory
+      ? Promise.reject(new Error('DATA_LOAD_FAILED'))
+      : state.blockInventory
+        ? new Promise(() => {})
+        : delay('inventory', []),
 }));
 vi.mock('@/lib/tasks', () => ({
   taskSummary: () =>
@@ -47,6 +54,8 @@ import Home from '@/app/(workspace)/page';
 import LocationPage from '@/app/(workspace)/inventory/[locationId]/page';
 beforeEach(() => {
   state.blockSecondary = false;
+  state.blockInventory = false;
+  state.failInventory = false;
   state.active = 0;
   state.peak = 0;
   state.starts = [];
@@ -93,4 +102,26 @@ it('Home location actions render without waiting for stalled Tasks or Documents'
     new Promise((resolve) => setTimeout(() => resolve(null), 1000)),
   ]);
   expect(result).not.toBeNull();
+});
+
+it('location header and actions render while inventory is still pending', async () => {
+  state.blockInventory = true;
+  const result = await Promise.race([
+    LocationPage({
+      params: Promise.resolve({ locationId: 'fixture' }),
+      searchParams: Promise.resolve({}),
+    }),
+    new Promise((resolve) => setTimeout(() => resolve(null), 500)),
+  ]);
+  expect(result).not.toBeNull();
+});
+
+it('streamed inventory failures still reach the existing error boundary', async () => {
+  state.failInventory = true;
+  const page = await LocationPage({
+    params: Promise.resolve({ locationId: 'fixture' }),
+    searchParams: Promise.resolve({}),
+  });
+  const content = page.props.children.at(-1).props.children;
+  await expect(content.type(content.props)).rejects.toThrow('DATA_LOAD_FAILED');
 });

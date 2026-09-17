@@ -1,3 +1,4 @@
+import { ListSkeleton } from '@/components/list-skeleton';
 import { Suspense } from 'react';
 import type { Locale } from '@/lib/i18n';
 import { timed } from '@/lib/performance';
@@ -50,7 +51,9 @@ async function renderHome() {
   const { pending, ordered } = counts;
   return (
     <div className="page">
-      <h1 className="mb-6 text-2xl font-semibold">{t.brand}</h1>
+      <div className="sea-lines-soft mb-4 rounded-xl px-1 py-2">
+        <h1 className="eyebrow">{t.home}</h1>
+      </div>
       {profile.role === 'OWNER' && (
         <Link
           href="/inventory/overview"
@@ -67,7 +70,9 @@ async function renderHome() {
       {canUseNeeds && (
         <section className="mt-4 rounded-2xl border bg-card p-5" aria-labelledby="home-needs">
           <div className="flex min-h-14 items-center gap-4">
-            <ShoppingBag aria-hidden="true" className="size-7 text-primary" />
+            <span className="domain-mark">
+              <ShoppingBag aria-hidden="true" className="size-5" />
+            </span>
             <h2 id="home-needs" className="text-xl font-semibold">
               {t.needsTitle}
             </h2>
@@ -95,7 +100,9 @@ async function renderHome() {
       {can(profile.role, 'receipts.upload') && (
         <section className="mt-4 rounded-2xl border bg-card p-5" aria-labelledby="home-receipts">
           <div className="flex min-h-14 items-center gap-4">
-            <ReceiptText aria-hidden="true" className="size-7 text-primary" />
+            <span className="domain-mark">
+              <ReceiptText aria-hidden="true" className="size-5" />
+            </span>
             <h2 id="home-receipts" className="text-xl font-semibold">
               {t.receipts}
             </h2>
@@ -108,23 +115,16 @@ async function renderHome() {
           </Link>
         </section>
       )}
-      <Suspense
-        fallback={
-          <p role="status" className="mt-4 min-h-24">
-            {t.tasksTitle}: {t.loading}
-          </p>
-        }
-      >
+      <Suspense fallback={<ListSkeleton label={`${t.tasksTitle}: ${t.loading}`} rows={2} />}>
         <HomeTasks data={tasks} locale={locale} actorId={profile.id} canManage={canUseNeeds} />
       </Suspense>
-      <Suspense
-        fallback={
-          <p role="status" className="mt-4 min-h-24">
-            {t.documents}: {t.loading}
-          </p>
-        }
-      >
-        <HomeDocuments data={documents} locale={locale} owner={profile.role === 'OWNER'} />
+      <Suspense fallback={<ListSkeleton label={`${t.documents}: ${t.loading}`} rows={2} />}>
+        <HomeDocuments
+          userId={profile.id}
+          data={documents}
+          locale={locale}
+          owner={profile.role === 'OWNER'}
+        />
       </Suspense>
     </div>
   );
@@ -168,10 +168,12 @@ async function HomeTasks({
   );
 }
 async function HomeDocuments({
+  userId,
   data,
   locale,
   owner,
 }: {
+  userId: string;
   data: Promise<Awaited<ReturnType<typeof getDocuments>> | null>;
   locale: Locale;
   owner: boolean;
@@ -179,6 +181,7 @@ async function HomeDocuments({
   const documents = await data;
   return documents ? (
     <DocumentList
+      userId={userId}
       documents={documents}
       locale={locale}
       owner={owner}

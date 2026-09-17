@@ -19,7 +19,7 @@ async function microphone(page: Page, denied = false) {
           const stop = track.stop.bind(track);
           track.stop = () => {
             stop();
-            if(context.state!=='closed')void context.close().catch(()=>{});
+            if (context.state !== 'closed') void context.close().catch(() => {});
           };
         }
         return dest.stream;
@@ -114,4 +114,19 @@ test('production headers permit only same-origin microphone and file route denie
   const file = await request.get('/task-update-file/50000000-0000-4000-8000-000000000001/voice');
   expect(file.status()).toBe(401);
   expect(file.headers()['cache-control']).toContain('no-store');
+});
+
+test('recording timer shows the maximum and warns near the existing limit', async ({ page }) => {
+  await microphone(page);
+  await page.clock.install();
+  await page.goto(url);
+  await page.getByRole('button', { name: 'Record voice note', exact: true }).click();
+  await page.getByRole('button', { name: 'Start recording', exact: true }).click();
+  await expect(page.getByRole('timer')).toContainText('/ 03:00');
+  await page.clock.fastForward(151000);
+  await expect(page.getByRole('timer')).toContainText('02:31 / 03:00');
+  await expect(page.getByText('Recording will stop at 3 minutes.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Stop recording', exact: true }).click();
+  await expect(page.getByRole('timer')).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('voice-fixture'))).toBeNull();
 });

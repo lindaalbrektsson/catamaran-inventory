@@ -1,5 +1,5 @@
 import {
-  CalendarCheck,
+  CalendarClock,
   PackagePlus,
   ShoppingCart,
   ReceiptText,
@@ -14,10 +14,10 @@ export function AddHub({ locale }: { locale: Locale }) {
     <div className="grid max-w-xl gap-3">
       {[
         { href: '/add?inventory=1', label: t.addStock, icon: PackagePlus },
+        { href: '/tasks/new', label: t.taskAdd, icon: ClipboardPlus },
+        { href: '/tasks/maintenance/plan', label: t.maintenanceShortcut, icon: CalendarClock },
         { href: '/needs/new', label: t.addPurchaseNeed, icon: ShoppingCart },
         { href: '/expenses/capture', label: t.addReceipt, icon: ReceiptText },
-        { href: '/tasks/maintenance/plan', label: t.maintenanceShortcut, icon: CalendarCheck },
-        { href: '/tasks/new', label: t.taskAdd, icon: ClipboardPlus },
         { href: '/documents/new', label: t.addDocument, icon: FilePlus2 },
       ].map(({ href, label, icon: Icon }) => (
         <Link

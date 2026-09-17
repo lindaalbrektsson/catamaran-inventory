@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireProfile } from './auth';
 import { supabase } from './supabase/server';
+import { authAdmin } from './supabase/admin';
 import { documentSchema, documentFileSchema } from './document-domain';
 import { validateDocument } from './document-validation';
 import type { Key } from './i18n';
@@ -77,7 +78,10 @@ export async function finishDocument(fileId: string): Promise<DocumentResult> {
   } catch {
     return { error: 'docInvalidFile' };
   }
-  const { error } = await db.rpc('complete_document_file', { p_file: fileId });
+  const { error } = await authAdmin().rpc('complete_document_file', {
+    p_file: fileId,
+    p_actor: p.id,
+  });
   if (error) return failure(error.message);
   revalidatePath('/');
   revalidatePath('/documents', 'layout');

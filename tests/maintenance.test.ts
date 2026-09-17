@@ -281,11 +281,31 @@ it('only confirmed mobile subscriptions receive grouped due checks, at most one 
   ]);
   await db.query('select public.confirm_mobile_push($1,$2)', [endpoint, owner]);
   const result = (
-    await db.query<{ r: { count: number; id: string } }>(
+    await db.query<{ r: { count: number; id: string; claim_token: string } }>(
       'select public.claim_due_maintenance_push() r',
     )
   ).rows[0].r;
   expect(result.count).toBe(2);
+  await db.query("select public.finish_maintenance_push($1,'FAILED',$2,$3)", [
+    result.id,
+    endpoint,
+    result.claim_token,
+  ]);
+  expect((await db.query('select public.claim_due_maintenance_push() r')).rows).toEqual([
+    { r: null },
+  ]);
+  await db.exec(
+    "update private.maintenance_push_batches set next_attempt_at=now()-interval '1 second'",
+  );
+  const retry = (
+    await db.query<{ r: { id: string; claim_token: string } }>(
+      'select public.claim_due_maintenance_push() r',
+    )
+  ).rows[0].r;
+  expect(retry.id).toBe(result.id);
+  expect(retry.claim_token).not.toBe(result.claim_token);
+  result.claim_token = retry.claim_token;
+
   expect((await db.query('select public.claim_due_maintenance_push() r')).rows).toEqual([
     { r: null },
   ]);
@@ -293,7 +313,11 @@ it('only confirmed mobile subscriptions receive grouped due checks, at most one 
   expect((await db.query('select public.claim_due_maintenance_push() r')).rows).toEqual([
     { r: null },
   ]);
-  await db.query("select public.finish_maintenance_push($1,'EXPIRED',$2)", [result.id, endpoint]);
+  await db.query("select public.finish_maintenance_push($1,'EXPIRED',$2,$3)", [
+    result.id,
+    endpoint,
+    result.claim_token,
+  ]);
   expect((await db.query('select * from private.push_subscriptions')).rows).toEqual([]);
 });
 it('inactive and unsupported roles cannot read or mutate maintenance', async () => {

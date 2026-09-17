@@ -44,31 +44,37 @@ export async function LowNeedSuggestions({
   );
   if (!low.length) return null;
   return (
-    <div className="mb-5 grid gap-3">
-      {low.map((i) => {
-        const existing = open.find((n) => n.product_id === i.product_id);
-        return (
-          <div key={i.product_id} className="rounded-xl border bg-secondary p-4">
-            <p>
-              {i.product.name} · {location.name}
-            </p>
-            <p>
-              {t.quantity}: {Number(i.quantity)} · {t.minimum}: {Number(i.minimum_stock)}
-            </p>
-            {existing && (
+    <details className="mb-3 rounded-xl border px-3">
+      <summary className="min-h-12 cursor-pointer py-3 font-medium">
+        {t.needsTitle} · {low.length}
+      </summary>
+      <div className="grid gap-2">
+        {low.map((i) => {
+          const existing = open.find((n) => n.product_id === i.product_id);
+          return (
+            <div key={i.product_id} className="rounded-xl border p-3">
               <p>
-                {t.needAlreadyActive} · {existing.status === 'PENDING' ? t.needPending : t.ORDERED}
+                {i.product.name} · {location.name}
               </p>
-            )}
-            <Link
-              className="mt-2 inline-flex min-h-12 items-center rounded-xl border bg-card p-3 font-semibold"
-              href={existing ? `/needs/${existing.id}` : `/needs/new?product=${i.product_id}`}
-            >
-              {existing ? t.needOpen : t.addToNeed}
-            </Link>
-          </div>
-        );
-      })}
-    </div>
+              <p>
+                {t.quantity}: {Number(i.quantity)} · {t.minimum}: {Number(i.minimum_stock)}
+              </p>
+              {existing && (
+                <p>
+                  {t.needAlreadyActive} ·{' '}
+                  {existing.status === 'PENDING' ? t.needPending : t.ORDERED}
+                </p>
+              )}
+              <Link
+                className="mt-2 inline-flex min-h-12 items-center rounded-xl border bg-card p-3 font-semibold"
+                href={existing ? `/needs/${existing.id}` : `/needs/new?product=${i.product_id}`}
+              >
+                {existing ? t.needOpen : t.addToNeed}
+              </Link>
+            </div>
+          );
+        })}
+      </div>
+    </details>
   );
 }

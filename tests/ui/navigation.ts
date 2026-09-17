@@ -5,7 +5,10 @@ export function usePathname() {
 
 export function useRouter() {
   return {
-    push: (url: string) => sessionStorage.setItem('navigation-fixture', url),
+    push: (url: string) => {
+      sessionStorage.setItem('navigation-fixture', url);
+      window.dispatchEvent(new CustomEvent('fixture-navigation', { detail: url }));
+    },
     refresh: () => sessionStorage.setItem('refreshed-fixture', 'yes'),
   };
 }

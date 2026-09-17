@@ -37,7 +37,7 @@ export function TransferForm({
       <input type="hidden" name="productId" value={productId} />
       <input type="hidden" name="sourceId" value={sourceId} />
       {destinations.length === 1 ? (
-        <div className="rounded-xl bg-secondary p-4">
+        <div data-location={destinations[0].type} className="location-header rounded-xl border p-4">
           <span className="text-sm">{t.destination}</span>
           <p className="font-semibold">{destinations[0].name}</p>
           <input type="hidden" name="destinationId" value={destination} />

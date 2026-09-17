@@ -10,7 +10,7 @@ vi.mock('@supabase/ssr', () => ({
 import { uploadOriginalReceipt } from '../src/lib/original-upload';
 beforeEach(() => {
   vi.resetAllMocks();
-  mocks.reserve.mockResolvedValue({ path: 'intake/test/original.png' });
+  mocks.reserve.mockResolvedValue({ path: 'intake/' + crypto.randomUUID() + '/receipt.jpg' });
   mocks.upload.mockResolvedValue({ error: null });
   mocks.finish.mockResolvedValue({});
 });
@@ -22,7 +22,7 @@ function data() {
   f.set('payment', 'CARD');
   return f;
 }
-it('uploads exact original bytes without upsert and finishes only after upload', async () => {
+it('uploads already processed bytes without upsert and finishes only after upload', async () => {
   const form = data();
   await uploadOriginalReceipt({}, form);
   const file = mocks.upload.mock.calls[0][1] as File;
@@ -43,14 +43,29 @@ it('uploads exact original bytes without upsert and finishes only after upload',
 it('provides feedback on network failure and permits a retry using the same request', async () => {
   mocks.upload.mockRejectedValueOnce(new Error('offline'));
   const form = data();
+  mocks.finish.mockResolvedValueOnce({ error: 'RECEIPT_UPLOAD_INCOMPLETE' });
   expect(await uploadOriginalReceipt({}, form)).toEqual({ error: 'RECEIPT_UPLOAD_INCOMPLETE' });
-  expect(mocks.finish).not.toHaveBeenCalled();
+  expect(mocks.finish).toHaveBeenCalledTimes(1);
   await uploadOriginalReceipt({}, form);
   expect(mocks.reserve.mock.calls[0][0].id).toBe(mocks.reserve.mock.calls[1][0].id);
-  expect(mocks.finish).toHaveBeenCalledTimes(1);
+  expect(mocks.finish).toHaveBeenCalledTimes(2);
 });
 it('handles an existing immutable upload through server verification, never overwrite', async () => {
   mocks.upload.mockResolvedValue({ error: { message: 'already exists' } });
   await uploadOriginalReceipt({}, data());
+  expect(mocks.finish).toHaveBeenCalledTimes(1);
+});
+
+it('accepted bytes are not resent when finalization response is retried', async () => {
+  const form = data();
+  await uploadOriginalReceipt({}, form);
+  await uploadOriginalReceipt({}, form);
+  expect(mocks.upload).toHaveBeenCalledTimes(1);
+  expect(mocks.finish).toHaveBeenCalledTimes(2);
+});
+it('ambiguous upload is reconciled without automatic resubmission', async () => {
+  mocks.upload.mockRejectedValueOnce(new Error('response lost'));
+  expect(await uploadOriginalReceipt({}, data())).toEqual({});
+  expect(mocks.upload).toHaveBeenCalledTimes(1);
   expect(mocks.finish).toHaveBeenCalledTimes(1);
 });
