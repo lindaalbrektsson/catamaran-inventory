@@ -1,6 +1,8 @@
 'use client';
 import { useActionState, useState, useRef } from 'react';
 import { SlowOperationNotice } from './slow-operation-notice';
+import { recoverUpload } from '@/lib/upload-recovery';
+import type { DocumentResult } from '@/lib/document-actions';
 import { uploadDocument } from '@/lib/document-upload';
 import { dictionary, type Locale } from '@/lib/i18n';
 import { documentAccess } from '@/lib/document-domain';
@@ -24,7 +26,13 @@ export function DocumentForm({
   categories: string[];
 }) {
   const t = dictionary(locale),
-    [state, action, pending] = useActionState(uploadDocument, {}),
+    [state, action, pending] = useActionState(
+      (previous: DocumentResult, form: FormData) =>
+        recoverUpload<DocumentResult>(() => uploadDocument(previous, form), {
+          error: 'docUploadIncomplete',
+        }),
+      {},
+    ),
     [request, setRequest] = useState(requestId),
     [draftId, setDraftId] = useState(id),
     [access, setAccess] = useState(initial?.access_level ?? (owner ? 'OWNERS' : 'MANAGERS')),

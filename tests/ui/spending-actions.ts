@@ -6,5 +6,7 @@ export async function uploadReceipt(_previous: unknown, form: FormData) {
   );
   if (new URLSearchParams(location.search).has('slow'))
     await new Promise((resolve) => setTimeout(resolve, 20000));
+  if (new URLSearchParams(location.search).has('transport'))
+    throw new TypeError('Network response lost');
   return { error: 'RECEIPT_UPLOAD_INCOMPLETE' as const };
 }

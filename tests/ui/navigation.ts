@@ -12,3 +12,13 @@ export function useRouter() {
     refresh: () => sessionStorage.setItem('refreshed-fixture', 'yes'),
   };
 }
+
+export function unstable_rethrow(error: unknown) {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'digest' in error &&
+    String(error.digest).startsWith('NEXT_REDIRECT')
+  )
+    throw error;
+}

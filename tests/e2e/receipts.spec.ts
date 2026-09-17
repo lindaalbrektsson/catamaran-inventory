@@ -77,3 +77,17 @@ test('slow online receipt stays pending with the same request and form values', 
   await expect(page.getByRole('status')).toHaveCount(0);
   await expect(page.locator('input[name="requestId"]')).toHaveValue(id);
 });
+
+test('ambiguous action response keeps the receipt and request available for retry', async ({
+  page,
+}) => {
+  await page.goto('http://127.0.0.1:4174/?view=receipt&transport=1');
+  await page.locator('input[type="file"]').last().setInputFiles('public/icon-192.png');
+  await expect(page.locator('img[alt]')).toBeVisible();
+  const id = await page.locator('input[name="requestId"]').inputValue();
+  await page.locator('button[type="submit"]').click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.locator('input[name="requestId"]')).toHaveValue(id);
+  await expect(page.locator('img[alt]')).toBeVisible();
+  await expect(page.locator('button[type="submit"]')).toBeEnabled();
+});

@@ -1,6 +1,7 @@
 'use client';
 import Image from 'next/image';
 import { useActionState, useEffect, useRef, useState } from 'react';
+import { recoverUpload } from '@/lib/upload-recovery';
 import type { ActionState } from '@/lib/actions';
 import { uploadReceipt } from '@/lib/spending-actions';
 import { uploadOriginalReceipt } from '@/lib/original-upload';
@@ -30,9 +31,14 @@ export function ReceiptUploader({
     gallery = useRef<HTMLInputElement>(null);
   const [stage, setStage] = useState<'uploading' | 'checking'>('uploading');
   const [state, action, pending] = useActionState(
-    intakeType
-      ? (previous: ActionState, form: FormData) => uploadOriginalReceipt(previous, form, setStage)
-      : uploadReceipt,
+    (previous: ActionState, form: FormData) =>
+      recoverUpload<ActionState>(
+        () =>
+          intakeType
+            ? uploadOriginalReceipt(previous, form, setStage)
+            : uploadReceipt(previous, form),
+        { error: 'RECEIPT_UPLOAD_INCOMPLETE' },
+      ),
     {},
   );
   const [id, setId] = useState(requestId);
