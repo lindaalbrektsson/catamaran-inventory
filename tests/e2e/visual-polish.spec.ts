@@ -4,12 +4,24 @@ test('category editor previews and submits EN/ES metadata without decorative req
   page,
 }) => {
   await page.goto(base + '?view=category-polish');
+  await expect(page.getByLabel('Preview')).toBeVisible();
+  const decorativeRequests: string[] = [];
+  page.on('request', (request) => {
+    if (['fetch', 'xhr', 'image', 'font'].includes(request.resourceType()))
+      decorativeRequests.push(request.url());
+  });
   await page.locator('[name="name_en"]').fill('Equipment');
   await page.locator('[name="name_es"]').fill('Equipo');
   await page.locator('[name="icon_key"]').selectOption('wrench');
   await page.getByLabel('Coral', { exact: true }).check();
   await expect(page.getByLabel('Preview').locator('[data-accent="coral"]')).toBeVisible();
   await expect(page.getByLabel('Preview')).toContainText('Equipment');
+  await expect(page.getByLabel('Preview').locator('svg.lucide-wrench')).toBeVisible();
+  // Names are user data: changing them must not change stored visual choices.
+  await page.locator('[name="name_en"]').fill('Completely new category');
+  await expect(page.getByLabel('Preview').locator('svg.lucide-wrench')).toBeVisible();
+  await expect(page.getByLabel('Preview').locator('[data-accent="coral"]')).toBeVisible();
+  expect(decorativeRequests).toEqual([]);
   await page.getByRole('button', { name: 'Save change', exact: true }).click();
   await expect
     .poll(() =>
