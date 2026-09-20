@@ -477,11 +477,24 @@ it.each(['OWNER', 'MANAGER'])(
       fresh = '40000000-0000-4000-8000-000000000003';
     await db.query("select public.begin_username_creation($1,'fresh')", [request]);
     await db.exec('reset role');
+    await db.query("insert into auth.users(id,email) values($1,'opaque@example.test')", [fresh]);
+    // Admin Auth inserts first, then writes app metadata in the same transaction.
     await db.query(
-      "insert into auth.users(id,email,raw_app_meta_data) values($1,'opaque@example.test',jsonb_build_object('account_operation',$2::text))",
+      "update auth.users set raw_app_meta_data=jsonb_build_object('account_operation',$2::text) where id=$1",
       [fresh, request],
     );
     await db.exec('set constraints all immediate');
+    expect(
+      (await db.query('select credential_pending from public.profiles where id=$1', [fresh])).rows,
+    ).toEqual([{ credential_pending: true }]);
+    await db.query('select public.release_account_change($1)', [request]);
+    await user(owner);
+    const retry = await db.query<{ v: { target: string } }>(
+      "select public.begin_username_creation($1,'fresh') v",
+      [request],
+    );
+    expect(retry.rows[0].v.target).toBe(fresh);
+    await db.exec('reset role');
     await db.query('select public.finish_username_creation($1,$2,$3,null)', [
       request,
       fresh,
