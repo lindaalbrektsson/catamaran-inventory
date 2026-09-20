@@ -118,11 +118,13 @@ export function MaintenanceList({
   locale,
   tab = 'today',
   planner = false,
+  preselected,
 }: {
   catalog: MaintenanceCatalog;
   locale: Locale;
   tab?: string;
   planner?: boolean;
+  preselected?: string;
 }) {
   const t = dictionary(locale),
     [state, action, pending] = useActionState(planMaintenance, {});
@@ -192,6 +194,7 @@ export function MaintenanceList({
                           type="checkbox"
                           name="task"
                           value={task.id}
+                          defaultChecked={task.id === preselected && !o}
                           disabled={pending || Boolean(o)}
                           className="size-6"
                         />

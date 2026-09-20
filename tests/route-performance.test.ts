@@ -21,6 +21,8 @@ vi.mock('@/lib/auth', () => ({
   getLocale: async () => 'en',
 }));
 vi.mock('@/lib/inventory', () => ({
+  collect: async (read: (a: number, b: number) => Promise<{ data: unknown[] }>) =>
+    (await read(0, 499)).data,
   getLocations: () => delay('locations', []),
   getLocation: () => delay('location', { id: 'fixture', name: 'Bodega' }),
   getInventory: () =>
@@ -42,9 +44,22 @@ vi.mock('@/lib/documents', () => ({
 vi.mock('@/lib/item-catalog', () => ({ itemCatalog: () => delay('catalog', {}) }));
 vi.mock('@/lib/supabase/server', () => ({
   supabase: async () => ({
-    from: () => ({
-      select: () => ({ eq: () => ({ eq: () => delay('needs', { count: 0, error: null }) }) }),
-    }),
+    from: (table: string) =>
+      table === 'inventory_balances'
+        ? {
+            select: () => ({
+              neq: () => ({
+                order: () => ({
+                  order: () => ({
+                    range: () => delay('transfer-balances', { data: [], error: null }),
+                  }),
+                }),
+              }),
+            }),
+          }
+        : {
+            select: () => ({ eq: () => ({ eq: () => delay('needs', { count: 0, error: null }) }) }),
+          },
   }),
 }));
 vi.mock('@/components/quick-add', () => ({ QuickAdd: () => null }));
@@ -91,7 +106,8 @@ it.each(['view', 'add', 'transfer'])(
       }),
     );
     expect(state.starts).toContain('location');
-    expect(state.peak).toBe(action === 'transfer' ? 3 : 2);
+    expect(state.peak).toBe(action === 'transfer' ? 4 : 2);
+    if (action !== 'transfer') expect(state.starts).not.toContain('transfer-balances');
   },
 );
 

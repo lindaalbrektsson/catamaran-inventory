@@ -134,7 +134,12 @@ export async function getTransferDestinations(productId: string, sourceId: strin
     ),
   ]);
   const configured = new Set(balances.map((balance) => balance.location_id));
-  return locations.filter((location) => location.id !== sourceId && configured.has(location.id));
+  return locations
+    .filter((location) => location.id !== sourceId && configured.has(location.id))
+    .map((location) => ({
+      ...location,
+      quantity: Number(balances.find((b) => b.location_id === location.id)!.quantity),
+    }));
 }
 export async function getItem(locationId: string, productId: string, includeInactive = false) {
   validId(locationId);

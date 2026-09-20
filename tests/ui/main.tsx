@@ -233,6 +233,7 @@ createRoot(document.getElementById('root')!).render(
             items={items}
             location={locations[0]}
             destinations={[locations[1]]}
+            balances={[{ product_id: item.product_id, location_id: locations[1].id, quantity: 3 }]}
             mode={params.get('mode') === 'transfer' ? 'transfer' : 'remove'}
             locale={locale}
             role="MANAGER"
@@ -391,7 +392,8 @@ createRoot(document.getElementById('root')!).render(
               locale={locale}
               productId={item.product_id}
               sourceId={item.location_id}
-              destinations={locations.slice(1)}
+              source={{ ...locations[0], quantity: 10 }}
+              destinations={locations.slice(1).map((l) => ({ ...l, quantity: 3 }))}
               requestId="50000000-0000-4000-8000-000000000001"
             />
           </div>

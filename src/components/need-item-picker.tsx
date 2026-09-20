@@ -1,4 +1,5 @@
 'use client';
+import { locationOrder } from '@/lib/location-order';
 import { useId, useState } from 'react';
 import Link from 'next/link';
 import { dictionary, type Locale } from '@/lib/i18n';
@@ -38,7 +39,7 @@ export function NeedItemPicker({
     setOpen(false);
   }
   function stocks(id: string) {
-    return catalog.locations.map((l) => {
+    return locationOrder(catalog.locations).map((l) => {
       const b = catalog.balances?.find((b) => b.product_id === id && b.location_id === l.id);
       return (
         <span className="block text-sm" key={l.id}>

@@ -60,7 +60,7 @@ export function TaskList({
     mine = open.filter((x) => x.assignee_id === actorId);
   const filtered = (
     home
-      ? open.filter((x) => x.assignee_id === actorId || taskIndicators(x, clock).length)
+      ? open
       : tasks.filter(
           (x) =>
             x.archived === archived &&

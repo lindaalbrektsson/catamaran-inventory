@@ -76,7 +76,7 @@ const needValue = {
 };
 const need = (
   id = crypto.randomUUID(),
-  values = needValue,
+  values: typeof needValue & { quantity_needed?: unknown } = needValue,
   version = 0,
   request = crypto.randomUUID(),
   confirm = false,
@@ -549,4 +549,61 @@ it.each(['MANAGER', 'CAPTAIN', 'CREW'])(
 it('anonymous users cannot call archive RPC', async () => {
   await db.exec('reset role;set role anon');
   await expect(db.query('select archive_inventory_item($1)', [product])).rejects.toThrow();
+});
+
+it.each([owner, manager])(
+  'optional Need quantity uses stock precision without changing inventory for %s',
+  async (actor) => {
+    await user(actor);
+    const id = crypto.randomUUID(),
+      request = crypto.randomUUID();
+    const values = { ...needValue, quantity_needed: 2.125 };
+    const before = (
+      await db.query('select * from public.inventory_balances order by product_id,location_id')
+    ).rows;
+    await need(id, values, 0, request);
+    await need(id, values, 0, request);
+    expect(
+      (await db.query('select quantity_needed from public.purchase_needs where id=$1', [id])).rows,
+    ).toEqual([{ quantity_needed: '2.125' }]);
+    await need(id, { ...needValue, status: 'ORDERED' }, 1);
+    expect(
+      (await db.query('select quantity_needed from public.purchase_needs where id=$1', [id])).rows,
+    ).toEqual([{ quantity_needed: '2.125' }]);
+    await need(id, { ...needValue, quantity_needed: null }, 2);
+    expect(
+      (await db.query('select quantity_needed from public.purchase_needs where id=$1', [id])).rows,
+    ).toEqual([{ quantity_needed: null }]);
+    expect(
+      (await db.query('select * from public.inventory_balances order by product_id,location_id'))
+        .rows,
+    ).toEqual(before);
+    await db.exec('reset role');
+    expect(
+      (
+        await db.query(
+          "select 1 from public.audit_events where entity_id=$1 and before_data->>'quantity_needed'='2.125' and after_data->'quantity_needed'='null'::jsonb",
+          [id],
+        )
+      ).rows,
+    ).toHaveLength(1);
+  },
+);
+it.each([-1, 0.0001, 100000000000, 'NaN', 'Infinity', '2 items'])(
+  'rejects invalid Need quantity %s',
+  async (quantity_needed) => {
+    await expect(need(crypto.randomUUID(), { ...needValue, quantity_needed })).rejects.toThrow(
+      'INVALID_INPUT',
+    );
+  },
+);
+it('legacy Need creates without quantity and duplicate protection still applies', async () => {
+  const id = crypto.randomUUID();
+  await need(id);
+  expect(
+    (await db.query('select quantity_needed from public.purchase_needs where id=$1', [id])).rows,
+  ).toEqual([{ quantity_needed: null }]);
+  await expect(need(crypto.randomUUID(), { ...needValue, quantity_needed: 3 })).rejects.toThrow(
+    'DUPLICATE_NEED',
+  );
 });

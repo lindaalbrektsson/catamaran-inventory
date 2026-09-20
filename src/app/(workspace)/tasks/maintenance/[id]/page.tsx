@@ -1,3 +1,5 @@
+import { MaintenancePlanLink } from '@/components/maintenance-plan-link';
+import { ReminderLink } from '@/components/reminder-link';
 import { MergedItemNotice, type MergedItemReference } from '@/components/merged-item-reference';
 import { AssigneeLabel } from '@/components/assignee-label';
 import { StatusBadge } from '@/components/status-badge';
@@ -96,6 +98,7 @@ export default async function MaintenanceDetail({
     <div className="page max-w-3xl">
       {relationship && <MergedItemNotice value={relationship} locale={locale} />}
       <PageHeader title={task.title} locale={locale} back="/tasks/maintenance" />
+      {!task.archived && <ReminderLink taskId={id} locale={locale} />}
       <p>
         {t[`maintenance${rule.recurrence}`]}
         {rule.custom_days ? ' · ' + rule.custom_days : ''}
@@ -110,14 +113,7 @@ export default async function MaintenanceDetail({
           {t.maintenanceLast}: <LocalTime value={rule.last_completed} locale={locale} />
         </p>
       )}
-      {!occurrences.some((o) => o.status !== 'DONE') && task.status !== 'DONE' && (
-        <Link
-          className="my-4 inline-flex min-h-12 items-center rounded-xl border p-3"
-          href="/tasks/maintenance/plan"
-        >
-          {t.maintenanceBuild}
-        </Link>
-      )}
+      <MaintenancePlanLink catalog={catalog} id={id} locale={locale} />
       {task.description && <p className="whitespace-pre-wrap">{task.description}</p>}
       {subtasks.length > 0 && (
         <details className="my-4">

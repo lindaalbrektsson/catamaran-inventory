@@ -7,7 +7,7 @@ import { getLocale, requireProfile } from '@/lib/auth';
 import { supabase } from '@/lib/supabase/server';
 import { collect } from '@/lib/inventory';
 import { itemCatalog } from '@/lib/item-catalog';
-import { dictionary } from '@/lib/i18n';
+import { dictionary, number } from '@/lib/i18n';
 import { compactDate } from '@/lib/list-presentation';
 import { NeedFilters } from '@/components/need-filters';
 export default async function Needs({
@@ -64,6 +64,14 @@ export default async function Needs({
               <h2 className="break-words font-semibold leading-snug">
                 {catalog.products.find((p) => p.id === n.product_id)?.name ?? n.name}
               </h2>
+              {n.quantity_needed != null && (
+                <p className="text-sm">
+                  {t.usabilityNeedQuantity}: {number(n.quantity_needed, locale)}{' '}
+                  {catalog.products.find((p) => p.id === n.product_id)
+                    ? t[catalog.products.find((p) => p.id === n.product_id)!.unit]
+                    : ''}
+                </p>
+              )}
               <p className="mt-1 text-sm text-muted-foreground">
                 {t[n.country]} ·{' '}
                 <StatusBadge

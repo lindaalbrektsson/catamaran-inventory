@@ -7,6 +7,7 @@ import type { ItemCatalog } from '@/lib/item-domain';
 import type { PurchaseNeed } from '@/lib/database.types';
 import { usePreservedForm } from './use-preserved-form';
 import { Button } from './ui/button';
+import { StatusBadge } from './status-badge';
 import { NeedItemPicker } from './need-item-picker';
 export function NeedForm({
   locale,
@@ -53,10 +54,14 @@ export function NeedForm({
       {existing && (
         <Link
           role="status"
-          className="rounded-xl border p-3 underline"
+          className="grid gap-2 rounded-xl border-2 border-primary/30 bg-secondary p-4 font-medium"
           href={`/needs/${existing.id}`}
         >
-          {t.needAlreadyActive} · {existing.status === 'PENDING' ? t.needPending : t.ORDERED}
+          <span>{t.usabilityNeedExists}</span>
+          <StatusBadge tone={existing.status === 'PENDING' ? 'attention' : 'active'}>
+            {existing.status === 'PENDING' ? t.needPending : t.ORDERED}
+          </StatusBadge>
+          <span className="underline">{t.needOpen}</span>
         </Link>
       )}
       <label className="grid gap-2">
@@ -65,6 +70,22 @@ export function NeedForm({
           <option value="BELIZE">{t.BELIZE}</option>
           <option value="USA">{t.USA}</option>
         </select>
+      </label>
+      <label className="grid gap-2">
+        {t.usabilityNeedQuantity} ({t.optional})
+        <input
+          className={c}
+          name="quantity_needed"
+          inputMode="decimal"
+          maxLength={15}
+          pattern="(?:0|[1-9][0-9]{0,10})(?:[.,][0-9]{1,3})?"
+          defaultValue={initial?.quantity_needed ?? ''}
+        />
+        {catalog.products.find((p) => p.id === productId) && (
+          <span className="text-sm text-muted-foreground">
+            {t[catalog.products.find((p) => p.id === productId)!.unit]}
+          </span>
+        )}
       </label>
       <details className="rounded-xl border p-3">
         <summary className="min-h-12 cursor-pointer py-3">{t.needOptional}</summary>

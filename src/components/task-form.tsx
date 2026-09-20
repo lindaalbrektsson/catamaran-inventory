@@ -15,6 +15,7 @@ export function TaskForm({
   actorRole,
   initial,
   subtasks = [],
+  reminderFor,
 }: {
   locale: Locale;
   catalog: TaskCatalog;
@@ -24,6 +25,7 @@ export function TaskForm({
   actorRole: string;
   initial?: Task;
   subtasks?: TaskSubtask[];
+  reminderFor?: { id: string; title: string };
 }) {
   const t = dictionary(locale),
     [state, action, pending] = useActionState(saveTask, {}),
@@ -31,7 +33,7 @@ export function TaskForm({
     [rows, setRows] = useState(subtasks.map((s) => ({ id: s.id, title: s.title }))),
     [reminder, setReminder] = useState(reminderToInput(initial?.remind_at ?? null)),
     ref = usePreservedForm();
-  const scopedReminder = Boolean(reminder || initial?.reminder_private);
+  const scopedReminder = Boolean(reminderFor || reminder || initial?.reminder_private);
   const selfOnly = scopedReminder && actorRole !== 'OWNER';
   const control = 'min-h-12 w-full rounded-xl border bg-background p-3';
   function relation(
@@ -39,7 +41,7 @@ export function TaskForm({
     label: string,
     options: { id: string; name: string }[],
   ) {
-    const current = initial?.[name] ?? '';
+    const current = initial?.[name] ?? (name === 'related_task_id' ? reminderFor?.id : '') ?? '';
     return (
       <label className="grid gap-2" key={name}>
         {label}
@@ -80,7 +82,7 @@ export function TaskForm({
             className={control}
             required
             maxLength={150}
-            defaultValue={initial?.title}
+            defaultValue={initial?.title ?? reminderFor?.title}
             spellCheck
             lang={locale}
           />
@@ -136,7 +138,7 @@ export function TaskForm({
             defaultValue={initial?.due_date ?? ''}
           />
         </label>
-        <details className="rounded-xl border p-4" open={undefined}>
+        <details className="rounded-xl border p-4" open={reminderFor ? true : undefined}>
           <summary className="min-h-12 cursor-pointer py-3">{t.taskDetailsReminder}</summary>
           <div className="grid gap-4">
             <label className="grid gap-2">
@@ -154,6 +156,7 @@ export function TaskForm({
               {t.taskReminderBelize}
               <input
                 type="datetime-local"
+                required={Boolean(reminderFor)}
                 className={control}
                 value={reminder}
                 onChange={(e) => setReminder(e.target.value)}

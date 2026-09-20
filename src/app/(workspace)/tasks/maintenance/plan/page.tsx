@@ -4,7 +4,11 @@ import { maintenanceCatalog } from '@/lib/maintenance';
 import { MaintenanceList } from '@/components/maintenance';
 import { PageHeader } from '@/components/page-header';
 import { dictionary } from '@/lib/i18n';
-export default async function PlanMaintenance() {
+export default async function PlanMaintenance({
+  searchParams,
+}: {
+  searchParams: Promise<{ task?: string }>;
+}) {
   const p = await requireProfile();
   if (!['OWNER', 'MANAGER'].includes(p.role)) redirect('/tasks');
   const locale = await getLocale();
@@ -15,7 +19,12 @@ export default async function PlanMaintenance() {
         locale={locale}
         back="/tasks/maintenance"
       />
-      <MaintenanceList locale={locale} catalog={await maintenanceCatalog()} planner />
+      <MaintenanceList
+        locale={locale}
+        catalog={await maintenanceCatalog()}
+        planner
+        preselected={(await searchParams).task}
+      />
     </div>
   );
 }

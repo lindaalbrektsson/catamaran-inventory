@@ -1,3 +1,5 @@
+import { supabase } from '@/lib/supabase/server';
+import { collect } from '@/lib/inventory';
 import { ListSkeleton } from '@/components/list-skeleton';
 import { timed } from '@/lib/performance';
 import { Suspense } from 'react';
@@ -58,9 +60,23 @@ async function renderLocationInventory({
   // Observe early failures while the authorized location loads. The original
   // rejection still reaches the route error boundary when its section renders.
   void inventory.catch(() => {});
-  const [location, destinations] = await Promise.all([
+  const [location, destinations, transferBalances] = await Promise.all([
     getLocation(locationId),
     moving ? getLocations() : Promise.resolve([]),
+    moving && search.action === 'transfer'
+      ? (async () => {
+          const db = await supabase();
+          return collect((a, b) =>
+            db
+              .from('inventory_balances')
+              .select('product_id,location_id,quantity')
+              .neq('location_id', locationId)
+              .order('location_id')
+              .order('product_id')
+              .range(a, b),
+          );
+        })()
+      : Promise.resolve([]),
   ]);
   if (
     ['remove', 'transfer'].includes(search.action ?? '') &&
@@ -77,6 +93,7 @@ async function renderLocationInventory({
         />
         <QuickMove
           items={items}
+          balances={transferBalances}
           location={location}
           destinations={destinations.filter((l) => l.id !== locationId)}
           mode={search.action as 'remove' | 'transfer'}

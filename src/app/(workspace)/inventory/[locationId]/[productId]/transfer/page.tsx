@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getLocale, requireProfile } from '@/lib/auth';
-import { dictionary, number } from '@/lib/i18n';
+import { dictionary } from '@/lib/i18n';
 import { getLocation, getItem, getTransferDestinations } from '@/lib/inventory';
 import { can } from '@/lib/domain';
 import { PageHeader } from '@/components/page-header';
@@ -31,14 +31,6 @@ export default async function Transfer({
         back={`/inventory/${locationId}/${productId}`}
         locale={locale}
       />
-      <div className="mb-6 rounded-xl bg-secondary p-4 text-primary">
-        <p className="text-sm">
-          {t.source}: {location.name}
-        </p>
-        <p className="mt-2 font-semibold">
-          {t.currentStock}: {number(item.quantity, locale)} {t[item.product.unit]}
-        </p>
-      </div>
       {destinations.length ? (
         <Card className="shadow-none">
           <CardContent className="p-5">
@@ -46,6 +38,8 @@ export default async function Transfer({
               locale={locale}
               productId={productId}
               sourceId={locationId}
+              source={{ ...location, quantity: Number(item.quantity) }}
+              unit={t[item.product.unit]}
               destinations={destinations}
               requestId={crypto.randomUUID()}
             />

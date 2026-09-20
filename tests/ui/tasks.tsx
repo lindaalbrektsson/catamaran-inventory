@@ -69,6 +69,11 @@ export function TasksFixture({ locale, view }: { locale: Locale; view: string })
       <TaskForm
         locale={locale}
         catalog={catalog}
+        reminderFor={
+          new URLSearchParams(location.search).has('context')
+            ? { id: task.id, title: task.title }
+            : undefined
+        }
         actorId={actor}
         actorRole={new URLSearchParams(location.search).has('manager') ? 'MANAGER' : 'OWNER'}
         id={task.id}
@@ -85,6 +90,17 @@ export function TasksFixture({ locale, view }: { locale: Locale; view: string })
   return (
     <TaskList
       {...catalog}
+      tasks={
+        new URLSearchParams(location.search).has('many')
+          ? Array.from({ length: 12 }, (_, i) => ({
+              ...task,
+              id: String(i),
+              title: 'Task ' + i,
+              due_date: `2026-09-${String(28 + i).padStart(2, '0')}`,
+              remind_at: null,
+            }))
+          : catalog.tasks
+      }
       locale={locale}
       actorId={actor}
       now="2026-09-30T18:00:00Z"

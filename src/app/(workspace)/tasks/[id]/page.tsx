@@ -1,3 +1,4 @@
+import { ReminderLink } from '@/components/reminder-link';
 import { MergedItemNotice, type MergedItemReference } from '@/components/merged-item-reference';
 import { TaskUpdateHistory } from '@/components/task-update-history';
 import { TaskUpdateForm } from '@/components/task-update-form';
@@ -113,6 +114,7 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
   return (
     <div className="page max-w-5xl">
       <PageHeader title={task.title} locale={locale} back="/tasks" />
+      {canManage && !task.archived && <ReminderLink taskId={id} locale={locale} />}
       <div className="mb-5 grid gap-2">
         {relationship && <MergedItemNotice value={relationship} locale={locale} />}
         {task.remind_at && (

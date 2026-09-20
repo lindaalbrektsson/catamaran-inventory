@@ -107,6 +107,7 @@ export type TaskSubtask = {
 };
 export type TaskType = { code: string; name_en: string; name_es: string; active: boolean };
 export type PurchaseNeed = {
+  quantity_needed: number | null;
   id: string;
   name: string;
   product_id: string | null;

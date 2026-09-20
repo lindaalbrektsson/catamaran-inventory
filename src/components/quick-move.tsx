@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import type { InventoryItem } from '@/lib/inventory';
-import type { Location } from '@/lib/database.types';
+import type { Balance, Location } from '@/lib/database.types';
 import { dictionary, type Locale } from '@/lib/i18n';
 import type { Role } from '@/lib/domain';
 import { StockForm } from './stock-form';
@@ -13,6 +13,7 @@ export function QuickMove({
   mode,
   locale,
   role,
+  balances = [],
 }: {
   items: InventoryItem[];
   location: Location;
@@ -20,6 +21,7 @@ export function QuickMove({
   mode: 'remove' | 'transfer';
   locale: Locale;
   role: Role;
+  balances?: Pick<Balance, 'product_id' | 'location_id' | 'quantity'>[];
 }) {
   const t = dictionary(locale),
     [query, setQuery] = useState(''),
@@ -116,7 +118,16 @@ export function QuickMove({
             locale={locale}
             productId={selected}
             sourceId={location.id}
-            destinations={destinations}
+            source={{
+              ...location,
+              quantity: Number(items.find((i) => i.product_id === selected)!.quantity),
+            }}
+            unit={t[items.find((i) => i.product_id === selected)!.product.unit]}
+            destinations={destinations.map((l) => ({
+              ...l,
+              quantity: balances.find((b) => b.product_id === selected && b.location_id === l.id)
+                ?.quantity,
+            }))}
             requestId={crypto.randomUUID()}
           />
         ))}

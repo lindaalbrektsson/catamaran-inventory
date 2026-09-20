@@ -80,6 +80,7 @@ export async function saveNeed(
     p_confirm_duplicate: v.product_id ? false : v.confirmDuplicate,
     p_values: {
       name: v.name,
+      quantity_needed: v.quantity_needed === '' ? null : Number(v.quantity_needed),
       product_id: v.product_id,
       location_id: '',
       country: v.country,
@@ -153,6 +154,7 @@ export async function advanceNeed(_previous: ActionState, form: FormData): Promi
     p_confirm_duplicate: false,
     p_values: {
       name: n.name,
+      quantity_needed: n.quantity_needed,
       product_id: n.product_id,
       location_id: n.location_id,
       country: n.country,

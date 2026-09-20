@@ -30,6 +30,16 @@ export const quickAddSchema = z
   })
   .refine((v) => !!v.product || (!!v.name && !!v.category));
 export const needSchema = z.object({
+  quantity_needed: z
+    .string()
+    .transform((v) => v.replace(',', '.'))
+    .pipe(
+      z
+        .string()
+        .regex(/^(?:0|[1-9]\d{0,10})(?:\.\d{1,3})?$/)
+        .or(z.literal('')),
+    )
+    .default(''),
   requestId: z.uuid(),
   id: z.uuid(),
   version: z.coerce.number().int().min(0),

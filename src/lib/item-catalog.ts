@@ -1,3 +1,4 @@
+import { locationOrder } from './location-order';
 import 'server-only';
 import { supabase } from './supabase/server';
 import { collect } from './inventory';
@@ -8,7 +9,7 @@ export async function itemCatalog() {
     collect((a, b) => db.from('locations').select('*').eq('active', true).order('id').range(a, b)),
     collect((a, b) => db.from('products').select('*').order('id').range(a, b)),
   ]);
-  return { categories, locations, products };
+  return { categories, locations: locationOrder(locations), products };
 }
 export async function needCatalog() {
   const db = await supabase();

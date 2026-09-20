@@ -1,3 +1,5 @@
+import { MaintenancePlanLink } from '@/components/maintenance-plan-link';
+import { ReminderLink } from '@/components/reminder-link';
 import { AddHub } from '@/components/add-hub';
 import {
   MaintenanceCreate,
@@ -78,11 +80,32 @@ const catalog: MaintenanceCatalog = {
   ],
 };
 export function MaintenanceFixture({ view, locale }: { view: string; locale: Locale }) {
+  if (view === 'maintenance-context')
+    return (
+      <>
+        <MaintenancePlanLink
+          catalog={{
+            ...catalog,
+            occurrences: new URLSearchParams(location.search).has('planned') ? [occurrence] : [],
+          }}
+          id={id}
+          locale={locale}
+        />
+        <ReminderLink taskId={id} locale={locale} />
+      </>
+    );
   if (view === 'maintenance-add') return <AddHub locale={locale} />;
   if (view === 'maintenance-create')
     return <MaintenanceCreate locale={locale} today={catalog.today} />;
   if (view === 'maintenance-plan')
-    return <MaintenanceList catalog={catalog} locale={locale} planner />;
+    return (
+      <MaintenanceList
+        catalog={catalog}
+        locale={locale}
+        planner
+        preselected={new URLSearchParams(location.search).get('task') ?? undefined}
+      />
+    );
   if (view === 'maintenance-work')
     return <MaintenanceWork occurrence={occurrence} people={catalog.people} locale={locale} />;
   if (view === 'maintenance-update')

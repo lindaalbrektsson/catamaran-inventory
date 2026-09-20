@@ -1,6 +1,11 @@
 import { PASSWORD_MIN_LENGTH } from './password-config.mjs';
 export type Locale = 'en' | 'es';
 export const en = {
+  usabilityPlanToday: "Add to today's plan",
+  usabilityReminder: 'Add reminder',
+  usabilityAfterTransfer: 'After transfer',
+  usabilityNeedQuantity: 'Quantity to buy',
+  usabilityNeedExists: 'Already in Need to Purchase — no need to add it again.',
   mergePreviousItem: 'Previous item',
   mergeInto: 'merged into',
   mergeTargetSettings:
@@ -272,7 +277,7 @@ export const en = {
   taskAll: 'All',
   taskOpen: 'Open tasks',
   taskViewMine: 'My tasks',
-  taskViewAll: 'All tasks',
+  taskViewAll: 'View all tasks',
   taskAssignedCount: '{n} assigned to me',
   taskDueCount: '{n} due soon or overdue',
   taskEmpty: 'No matching tasks.',
@@ -788,6 +793,11 @@ export const en = {
 } as const;
 export type Key = keyof typeof en;
 export const es: Record<Key, string> = {
+  usabilityPlanToday: 'Agregar al plan de hoy',
+  usabilityReminder: 'Agregar recordatorio',
+  usabilityAfterTransfer: 'Después del traslado',
+  usabilityNeedQuantity: 'Cantidad a comprar',
+  usabilityNeedExists: 'Ya está en compras necesarias; no hace falta agregarlo de nuevo.',
   categoryIconLabel: 'Icono',
   categoryAccentLabel: 'Acento',
   categoryPreview: 'Vista previa',
@@ -1063,7 +1073,7 @@ export const es: Record<Key, string> = {
   taskAll: 'Todas',
   taskOpen: 'Tareas abiertas',
   taskViewMine: 'Mis tareas',
-  taskViewAll: 'Todas las tareas',
+  taskViewAll: 'Ver todas las tareas',
   taskAssignedCount: '{n} asignadas a mí',
   taskDueCount: '{n} próximas o vencidas',
   taskEmpty: 'No hay tareas que coincidan.',
