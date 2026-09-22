@@ -1188,7 +1188,7 @@ export const es: Record<Key, string> = {
   quickUnit: 'Los artículos nuevos usan piezas. El propietario puede editar los datos después.',
   SIMILAR_ITEM:
     'Existe un artículo similar. Revisa las coincidencias y confirma solo si es diferente.',
-  needNav: 'Necesitamos',
+  needNav: 'Por comprar',
   viewNeeds: 'Ver necesidades',
   applyFilters: 'Aplicar filtros',
   addInventory: 'Agregar existencias',
