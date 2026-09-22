@@ -1,3 +1,4 @@
+vi.mock('server-only', () => ({}));
 import { beforeEach, it, expect, vi } from 'vitest';
 const m = vi.hoisted(() => ({ profile: vi.fn(), rpc: vi.fn() }));
 vi.mock('@/lib/auth', () => ({ requireProfile: m.profile }));
@@ -50,6 +51,22 @@ it.each(['OWNER', 'MANAGER'])('%s creates only via the audited RPC', async (role
     }),
   );
 });
+it.each(['OWNER', 'MANAGER'])(
+  '%s opts into test classification only when checked',
+  async (role) => {
+    m.profile.mockResolvedValue({ role });
+    const f = form();
+    f.set('is_test', 'on');
+    await expect(saveTask({}, f)).rejects.toThrow('REDIRECT');
+    expect(m.rpc).toHaveBeenCalledWith(
+      'create_test_record',
+      expect.objectContaining({
+        p_function: 'manage_task',
+        p_args: expect.objectContaining({ p_version: 0 }),
+      }),
+    );
+  },
+);
 it.each(['CREW', 'CAPTAIN'])('%s cannot create tasks through the server action', async (role) => {
   m.profile.mockResolvedValue({ role });
   expect(await saveTask({}, form())).toEqual({ error: 'FORBIDDEN' });

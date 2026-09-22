@@ -1,4 +1,5 @@
 'use client';
+import { TestDataField } from './test-data';
 import Link from 'next/link';
 import { useActionState, useState } from 'react';
 import { uploadNeed } from '@/lib/need-upload';
@@ -174,6 +175,7 @@ export function NeedForm({
           {t.needEdit}
         </Link>
       )}
+      {!initial && <TestDataField disabled={pending} locale={locale} />}
       <Button disabled={processing || pending || (!!existing && initial?.status !== 'DONE')}>
         {pending ? t.saving : t.needSave}
       </Button>

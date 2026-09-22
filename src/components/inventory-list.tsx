@@ -1,4 +1,5 @@
 'use client';
+import { TestBadge } from './test-badge';
 import { CategoryMark } from './category-mark';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -138,7 +139,8 @@ export function InventoryList({
                 <div className="flex min-h-20 items-center gap-3 rounded-xl border bg-card px-3 py-3 transition-colors group-hover:border-primary/50">
                   <CategoryMark category={item.category} />
                   <div className="min-w-0 flex-1">
-                    <h3 className="break-words font-semibold">{item.product.name}</h3>
+                    <h3 className="break-words font-semibold">{item.product.name}</h3>{' '}
+                    <TestBadge value={item.product.is_test} />
                     <p className="mt-1 text-xs text-muted-foreground">
                       {locale === 'es' ? item.category.name_es : item.category.name_en}
                     </p>

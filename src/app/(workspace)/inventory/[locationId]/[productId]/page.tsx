@@ -1,3 +1,4 @@
+import { TestRecordControls } from '@/components/test-record-controls';
 import { CheckCircle2 } from 'lucide-react';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
@@ -27,6 +28,12 @@ export default async function ProductDetail({
   const basePath = `/inventory/${locationId}/${productId}`;
   return (
     <div className="page">
+      <TestRecordControls
+        table="products"
+        record={item.product}
+        locale={locale}
+        back={`/inventory/${locationId}`}
+      />
       <PageHeader
         title={item.product.name}
         description={`${location.name} · ${locale === 'es' ? item.category.name_es : item.category.name_en}`}

@@ -1,4 +1,5 @@
 'use server';
+import { creationRpc } from './test-data';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
@@ -39,15 +40,18 @@ export async function prepareDocument(values: unknown, file: unknown): Promise<D
   )
     return { error: 'FORBIDDEN' };
   const { id, requestId, version, ...metadata } = v.data;
-  const { data, error } = await (
-    await supabase()
-  ).rpc('save_document', {
-    p_request: requestId,
-    p_id: id,
-    p_version: version,
-    p_values: metadata,
-    p_file: f?.success ? f.data : null,
-  });
+  const { data, error } = await creationRpc(
+    await supabase(),
+    version === 0 && metadata.is_test === true,
+    'save_document',
+    {
+      p_request: requestId,
+      p_id: id,
+      p_version: version,
+      p_values: metadata,
+      p_file: f?.success ? f.data : null,
+    },
+  );
   if (error) return failure(error.message);
   revalidatePath('/');
   revalidatePath('/documents', 'layout');

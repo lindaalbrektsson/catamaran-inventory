@@ -1,4 +1,5 @@
 'use client';
+import { TestBadge } from '@/components/test-badge';
 import { EmptyState } from './empty-state';
 import { ClipboardCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -302,7 +303,9 @@ export function TaskList({
               href={`/tasks/${task.id}`}
               className="block min-h-14 rounded-xl border bg-card p-4"
             >
-              <h3 className="break-words font-semibold">{task.title}</h3>
+              <h3 className="break-words font-semibold">
+                {task.title} <TestBadge value={task.is_test} />
+              </h3>
               <p className="mt-2 text-sm">
                 <StatusBadge
                   tone={

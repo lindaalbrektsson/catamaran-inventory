@@ -1,4 +1,5 @@
 'use client';
+import { TestDataField } from './test-data';
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { dictionary, type Locale } from '@/lib/i18n';
@@ -33,6 +34,7 @@ export function ItemManager({
     [pending, start] = useTransition(),
     [error, setError] = useState<ItemError>(),
     [saved, setSaved] = useState(false);
+  const [isTest, setIsTest] = useState(false);
   const [rows, setRows] = useState<PreviewRow[]>([]),
     [id, setId] = useState(requestId);
   const [value, setValue] = useState<ItemInput>(
@@ -63,7 +65,7 @@ export function ItemManager({
     try {
       const result = productId
         ? await updateCatalogItem(productId, values[0])
-        : await saveItems(id, values);
+        : await saveItems(id, values, !importing && isTest);
       setError(result.error);
       if (result.success) setSaved(true);
     } catch {
@@ -348,6 +350,16 @@ export function ItemManager({
             />
             {t.itemActive}
           </label>
+            {!productId && (
+              <TestDataField
+                locale={locale}
+                disabled={pending}
+                onChange={(v) => {
+                  setIsTest(v);
+                  setId(crypto.randomUUID());
+                }}
+              />
+            )}
           <Button disabled={pending}>{pending ? t.itemWorking : t.itemSave}</Button>
         </form>
       )}

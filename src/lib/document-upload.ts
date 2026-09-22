@@ -49,6 +49,7 @@ export async function uploadDocument(
   const prepared = await prepareDocument(
     {
       ...values,
+      is_test: form.get('is_test') === 'on',
       favorite: form.get('favorite') === 'on',
       archived: form.get('archived') === 'on',
       selected_users: form.getAll('selected_users'),

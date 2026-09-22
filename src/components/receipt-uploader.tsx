@@ -1,4 +1,5 @@
 'use client';
+import { TestDataField } from './test-data';
 import { useActionState, useState } from 'react';
 import { recoverUpload } from '@/lib/upload-recovery';
 import type { ActionState } from '@/lib/actions';
@@ -84,6 +85,7 @@ export function ReceiptUploader({
           ))}
         </fieldset>
       )}
+      {intakeType && <TestDataField disabled={pending} locale={locale} onChange={() => setId(crypto.randomUUID())} />}
       <SlowOperationNotice pending={pending} locale={locale} />
       <Button type="submit" disabled={!file || pending || processing}>
         {pending

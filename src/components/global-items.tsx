@@ -1,4 +1,6 @@
 'use client';
+import { TestDataField } from './test-data';
+import { TestBadge } from './test-badge';
 import { mergePreview } from '@/lib/merge-preview';
 import { CategoryMark } from './category-mark';
 import { EmptyState } from './empty-state';
@@ -82,7 +84,8 @@ export function GlobalItems({ catalog, locale }: { catalog: ItemCatalog; locale:
             >
               <CategoryMark category={catalog.categories.find((c) => c.id === p.category_id)} />
               <div className="min-w-0 flex-1">
-                <span className="block break-words font-semibold">{p.name}</span>
+                <span className="block break-words font-semibold">{p.name}</span>{' '}
+                <TestBadge value={p.is_test} />
                 <span className="text-sm text-muted-foreground">
                   {catalog.categories.find((c) => c.id === p.category_id)?.[`name_${locale}`]} ·{' '}
                   {t[p.unit]}
@@ -136,6 +139,7 @@ export function GlobalItemEditor({
     (p) => p.active && p.id !== item?.id && normalizedName(p.name).includes(normalizedName(query)),
   );
   const selected = targets.find((p) => p.id === target);
+  const [isTest, setIsTest] = useState(false);
   function save(action: 'CREATE' | 'EDIT' | 'DELETE' | 'MERGE') {
     start(async () => {
       setError('');
@@ -148,7 +152,7 @@ export function GlobalItemEditor({
           values:
             action === 'MERGE'
               ? { target, targetUpdatedAt: selected?.updated_at ?? null }
-              : { name, category, unit, confirmDuplicate: confirm },
+              : { name, category, unit, confirmDuplicate: confirm, is_test: isTest },
         });
         if (result.error) setError(result.error);
         else {
@@ -167,6 +171,7 @@ export function GlobalItemEditor({
     ITEM_STALE: t.catalogStale,
     ITEM_NOT_FOUND: t.catalogGone,
     ITEM_INVALID: t.catalogFailed,
+    TEST_MERGE_CONFLICT: t.TEST_MERGE_CONFLICT,
   };
   return (
     <div className="grid gap-6">
@@ -269,6 +274,15 @@ export function GlobalItemEditor({
             ))}
           </select>
         </label>
+        {!item && (
+          <TestDataField
+            locale={locale}
+            onChange={(v) => {
+              changed();
+              setIsTest(v);
+            }}
+          />
+        )}
         <Button className="min-h-12" disabled={pending || (similar.length > 0 && !confirm)}>
           {t.save}
         </Button>
@@ -286,17 +300,19 @@ export function GlobalItemEditor({
           >
             {t.catalogMerge}
           </Button>
-          <Button
-            variant="ghost"
-            className="min-h-12 text-destructive"
-            disabled={pending}
-            onClick={() => {
-              changed();
-              setDialog('DELETE');
-            }}
-          >
-            {t.catalogDelete}
-          </Button>
+          {!item.is_test && (
+            <Button
+              variant="ghost"
+              className="min-h-12 text-destructive"
+              disabled={pending}
+              onClick={() => {
+                changed();
+                setDialog('DELETE');
+              }}
+            >
+              {t.catalogDelete}
+            </Button>
+          )}
         </div>
       )}
       {dialog && (

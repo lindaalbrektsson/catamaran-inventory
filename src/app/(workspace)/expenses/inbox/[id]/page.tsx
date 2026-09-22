@@ -1,3 +1,4 @@
+import { TestRecordControls } from '@/components/test-record-controls';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getLocale, requireProfile } from '@/lib/auth';
@@ -27,6 +28,7 @@ export default async function IntakeDetail({ params }: { params: Promise<{ id: s
     .maybeSingle();
   return (
     <div className="page">
+      <TestRecordControls table="receipt_intake" record={r} locale={locale} back="/expenses" />
       <h1 className="text-2xl font-semibold">{t[r.receipt_type]}</h1>
       <p className="my-3">
         {actor.data?.display_name ?? r.uploaded_by} ·{' '}

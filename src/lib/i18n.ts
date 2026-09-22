@@ -137,7 +137,8 @@ export const en = {
   onboardNotNow: 'Not now',
   onboardInstallHint: 'Install Catamaran Belize for faster access and the best mobile experience.',
   onboardStayUpdated: 'Stay updated',
-  onboardPushHint: 'Turn on notifications to receive task and reminder alerts even when the app is closed.',
+  onboardPushHint:
+    'Turn on notifications to receive task and reminder alerts even when the app is closed.',
   pushTitle: 'Notifications',
   reminderAssignedTo: 'Assigned to',
   reminderDelete: 'Delete reminder',
@@ -215,8 +216,7 @@ export const en = {
   docSelectPeople: 'Select users',
   docFile: 'File',
   docReplace: 'Replace file (optional)',
-  docFileHint:
-    'Images or PDF · max 30 MB',
+  docFileHint: 'Images or PDF · max 30 MB',
   docUpload: 'Upload document',
   docUploading: 'Saving document…',
   docSave: 'Save document',
@@ -310,6 +310,13 @@ export const en = {
   resetStaffPassword: 'Issue new temporary password',
   changeStaffPhone: 'Update contact phone',
   phoneVerified: 'I have verified that this number belongs to this staff member.',
+  accountFormInvalid: 'This account form is invalid. Reopen Users and try again.',
+  accountNameInvalid: 'Enter a display name between 1 and 100 characters.',
+  accountRoleInvalid: 'Choose Owner or Manager.',
+  accountLanguageInvalid: 'Choose English or Spanish for this account.',
+  accountUsernameInvalid: 'Use 1–40 letters, numbers, dots, underscores or hyphens for the username.',
+  accountPhoneInvalid: 'Check the optional contact phone number.',
+  accountUsernameUnavailable: 'This username is already assigned or reserved for account setup.',
   accountChangeFailed:
     'The account change could not be completed. Check the username and retry. Incomplete accounts remain blocked.',
   accountAdminProtected:
@@ -349,6 +356,16 @@ export const en = {
   temporaryPasswordLabel: 'Temporary password',
   adminRole: 'Admin',
   staffManagement: 'Users',
+  testBadge: 'TEST',
+  testData: 'Test data',
+  testDataHelp: 'Mark this if you are only testing the app. Test data can be deleted afterwards.',
+  deleteTestData: 'Delete test data',
+  deleteTestConfirm:
+    'Permanently delete this test record and its related test content? Real or protected linked records will block deletion. Private files may take a little longer to be removed.',
+  testDeleteBlocked:
+    'Test data could not be deleted. A real or protected record may still reference it.',
+  TEST_MERGE_CONFLICT: 'Test items cannot be merged with real items.',
+  TEST_DATA_DELETED: 'This test record was deleted. Start a new entry.',
   staffFirstLoginIncomplete: 'First login not completed',
   staffSetupComplete: 'Setup complete',
   staffNeverSignedIn: 'Never signed in',
@@ -929,9 +946,11 @@ export const es: Record<Key, string> = {
   docChooseFile: 'Elegir archivo',
   mediaReplace: 'Reemplazar imagen',
   onboardNotNow: 'Ahora no',
-  onboardInstallHint: 'Instala Catamaran Belize para acceder más rápido y disfrutar de la mejor experiencia móvil.',
+  onboardInstallHint:
+    'Instala Catamaran Belize para acceder más rápido y disfrutar de la mejor experiencia móvil.',
   onboardStayUpdated: 'Mantente al día',
-  onboardPushHint: 'Activa las notificaciones para recibir avisos de tareas y recordatorios, incluso con la app cerrada.',
+  onboardPushHint:
+    'Activa las notificaciones para recibir avisos de tareas y recordatorios, incluso con la app cerrada.',
   pushTitle: 'Notificaciones',
   reminderAssignedTo: 'Asignado a',
   reminderDelete: 'Eliminar recordatorio',
@@ -1020,8 +1039,7 @@ export const es: Record<Key, string> = {
   docSelectPeople: 'Selecciona usuarios',
   docFile: 'Archivo',
   docReplace: 'Reemplazar archivo (opcional)',
-  docFileHint:
-    'Imágenes o PDF · máx. 30 MB',
+  docFileHint: 'Imágenes o PDF · máx. 30 MB',
   docUpload: 'Subir documento',
   docUploading: 'Guardando documento…',
   docSave: 'Guardar documento',
@@ -1116,6 +1134,13 @@ export const es: Record<Key, string> = {
   resetStaffPassword: 'Establecer contraseña temporal',
   changeStaffPhone: 'Cambiar teléfono de acceso',
   phoneVerified: 'He verificado que este número pertenece a esta persona.',
+  accountFormInvalid: 'Este formulario de cuenta no es válido. Vuelve a abrir Usuarios e inténtalo de nuevo.',
+  accountNameInvalid: 'Escribe un nombre de entre 1 y 100 caracteres.',
+  accountRoleInvalid: 'Selecciona Propietario o Encargado.',
+  accountLanguageInvalid: 'Selecciona inglés o español para esta cuenta.',
+  accountUsernameInvalid: 'Usa de 1 a 40 letras, números, puntos, guiones bajos o guiones para el usuario.',
+  accountPhoneInvalid: 'Revisa el teléfono de contacto opcional.',
+  accountUsernameUnavailable: 'Este usuario ya está asignado o reservado para configurar una cuenta.',
   accountChangeFailed:
     'No se pudo completar el cambio. Revisa el usuario y reintenta. Las cuentas incompletas permanecen bloqueadas.',
   accountAdminProtected:
@@ -1155,6 +1180,16 @@ export const es: Record<Key, string> = {
   temporaryPasswordLabel: 'Contraseña temporal',
   adminRole: 'Administrador',
   staffManagement: 'Usuarios',
+  testBadge: 'TEST',
+  testData: 'Datos de prueba',
+  testDataHelp: 'Márcalo si solo estás probando la app. Estos datos se pueden borrar después.',
+  deleteTestData: 'Eliminar datos de prueba',
+  deleteTestConfirm:
+    '¿Eliminar permanentemente este registro de prueba y su contenido relacionado? Los registros reales o protegidos vinculados impedirán la eliminación. Los archivos privados pueden tardar un poco más en eliminarse.',
+  testDeleteBlocked:
+    'No se pudieron eliminar los datos de prueba. Puede haber un registro real o protegido vinculado.',
+  TEST_MERGE_CONFLICT: 'No se pueden combinar artículos de prueba con artículos reales.',
+  TEST_DATA_DELETED: 'Este registro de prueba fue eliminado. Crea una nueva entrada.',
   staffFirstLoginIncomplete: 'Primer inicio de sesión pendiente',
   staffSetupComplete: 'Configuración completa',
   staffNeverSignedIn: 'Nunca ha iniciado sesión',

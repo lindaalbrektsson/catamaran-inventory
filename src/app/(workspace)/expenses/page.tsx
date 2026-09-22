@@ -1,3 +1,4 @@
+import { TestBadge } from '@/components/test-badge';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getLocale, requireProfile } from '@/lib/auth';
@@ -78,7 +79,7 @@ export default async function Receipts({
               height={160}
               className="mb-3 h-40 w-28 rounded-lg border object-contain"
             />
-            <h2 className="font-semibold">{t[r.receipt_type]}</h2>
+            <h2 className="font-semibold">{t[r.receipt_type]}</h2> <TestBadge value={r.is_test} />
             <p className="my-2">
               {t[r.payment_method]} · {t[r.status]}
             </p>

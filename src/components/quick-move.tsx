@@ -1,4 +1,5 @@
 'use client';
+import { TestBadge } from './test-badge';
 import { useState } from 'react';
 import type { InventoryItem } from '@/lib/inventory';
 import type { Balance, Location } from '@/lib/database.types';
@@ -94,7 +95,7 @@ export function QuickMove({
                 setQuery(i.product.name);
               }}
             >
-              {i.product.name} · {i.quantity}
+              {i.product.name} · <TestBadge value={i.product.is_test} /> {i.quantity}
             </button>
           ))}
           {!matches.length && <p>{t.noProducts}</p>}

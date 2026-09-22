@@ -1,3 +1,4 @@
+import { TestBadge } from '@/components/test-badge';
 import { ImageIcon } from 'lucide-react';
 import { EmptyState } from '@/components/empty-state';
 import { StatusBadge } from '@/components/status-badge';
@@ -63,7 +64,8 @@ export default async function Needs({
           <article key={n.id} className="flex items-center gap-3 px-3 py-3 sm:px-4">
             <Link href={`/needs/${n.id}`} className="block min-h-11 min-w-0 flex-1">
               <h2 className="break-words font-semibold leading-snug">
-                {catalog.products.find((p) => p.id === n.product_id)?.name ?? n.name}
+                {catalog.products.find((p) => p.id === n.product_id)?.name ?? n.name}{' '}
+                <TestBadge value={n.is_test} />
               </h2>
               {(n.photo_ready || n.current_photo_id) && (
                 <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">

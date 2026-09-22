@@ -1,3 +1,4 @@
+import { TestBadge } from '@/components/test-badge';
 import Link from 'next/link';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary, dateTime } from '@/lib/i18n';
@@ -58,6 +59,7 @@ export default async function Expenses({
                   href={spendingPath(row.id, kind)}
                   className="rounded-xl border bg-card p-5"
                 >
+                  <TestBadge value={row.is_test} />
                   <p className="font-semibold">
                     {row.category
                       ? locale === 'es'

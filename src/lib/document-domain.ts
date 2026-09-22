@@ -5,6 +5,7 @@ export const documentAccess = ['OWNERS', 'MANAGERS', 'STAFF', 'SELECTED'] as con
 export const documentLimit = 30 * 1024 * 1024;
 export const documentSchema = z
   .object({
+    is_test: z.boolean().optional().default(false),
     id: z.uuid(),
     requestId: z.uuid(),
     version: z.coerce.number().int().min(0),

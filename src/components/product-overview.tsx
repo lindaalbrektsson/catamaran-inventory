@@ -82,7 +82,7 @@ export function ProductOverview({
           </Link>
         </div>
       )}
-      {role === 'OWNER' && item.product.active && (
+      {role === 'OWNER' && item.product.active && !item.product.is_test && (
         <ArchiveItem productId={item.product_id} locale={locale} />
       )}
       <div className="stock-actions grid gap-3 rounded-xl p-3 sm:grid-cols-2">

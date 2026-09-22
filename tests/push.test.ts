@@ -1,3 +1,4 @@
+vi.mock('@/lib/test-storage-cleanup', () => ({ cleanTestStorage: async () => 0 }));
 import { beforeEach, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';

@@ -1,6 +1,7 @@
 import type { Role, Unit, MovementType } from './domain';
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 export type OperationalDocument = {
+  is_test?: boolean;
   id: string;
   title: string;
   description: string;
@@ -72,6 +73,7 @@ export type MaintenanceUpdate = {
 };
 export type TaskStatus = 'NEED_REVIEW' | 'IN_PROGRESS' | 'DONE';
 export type Task = {
+  is_test?: boolean;
   id: string;
   title: string;
   description: string;
@@ -107,6 +109,7 @@ export type TaskSubtask = {
 };
 export type TaskType = { code: string; name_en: string; name_es: string; active: boolean };
 export type PurchaseNeed = {
+  is_test?: boolean;
   current_photo_id?: string | null;
   quantity_needed: number | null;
   id: string;
@@ -158,6 +161,7 @@ export type Category = {
   accent_key?: string | null;
 };
 export type Spending = {
+  is_test?: boolean;
   id: string;
   category_id: string;
   amount: number;
@@ -182,6 +186,8 @@ export type Receipt = {
   created_at: string;
 };
 export type Product = {
+  is_test?: boolean;
+  created_by?: string | null;
   id: string;
   name: string;
   category_id: string;
@@ -253,6 +259,7 @@ export type Database = {
         uploaded_at: string | null;
       }>;
       receipt_intake: Table<{
+        is_test?: boolean;
         content_type: string;
         original_preserved: boolean;
         id: string;
@@ -294,6 +301,13 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      create_test_record: { Args: { p_function: string; p_args: Json }; Returns: Json };
+      delete_test_record: { Args: { p_table: string; p_id: string }; Returns: undefined };
+      claim_test_storage_cleanup: { Args: Record<string, never>; Returns: Json };
+      finish_test_storage_cleanup: {
+        Args: { p_bucket: string; p_path: string; p_token: string; p_success: boolean };
+        Returns: undefined;
+      };
       save_push_subscription: {
         Args: { p_endpoint: string; p_p256dh: string; p_auth: string };
         Returns: undefined;

@@ -1,3 +1,4 @@
+import { TestRecordControls } from '@/components/test-record-controls';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound, redirect } from 'next/navigation';
@@ -28,6 +29,7 @@ export default async function NeedDetail({ params }: { params: Promise<{ id: str
   if (actorError) throw new Error('ACTORS_LOAD_FAILED');
   return (
     <div className="page">
+      <TestRecordControls table="purchase_needs" record={n} locale={locale} back="/needs" />
       <PageHeader
         title={catalog.products.find((p) => p.id === n.product_id)?.name ?? n.name}
         back="/needs"

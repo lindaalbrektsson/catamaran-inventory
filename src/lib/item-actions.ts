@@ -1,4 +1,5 @@
 'use server';
+import { creationRpc } from './test-data';
 import { requireProfile } from './auth';
 import { supabase } from './supabase/server';
 import { itemCatalog } from './item-catalog';
@@ -32,6 +33,7 @@ export async function uploadItemPreview(data: FormData) {
 export async function saveItems(
   id: string,
   values: ItemInput[],
+  isTest = false,
 ): Promise<{ error?: ItemError; success?: boolean }> {
   const profile = await requireProfile();
   if (profile.role !== 'OWNER') return { error: 'ITEM_FAILED' };
@@ -41,9 +43,10 @@ export async function saveItems(
   )
     return { error: 'ITEM_INVALID' };
   // RPC repeats validation under a catalog lock. It also handles exact request retries.
-  const { error } = await (
-    await supabase()
-  ).rpc('save_inventory_items', { p_id: id, p_rows: values as unknown as Json });
+  const { error } = await creationRpc(await supabase(), isTest === true, 'save_inventory_items', {
+    p_id: id,
+    p_rows: values as unknown as Json,
+  });
   if (error)
     return {
       error: [

@@ -1,3 +1,4 @@
+import { cleanTestStorage } from '@/lib/test-storage-cleanup';
 import { timingSafeEqual } from 'node:crypto';
 import { dispatchDuePush } from '@/lib/push-dispatch';
 export const runtime = 'nodejs';
@@ -9,7 +10,10 @@ export async function POST(request: Request) {
   if (!secret || a.length !== b.length || !timingSafeEqual(a, b))
     return new Response(null, { status: 401 });
   try {
-    return Response.json(await dispatchDuePush(), { headers: { 'Cache-Control': 'no-store' } });
+    const cleanup = cleanTestStorage(10).catch(() => 0);
+    const push = await dispatchDuePush();
+    await cleanup;
+    return Response.json(push, { headers: { 'Cache-Control': 'no-store' } });
   } catch {
     return Response.json({ error: 'PUSH_DISPATCH_FAILED' }, { status: 503 });
   }

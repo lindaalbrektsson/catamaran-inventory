@@ -35,7 +35,7 @@ test('new item needs only name category quantity and warns about punctuation dup
     .getByRole('combobox', { name: 'Category', exact: true })
     .selectOption({ label: 'Bar' });
   await page.getByLabel('Quantity', { exact: true }).fill('3');
-  await page.getByRole('checkbox').check();
+  await page.locator('input[name="confirmDuplicate"]').check();
   await page.getByRole('button', { name: 'Save change', exact: true }).click();
   await expect(page.getByRole('alert')).toBeVisible();
   const value = JSON.parse(
@@ -44,7 +44,7 @@ test('new item needs only name category quantity and warns about punctuation dup
   await expect(page.getByRole('combobox', { name: 'Category', exact: true })).toHaveValue(
     '20000000-0000-4000-8000-000000000001',
   );
-  await expect(page.getByRole('checkbox')).toBeChecked();
+  await expect(page.locator('input[name="confirmDuplicate"]')).toBeChecked();
   await page.getByRole('button', { name: 'Save change', exact: true }).click();
   expect(
     JSON.parse((await page.evaluate(() => sessionStorage.getItem('quick-add-fixture')))!),

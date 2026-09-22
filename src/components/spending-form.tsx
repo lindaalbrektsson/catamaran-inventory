@@ -1,4 +1,5 @@
 'use client';
+import { TestDataField } from './test-data';
 import { useActionState, useState } from 'react';
 import { recordSpending } from '@/lib/spending-actions';
 import { dictionary, type Locale } from '@/lib/i18n';
@@ -202,6 +203,7 @@ export function SpendingForm({
         </p>
       )}
       <div className="stock-actions">
+        <TestDataField disabled={pending} locale={locale} />
         <Button type="submit" className="w-full" disabled={pending}>
           {pending ? t.saving : t.saveReceiptNext}
         </Button>

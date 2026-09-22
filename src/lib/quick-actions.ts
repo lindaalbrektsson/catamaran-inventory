@@ -1,4 +1,5 @@
 'use server';
+import { creationRpc } from './test-data';
 import { requireProfile } from './auth';
 import { supabase } from './supabase/server';
 import { quickAddSchema, needSchema } from './quick-domain';
@@ -30,19 +31,22 @@ export async function quickAdd(_previous: ActionState, form: FormData): Promise<
   });
   if (!result.success) return { error: 'INVALID_INPUT' };
   const v = result.data;
-  const { data, error } = await (
-    await supabase()
-  ).rpc('quick_add_item', {
-    p_request: v.requestId,
-    p_location: v.location,
-    p_product: v.product || null,
-    p_name: v.name,
-    p_category: v.category || null,
-    p_quantity: Number(v.quantity),
-    p_unit: v.unit,
-    p_minimum: v.minimum ? Number(v.minimum) : null,
-    p_confirm_duplicate: v.confirmDuplicate,
-  });
+  const { data, error } = await creationRpc(
+    await supabase(),
+    !v.product && form.get('is_test') === 'on',
+    'quick_add_item',
+    {
+      p_request: v.requestId,
+      p_location: v.location,
+      p_product: v.product || null,
+      p_name: v.name,
+      p_category: v.category || null,
+      p_quantity: Number(v.quantity),
+      p_unit: v.unit,
+      p_minimum: v.minimum ? Number(v.minimum) : null,
+      p_confirm_duplicate: v.confirmDuplicate,
+    },
+  );
   if (error || !data) return { error: errorKey(error?.message ?? '') };
   revalidatePath('/inventory', 'layout');
   revalidatePath('/items', 'layout');
@@ -61,22 +65,27 @@ export async function saveNeed(
   if (!result.success) return { error: 'INVALID_INPUT' };
   const v = result.data,
     db = await supabase();
-  const { error } = await db.rpc('save_purchase_need', {
-    p_request: v.requestId,
-    p_id: v.id,
-    p_version: v.version,
-    p_confirm_duplicate: v.product_id ? false : v.confirmDuplicate,
-    p_values: {
-      name: v.name,
-      quantity_needed: v.quantity_needed === '' ? null : Number(v.quantity_needed),
-      product_id: v.product_id,
-      location_id: '',
-      country: v.country,
-      status: v.status,
-      product_url: v.product_url,
-      comment: v.comment,
+  const { error } = await creationRpc(
+    db,
+    v.version === 0 && form.get('is_test') === 'on',
+    'save_purchase_need',
+    {
+      p_request: v.requestId,
+      p_id: v.id,
+      p_version: v.version,
+      p_confirm_duplicate: v.product_id ? false : v.confirmDuplicate,
+      p_values: {
+        name: v.name,
+        quantity_needed: v.quantity_needed === '' ? null : Number(v.quantity_needed),
+        product_id: v.product_id,
+        location_id: '',
+        country: v.country,
+        status: v.status,
+        product_url: v.product_url,
+        comment: v.comment,
+      },
     },
-  });
+  );
   if (error) {
     if (error.message.includes('DUPLICATE_NEED') && v.product_id) {
       const { data: existing } = await db

@@ -24,6 +24,7 @@ export async function uploadOriginalReceipt(
       .join('');
     const reservation = await prepareOriginalReceipt({
       id,
+      is_test: form.get('is_test') === 'on',
       type: String(form.get('receiptType')),
       payment: String(form.get('payment')),
       hash,

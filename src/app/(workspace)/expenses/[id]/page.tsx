@@ -1,3 +1,4 @@
+import { TestRecordControls } from '@/components/test-record-controls';
 import Image from 'next/image';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary, dateTime } from '@/lib/i18n';
@@ -28,6 +29,12 @@ export default async function ExpenseDetail({
   ];
   return (
     <div className="page max-w-2xl">
+      <TestRecordControls
+        table={kind === 'PURCHASE' ? 'purchases' : 'expenses'}
+        record={record}
+        locale={locale}
+        back="/expenses"
+      />
       <PageHeader
         title={kind === 'PURCHASE' ? t.purchaseDraft : t.expenses}
         back="/expenses"

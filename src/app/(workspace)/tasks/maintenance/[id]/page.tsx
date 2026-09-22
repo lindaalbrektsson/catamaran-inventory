@@ -1,3 +1,4 @@
+import { TestRecordControls } from '@/components/test-record-controls';
 import { MaintenancePlanLink } from '@/components/maintenance-plan-link';
 import { ReminderLink } from '@/components/reminder-link';
 import { MergedItemNotice, type MergedItemReference } from '@/components/merged-item-reference';
@@ -96,6 +97,7 @@ export default async function MaintenanceDetail({
   const relationship = merged.data as MergedItemReference | null;
   return (
     <div className="page max-w-3xl">
+      <TestRecordControls table="tasks" record={task} locale={locale} back="/tasks/maintenance" />
       {relationship && <MergedItemNotice value={relationship} locale={locale} />}
       <PageHeader title={task.title} locale={locale} back="/tasks/maintenance" />
       {!task.archived && <ReminderLink taskId={id} locale={locale} />}

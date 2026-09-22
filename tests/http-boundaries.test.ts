@@ -1,3 +1,4 @@
+vi.mock('server-only', () => ({}));
 vi.mock('@/lib/supabase/admin', () => ({ authAdmin: () => ({ rpc: mock.rpc }) }));
 import { it, expect, vi, beforeEach } from 'vitest';
 import sharp from 'sharp';

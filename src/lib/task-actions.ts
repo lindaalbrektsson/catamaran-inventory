@@ -1,4 +1,5 @@
 'use server';
+import { creationRpc } from './test-data';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
@@ -35,15 +36,18 @@ export async function saveTask(_state: ActionState, form: FormData): Promise<Act
   const parsed = taskSchema.safeParse({ ...Object.fromEntries(form), subtasks });
   if (!parsed.success) return { error: 'INVALID_INPUT' };
   const { requestId, id, version, ...values } = parsed.data;
-  const { error } = await (
-    await supabase()
-  ).rpc('manage_task', {
-    p_request: requestId,
-    p_id: id,
-    p_version: version,
-    p_action: 'SAVE',
-    p_values: values,
-  });
+  const { error } = await creationRpc(
+    await supabase(),
+    version === 0 && form.get('is_test') === 'on',
+    'manage_task',
+    {
+      p_request: requestId,
+      p_id: id,
+      p_version: version,
+      p_action: 'SAVE',
+      p_values: values,
+    },
+  );
   if (error) return taskError(error.message);
   refreshTask(id);
   redirect(`/tasks/${id}`);

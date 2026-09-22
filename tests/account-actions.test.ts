@@ -120,7 +120,7 @@ it('never returns a credential when profile finalization fails', async () => {
 it('rejects creation of roles outside the operational onboarding choices', async () => {
   const value = form();
   value.set('role', 'CREW');
-  expect(await accountChange(value)).toEqual({ error: 'INVALID_INPUT' });
+  expect(await accountChange(value)).toEqual({ error: 'accountRoleInvalid' });
   expect(m.create).not.toHaveBeenCalled();
 });
 it.each(['CREATE', 'RESET'])(
@@ -204,3 +204,30 @@ it.each(['OWNER', 'MANAGER'])(
     );
   },
 );
+
+it('accepts the exact reusable test.manager username through normal creation', async () => {
+  const f=form(); f.set('username','test.manager');
+  expect((await accountChange(f)).success).toBe(true);
+  expect(m.rpc).toHaveBeenCalledWith('begin_username_creation',expect.objectContaining({p_username:'test.manager'}));
+});
+it.each([
+  ['name','   ','accountNameInvalid'],
+  ['username','test.manager​','accountUsernameInvalid'],
+  ['request','not-a-uuid','accountFormInvalid'],
+  ['role','unsupported','accountRoleInvalid'],
+])('invalid account field %s produces an account-specific error before any RPC', async(field,value,error)=>{
+  const f=form();f.set(field,value);
+  expect(await accountChange(f)).toEqual({error});
+  expect(m.rpc).not.toHaveBeenCalled();
+  expect(m.create).not.toHaveBeenCalled();
+});
+it('a reserved username has a specific safe message and never reaches Auth creation',async()=>{
+  m.rpc.mockResolvedValue({data:null,error:{code:'P0001',message:'USERNAME_UNAVAILABLE'}});
+  expect(await accountChange(form())).toEqual({error:'accountUsernameUnavailable'});
+  expect(m.create).not.toHaveBeenCalled();
+});
+it('unknown database validation errors stay in the account error domain',async()=>{
+  m.rpc.mockResolvedValue({data:null,error:{code:'P0001',message:'INVALID_INPUT'}});
+  expect(await accountChange(form())).toEqual({error:'accountChangeFailed'});
+  expect(m.create).not.toHaveBeenCalled();
+});

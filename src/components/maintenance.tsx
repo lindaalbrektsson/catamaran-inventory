@@ -1,4 +1,6 @@
 'use client';
+import { TestBadge } from '@/components/test-badge';
+import { TestDataField } from './test-data';
 import { EmptyState } from '@/components/empty-state';
 
 import { AssigneeLabel } from './assignee-label';
@@ -107,6 +109,7 @@ export function MaintenanceCreate({ locale, today }: { locale: Locale; today: st
         ) : (
           <input type="hidden" name="monthday" value="" />
         )}
+        <TestDataField locale={locale} />
         {state.error && <p role="alert">{t[state.error]}</p>}
         <button className={control}>{pending ? t.saving : t.maintenanceSave}</button>
       </fieldset>
@@ -205,7 +208,7 @@ export function MaintenanceList({
                       className="inline-flex min-h-11 items-center font-semibold"
                       href={'/tasks/maintenance/' + task.id}
                     >
-                      {planner ? t.maintenanceOpen : task.title}
+                      {planner ? t.maintenanceOpen : task.title} <TestBadge value={task.is_test} />
                     </Link>
                     {o && (
                       <>

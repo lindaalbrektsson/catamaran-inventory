@@ -1,4 +1,5 @@
 'use client';
+import { TestBadge } from './test-badge';
 import { stockStatus } from '@/lib/stock-status';
 import { SearchField } from './search-field';
 import { useState } from 'react';
@@ -94,7 +95,7 @@ export function OwnerInventory({
               <tr key={`${i.location_id}-${i.product_id}`}>
                 <td className="border-b p-3">
                   <Link className="underline" href={`/inventory/${i.location_id}/${i.product_id}`}>
-                    {i.product.name}
+                    {i.product.name} <TestBadge value={i.product.is_test} />
                   </Link>
                   {!i.product.active && <span className="ml-2">({t.inactive})</span>}
                 </td>

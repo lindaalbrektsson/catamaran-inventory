@@ -1,4 +1,5 @@
 'use server';
+import { creationRpc } from './test-data';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
@@ -55,7 +56,7 @@ export async function captureSimpleReceipt(
   const v = parsed.data,
     db = await supabase(),
     hash = createHash('sha256').update(bytes).digest('hex');
-  const reserve = await db.rpc('capture_receipt', {
+  const reserve = await creationRpc(db, form.get('is_test') === 'on', 'capture_receipt', {
     p_id: v.requestId,
     p_type: v.receiptType,
     p_payment: v.payment,
@@ -116,6 +117,7 @@ export async function reviewReceipt(_previous: ActionState, form: FormData): Pro
 }
 
 export async function prepareOriginalReceipt(input: {
+  is_test?: boolean;
   id: string;
   type: string;
   payment: string;
@@ -138,7 +140,7 @@ export async function prepareOriginalReceipt(input: {
   if (!parsed.success) return { error: 'RECEIPT_INVALID' as const };
   const v = parsed.data,
     db = await supabase();
-  const reserved = await db.rpc('capture_receipt', {
+  const reserved = await creationRpc(db, input.is_test === true, 'capture_receipt', {
     p_id: v.id,
     p_type: v.type,
     p_payment: v.payment,

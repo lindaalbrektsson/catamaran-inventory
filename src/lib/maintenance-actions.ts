@@ -1,4 +1,5 @@
 'use server';
+import { creationRpc } from './test-data';
 import { z } from 'zod';
 import { createHash } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
@@ -39,18 +40,21 @@ export async function createMaintenance(_: ActionState, form: FormData): Promise
     .safeParse(Object.fromEntries(form));
   if (!v.success) return fail('INVALID_INPUT');
   const x = v.data;
-  const { error } = await (
-    await supabase()
-  ).rpc('create_maintenance', {
-    p_id: x.id,
-    p_title: x.title,
-    p_recurrence: x.recurrence,
-    p_days: x.recurrence === 'CUSTOM' ? Number(x.days) : null,
-    p_due: x.recurrence === 'NONE' ? null : x.due,
-    p_time: x.time || null,
-    p_weekday: x.recurrence === 'WEEKLY' ? Number(x.weekday) : null,
-    p_monthday: x.recurrence === 'MONTHLY' ? Number(x.monthday) : null,
-  });
+  const { error } = await creationRpc(
+    await supabase(),
+    form.get('is_test') === 'on',
+    'create_maintenance',
+    {
+      p_id: x.id,
+      p_title: x.title,
+      p_recurrence: x.recurrence,
+      p_days: x.recurrence === 'CUSTOM' ? Number(x.days) : null,
+      p_due: x.recurrence === 'NONE' ? null : x.due,
+      p_time: x.time || null,
+      p_weekday: x.recurrence === 'WEEKLY' ? Number(x.weekday) : null,
+      p_monthday: x.recurrence === 'MONTHLY' ? Number(x.monthday) : null,
+    },
+  );
   if (error) return fail(error.message);
   refresh();
   redirect('/tasks/maintenance/' + x.id);

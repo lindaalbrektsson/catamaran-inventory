@@ -1,4 +1,5 @@
 'use client';
+import { TestBadge } from '@/components/test-badge';
 import { EmptyState } from './empty-state';
 import { FileText } from 'lucide-react';
 import { SearchField } from './search-field';
@@ -86,7 +87,7 @@ export function DocumentList({
                 href={`/documents/${d.id}`}
                 className="flex min-h-12 items-center rounded-xl border p-3"
               >
-                {d.title}
+                {d.title} <TestBadge value={d.is_test} />
               </Link>
             ))}
           </div>
@@ -141,7 +142,9 @@ export function DocumentList({
               rel={home ? 'noopener noreferrer' : undefined}
               className="block min-h-14 rounded-xl border p-4"
             >
-              <h3 className="break-words font-semibold">{d.title}</h3>
+              <h3 className="break-words font-semibold">
+                {d.title} <TestBadge value={d.is_test} />
+              </h3>
               {!home && (
                 <>
                   {d.category && <p className="mt-1 text-sm">{d.category}</p>}

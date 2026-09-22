@@ -1,3 +1,4 @@
+import { TestRecordControls } from '@/components/test-record-controls';
 import { supabase } from '@/lib/supabase/server';
 import { collect } from '@/lib/inventory';
 import { notFound } from 'next/navigation';
@@ -27,6 +28,7 @@ export default async function EditItem({ params }: { params: Promise<{ id: strin
   if (!item) notFound();
   return (
     <div className="page max-w-xl">
+      <TestRecordControls table="products" record={item} locale={locale} back="/items" />
       <PageHeader title={dictionary(locale).editItem} locale={locale} />
       <GlobalItemEditor catalog={catalog} locale={locale} item={item} />
     </div>

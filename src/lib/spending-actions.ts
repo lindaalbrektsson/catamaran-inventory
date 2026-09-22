@@ -1,4 +1,5 @@
 'use server';
+import { creationRpc } from './test-data';
 import { createHash } from 'node:crypto';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
@@ -17,20 +18,23 @@ export async function recordSpending(_previous: ActionState, form: FormData): Pr
   const value = parsed.data;
   if (!can(profile.role, value.kind === 'EXPENSE' ? 'expenses.create' : 'purchases.capture'))
     return { error: 'FORBIDDEN' };
-  const { error } = await (
-    await supabase()
-  ).rpc('record_spending', {
-    p_id: value.requestId,
-    p_kind: value.kind,
-    p_category_id: value.categoryId,
-    p_amount: value.amount, // Decimal string reaches PostgreSQL numeric without float arithmetic.
-    p_currency: value.currency,
-    p_location_id: value.locationId,
-    p_paid_by: value.paidBy,
-    p_payment_method: value.paymentMethod,
-    p_occurred_at: value.occurredAt,
-    p_notes: value.notes,
-  });
+  const { error } = await creationRpc(
+    await supabase(),
+    form.get('is_test') === 'on',
+    'record_spending',
+    {
+      p_id: value.requestId,
+      p_kind: value.kind,
+      p_category_id: value.categoryId,
+      p_amount: value.amount, // Decimal string reaches PostgreSQL numeric without float arithmetic.
+      p_currency: value.currency,
+      p_location_id: value.locationId,
+      p_paid_by: value.paidBy,
+      p_payment_method: value.paymentMethod,
+      p_occurred_at: value.occurredAt,
+      p_notes: value.notes,
+    },
+  );
   if (error) {
     const known = ['FORBIDDEN', 'REQUEST_CONFLICT', 'SPENDING_INVALID'] as const;
     return { error: known.find((key) => error.message.includes(key)) ?? 'SPENDING_UNKNOWN' };

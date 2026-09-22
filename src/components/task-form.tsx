@@ -1,4 +1,5 @@
 'use client';
+import { TestDataField } from './test-data';
 import { useActionState, useState } from 'react';
 import { saveTask } from '@/lib/task-actions';
 import { dictionary, type Locale } from '@/lib/i18n';
@@ -236,6 +237,7 @@ export function TaskForm({
             )}
           </div>
         </details>
+        {!initial && <TestDataField locale={locale} />}
         {state.error && <p role="alert">{t[state.error]}</p>}
         <button
           className="min-h-14 rounded-xl bg-primary p-3 font-semibold text-primary-foreground"

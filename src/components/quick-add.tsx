@@ -1,4 +1,5 @@
 'use client';
+import { TestDataField } from './test-data';
 import { useActionState, useId, useState } from 'react';
 import { quickAdd } from '@/lib/quick-actions';
 import { units } from '@/lib/domain';
@@ -323,6 +324,7 @@ export function QuickAdd({
           {t[state.error]}
         </p>
       )}
+      {creating && <TestDataField disabled={pending} locale={locale} onChange={changed} />}
       <Button className="min-h-14" disabled={pending || (!product && !creating)}>
         {pending ? t.saving : t.save}
       </Button>

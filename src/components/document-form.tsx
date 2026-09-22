@@ -1,4 +1,5 @@
 'use client';
+import { TestDataField } from './test-data';
 import { useActionState, useState } from 'react';
 import { MediaPicker } from './media-picker';
 import { SlowOperationNotice } from './slow-operation-notice';
@@ -172,6 +173,7 @@ export function DocumentForm({
         ) : (
           <input type="hidden" name="access_level" value="MANAGERS" />
         )}
+        {!initial && <TestDataField locale={locale} />}
         <button
           className="min-h-14 rounded-xl bg-primary p-3 font-semibold text-primary-foreground"
           disabled={pending || processing || (!selected && !initial?.current_file_id)}

@@ -1,3 +1,4 @@
+import { TestRecordControls } from '@/components/test-record-controls';
 import { DocumentOpened } from '@/components/document-opened';
 import { notFound } from 'next/navigation';
 import { getLocale, requireProfile } from '@/lib/auth';
@@ -73,6 +74,7 @@ export default async function DocumentDetail({ params }: { params: Promise<{ id:
   const due = documentExpiry(d.expiry_date);
   return (
     <div className="page max-w-5xl">
+      <TestRecordControls table="documents" record={d} locale={locale} back="/documents" />
       {!d.archived && d.current_file_id && <DocumentOpened userId={p.id} documentId={d.id} />}
       <PageHeader title={d.title} back="/documents" locale={locale} />
       {d.archived && <p className="mb-4 font-semibold">{t.docArchived}</p>}

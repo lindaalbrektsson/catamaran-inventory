@@ -1,3 +1,4 @@
+import { TestRecordControls } from '@/components/test-record-controls';
 import { ReminderLink } from '@/components/reminder-link';
 import { MergedItemNotice, type MergedItemReference } from '@/components/merged-item-reference';
 import { TaskUpdateHistory } from '@/components/task-update-history';
@@ -113,6 +114,7 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
   }
   return (
     <div className="page max-w-5xl">
+      <TestRecordControls table="tasks" record={task} locale={locale} back="/tasks" />
       <PageHeader title={task.title} locale={locale} back="/tasks" />
       {canManage && !task.archived && <ReminderLink taskId={id} locale={locale} />}
       <div className="mb-5 grid gap-2">
