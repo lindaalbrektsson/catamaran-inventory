@@ -1,4 +1,5 @@
 import { CategoryEditor } from '@/components/category-editor';
+import { StaffActivity } from '@/components/staff-activity';
 import { ListSkeleton } from '@/components/list-skeleton';
 import { NeedFilters } from '@/components/need-filters';
 import { NeedWorkflowFixture } from './need-workflow';
@@ -127,7 +128,14 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.get('view') === 'onboarding' ? (
+        {params.get('view') === 'staff-activity' ? (
+          <div className="space-y-4">
+            <StaffActivity locale={locale} mustChangePassword credentialPending={false} lastLogin={null} />
+            <StaffActivity locale={locale} mustChangePassword={false} credentialPending={false} lastLogin="2026-09-22T20:37:00Z" />
+            <StaffActivity locale={locale} mustChangePassword={false} credentialPending />
+            <AccountForm locale={locale} configured />
+          </div>
+        ) : params.get('view') === 'onboarding' ? (
           <PwaProvider locale={locale}>
             <MobileOnboarding
               locale={locale}

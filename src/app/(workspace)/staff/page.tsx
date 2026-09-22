@@ -9,6 +9,31 @@ import { dictionary } from '@/lib/i18n';
 import { collect } from '@/lib/inventory';
 import { DesktopOnly } from '@/components/desktop-only';
 import { StaffProfileForm } from '@/components/staff-profile-form';
+import { Suspense } from 'react';
+import { StaffActivity } from '@/components/staff-activity';
+import { staffLastLogins } from '@/lib/staff-activity';
+import type { Profile } from '@/lib/database.types';
+import type { Locale } from '@/lib/i18n';
+
+async function Activity({
+  profile,
+  locale,
+  logins,
+}: {
+  profile: Profile;
+  locale: Locale;
+  logins: Promise<Map<string, string | null>>;
+}) {
+  const values = await logins;
+  return (
+    <StaffActivity
+      locale={locale}
+      mustChangePassword={profile.must_change_password}
+      credentialPending={profile.credential_pending}
+      lastLogin={values.get(profile.id)}
+    />
+  );
+}
 export default async function Staff() {
   return timed('route.staff', renderStaff);
 }
@@ -30,6 +55,7 @@ async function renderStaff() {
     username: string;
     running: boolean;
   }[];
+  const logins = staffLastLogins(profiles.map((p) => p.id));
   return (
     <DesktopOnly locale={locale}>
       <div className="page max-w-4xl">
@@ -50,6 +76,18 @@ async function renderStaff() {
           {profiles.map((p) => (
             <section key={p.id} className="grid content-start gap-4">
               <StaffProfileForm profile={p} locale={locale} />
+              <Suspense
+                fallback={
+                  <StaffActivity
+                    locale={locale}
+                    mustChangePassword={p.must_change_password}
+                    credentialPending={p.credential_pending}
+                    loading
+                  />
+                }
+              >
+                <Activity profile={p} locale={locale} logins={logins} />
+              </Suspense>
               {p.credential_pending && <p role="status">{t.accountSetupPending}</p>}
               {p.id !== profile.id && !p.account_admin && (
                 <DeleteUserButton target={p.id} locale={locale} />
