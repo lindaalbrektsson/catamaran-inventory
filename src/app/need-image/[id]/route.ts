@@ -15,12 +15,23 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const db = await supabase();
   const { data: n, error } = await db
     .from('purchase_needs')
-    .select('photo_path,photo_ready')
+    .select('photo_path,photo_ready,current_photo_id')
     .eq('id', id)
     .maybeSingle();
   if (error) return new Response(null, { status: 500, headers });
-  if (!n?.photo_ready || !n.photo_path) return new Response(null, { status: 404, headers });
-  const file = await db.storage.from('need-photos').download(n.photo_path);
+  let path = n?.photo_ready ? n.photo_path : null;
+  if (n?.current_photo_id) {
+    const { data: photo } = await db
+      .from('need_photos')
+      .select('object_path')
+      .eq('id', n.current_photo_id)
+      .eq('need_id', id)
+      .eq('ready', true)
+      .maybeSingle();
+    path = photo?.object_path ?? null;
+  }
+  if (!path) return new Response(null, { status: 404, headers });
+  const file = await db.storage.from('need-photos').download(path);
   if (file.error || !file.data) return new Response(null, { status: 404, headers });
   return new Response(await file.data.arrayBuffer(), {
     headers: { ...headers, 'Content-Type': 'image/jpeg' },

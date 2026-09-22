@@ -4,6 +4,8 @@ import { NeedFilters } from '@/components/need-filters';
 import { NeedWorkflowFixture } from './need-workflow';
 import { VoiceFixture } from './voice';
 import { NotificationSettings } from '@/components/notification-settings';
+import { MobileOnboarding, InstallationSettings } from '@/components/mobile-onboarding';
+import { PwaProvider } from '@/components/pwa-support';
 import { DeleteUserButton } from '@/components/delete-user-button';
 import { GlobalItems, GlobalItemEditor } from '@/components/global-items';
 import { ItemChangeHistory } from '@/components/item-change-history';
@@ -125,7 +127,16 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.get('view') === 'need-workflow' ? (
+        {params.get('view') === 'onboarding' ? (
+          <PwaProvider locale={locale}>
+            <MobileOnboarding
+              locale={locale}
+              userId={params.get('user') ?? 'fixture-one'}
+              publicKey={params.has('unconfigured') ? '' : 'B'.repeat(87)}
+            />
+            <InstallationSettings locale={locale} />
+          </PwaProvider>
+        ) : params.get('view') === 'need-workflow' ? (
           <NeedWorkflowFixture locale={locale} />
         ) : params.get('view') === 'need-filters' ? (
           <NeedFilters

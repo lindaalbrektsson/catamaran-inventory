@@ -104,3 +104,22 @@ it.each(['OWNER', 'MANAGER'])(
     expect(m.rpc).toHaveBeenCalledWith('complete_document_file', { p_file: id, p_actor: actor });
   },
 );
+
+it.each(['application/pdf', 'image/jpeg'])(
+  'matching hash does not allow malformed %s to finalize',
+  async (mime) => {
+    const bytes = Buffer.from('<html>disguised content</html>');
+    m.profile.mockResolvedValue({ role: 'OWNER', id: '40000000-0000-4000-8000-000000000001' });
+    m.maybeSingle.mockResolvedValue({
+      data: {
+        object_path: 'fixture',
+        byte_size: bytes.length,
+        sha256: (await import('node:crypto')).createHash('sha256').update(bytes).digest('hex'),
+        content_type: mime,
+      },
+    });
+    m.download.mockResolvedValue({ data: new Blob([bytes]), error: null });
+    expect(await finishDocument(crypto.randomUUID())).toEqual({ error: 'docInvalidFile' });
+    expect(m.rpc).not.toHaveBeenCalled();
+  },
+);

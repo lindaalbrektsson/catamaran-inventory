@@ -4,8 +4,6 @@ import { supabase } from './supabase/server';
 import { quickAddSchema, needSchema } from './quick-domain';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { normalizeReceipt } from './receipt-image';
-import { createHash } from 'node:crypto';
 import type { ActionState } from './actions';
 import type { Key } from './i18n';
 function errorKey(message: string): Key {
@@ -53,7 +51,7 @@ export async function quickAdd(_previous: ActionState, form: FormData): Promise<
 export async function saveNeed(
   _previous: ActionState,
   form: FormData,
-): Promise<ActionState & { existingNeed?: string }> {
+): Promise<ActionState & { existingNeed?: string; needId?: string }> {
   const p = await requireProfile();
   if (!['OWNER', 'MANAGER'].includes(p.role)) return { error: 'FORBIDDEN' };
   const result = needSchema.safeParse({
@@ -61,16 +59,6 @@ export async function saveNeed(
     confirmDuplicate: form.get('confirmDuplicate') === 'on',
   });
   if (!result.success) return { error: 'INVALID_INPUT' };
-  const file = form.get('photo');
-  let bytes: Buffer | undefined;
-  if (file instanceof File && file.size) {
-    if (file.size > 3145728) return { error: 'needPhotoInvalid' };
-    try {
-      bytes = await normalizeReceipt(new Uint8Array(await file.arrayBuffer()));
-    } catch {
-      return { error: 'needPhotoInvalid' };
-    }
-  }
   const v = result.data,
     db = await supabase();
   const { error } = await db.rpc('save_purchase_need', {
@@ -103,37 +91,10 @@ export async function saveNeed(
     }
     return { error: errorKey(error.message) };
   }
-  if (bytes) {
-    const hash = createHash('sha256').update(bytes).digest('hex');
-    const reserved = await db.rpc('reserve_need_photo', {
-      p_id: v.id,
-      p_hash: hash,
-      p_size: bytes.length,
-    });
-    if (reserved.error || !reserved.data) return { error: 'needPhotoRetry' };
-    const upload = await db.storage.from('need-photos').upload(reserved.data, bytes, {
-      contentType: 'image/jpeg',
-      cacheControl: '0',
-      upsert: false,
-    });
-    if (upload.error) {
-      const existing = await db.storage.from('need-photos').download(reserved.data);
-      if (
-        existing.error ||
-        !existing.data ||
-        createHash('sha256')
-          .update(Buffer.from(await existing.data.arrayBuffer()))
-          .digest('hex') !== hash
-      )
-        return { error: 'needPhotoRetry' };
-    }
-    const complete = await db.rpc('complete_need_photo', { p_id: v.id });
-    if (complete.error) return { error: 'needPhotoRetry' };
-  }
   revalidatePath('/needs', 'layout');
   revalidatePath('/inventory', 'layout');
   revalidatePath('/items', 'layout');
-  redirect(`/needs/${v.id}`);
+  return { needId: v.id };
 }
 
 export async function advanceNeed(_previous: ActionState, form: FormData): Promise<ActionState> {
@@ -168,4 +129,9 @@ export async function advanceNeed(_previous: ActionState, form: FormData): Promi
   revalidatePath('/inventory', 'layout');
   revalidatePath('/items', 'layout');
   return {};
+}
+
+export async function openSavedNeed(id: string) {
+  await requireProfile();
+  if (/^[0-9a-f-]{36}$/i.test(id)) redirect('/needs/' + id);
 }

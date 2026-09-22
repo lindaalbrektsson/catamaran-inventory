@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { dictionary, type Locale } from '@/lib/i18n';
 import { MobilePwaOnly } from './mobile-pwa-only';
 import { isMobilePwa, mobilePlatform } from '@/lib/mobile-pwa';
-import { hasPush, savePush, removePush, testPush } from '@/lib/push-actions';
+import { hasPush, removePush, testPush } from '@/lib/push-actions';
+import { enableDevicePush } from '@/lib/push-client';
+import { markPush } from '@/lib/onboarding-local';
 function notificationPermission(): NotificationPermission | 'unsupported' {
   return !('Notification' in window) ||
     !('serviceWorker' in navigator) ||
@@ -20,14 +22,18 @@ function subscribePermission(callback: () => void) {
     window.removeEventListener('push-permission', callback);
   };
 }
-export function NotificationSettings(props: { locale: Locale; publicKey: string }) {
+export function NotificationSettings(props: {
+  locale: Locale;
+  publicKey: string;
+  userId?: string;
+}) {
   return (
     <MobilePwaOnly includeBrowser>
       <NotificationAccess {...props} />
     </MobilePwaOnly>
   );
 }
-function NotificationAccess(props: { locale: Locale; publicKey: string }) {
+function NotificationAccess(props: { locale: Locale; publicKey: string; userId?: string }) {
   const installed = useSyncExternalStore(subscribePermission, isMobilePwa, () => false);
   const t = dictionary(props.locale);
   return installed ? (
@@ -42,7 +48,15 @@ function NotificationAccess(props: { locale: Locale; publicKey: string }) {
     </section>
   );
 }
-function MobileNotificationSettings({ locale, publicKey }: { locale: Locale; publicKey: string }) {
+function MobileNotificationSettings({
+  locale,
+  publicKey,
+  userId = '',
+}: {
+  locale: Locale;
+  publicKey: string;
+  userId?: string;
+}) {
   const t = dictionary(locale);
   const permission = useSyncExternalStore(
     subscribePermission,
@@ -60,7 +74,10 @@ function MobileNotificationSettings({ locale, publicKey }: { locale: Locale; pub
       .then(async (r) => {
         const s = await r?.pushManager.getSubscription();
         const saved = s ? await hasPush(s.endpoint) : false;
-        if (active) setOn(saved && Notification.permission === 'granted');
+        if (active) {
+          setOn(saved && Notification.permission === 'granted');
+          if (saved && Notification.permission === 'granted') markPush(userId, true);
+        }
       })
       .catch(() => {
         if (active) setMessage(t.pushFailed);
@@ -71,51 +88,31 @@ function MobileNotificationSettings({ locale, publicKey }: { locale: Locale; pub
     return () => {
       active = false;
     };
-  }, [t.pushFailed]);
+  }, [t.pushFailed, userId]);
   async function toggle() {
     if (!isMobilePwa()) return;
     setBusy(true);
     setMessage('');
     try {
-      // Permission request must be directly initiated by this user gesture on iOS.
       if (!on) {
-        const permission = await Notification.requestPermission();
-        window.dispatchEvent(new Event('push-permission'));
-        if (permission !== 'granted') {
+        if (!(await enableDevicePush(publicKey))) {
           setMessage(t.pushPermissionHelp);
           return;
         }
+        markPush(userId, true);
+        setOn(true);
+        return;
       }
       const r = await navigator.serviceWorker.getRegistration();
       if (!r?.active) throw new Error('WORKER_NOT_READY');
-      let s = await r.pushManager.getSubscription();
+      const s = await r.pushManager.getSubscription();
       if (on) {
         if (s) {
           if (!(await removePush(s.endpoint))) throw new Error('REMOVE_FAILED');
           await s.unsubscribe();
         }
         setOn(false);
-      } else {
-        // A subscription from another signed-in account is never silently re-bound.
-        if (s && !(await hasPush(s.endpoint))) {
-          await s.unsubscribe();
-          s = null;
-        }
-        const raw = atob(publicKey.replace(/-/g, '+').replace(/_/g, '/'));
-        const key = Uint8Array.from(raw, (c) => c.charCodeAt(0));
-        s =
-          s ??
-          (await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }));
-        if (
-          !(await savePush(
-            s.toJSON(),
-            mobilePlatform(navigator.userAgent, navigator.maxTouchPoints),
-          ))
-        ) {
-          await s.unsubscribe();
-          throw new Error('SAVE_FAILED');
-        }
-        setOn(true);
+        markPush(userId, false);
       }
     } catch {
       setMessage(t.pushFailed);

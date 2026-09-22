@@ -1,4 +1,5 @@
 import { ListSkeleton } from '@/components/list-skeleton';
+import { MobileOnboarding } from '@/components/mobile-onboarding';
 import { Suspense } from 'react';
 import type { Locale } from '@/lib/i18n';
 import { timed } from '@/lib/performance';
@@ -54,6 +55,17 @@ async function renderHome() {
       <div className="sea-lines-soft mb-4 rounded-xl px-1 py-2">
         <h1 className="eyebrow">{t.home}</h1>
       </div>
+      {canUseNeeds && (
+        <MobileOnboarding
+          locale={locale}
+          userId={profile.id}
+          publicKey={
+            process.env.WEB_PUSH_PRIVATE_KEY && process.env.WEB_PUSH_SUBJECT
+              ? (process.env.WEB_PUSH_PUBLIC_KEY ?? '')
+              : ''
+          }
+        />
+      )}
       {profile.role === 'OWNER' && (
         <Link
           href="/inventory/overview"

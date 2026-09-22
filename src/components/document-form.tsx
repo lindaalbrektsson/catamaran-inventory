@@ -1,5 +1,6 @@
 'use client';
-import { useActionState, useState, useRef } from 'react';
+import { useActionState, useState } from 'react';
+import { MediaPicker } from './media-picker';
 import { SlowOperationNotice } from './slow-operation-notice';
 import { recoverUpload } from '@/lib/upload-recovery';
 import type { DocumentResult } from '@/lib/document-actions';
@@ -38,9 +39,8 @@ export function DocumentForm({
     [access, setAccess] = useState(initial?.access_level ?? (owner ? 'OWNERS' : 'MANAGERS')),
     ref = usePreservedForm(),
     c = 'min-h-12 w-full rounded-xl border bg-background p-3';
-  const camera = useRef<HTMLInputElement>(null),
-    gallery = useRef<HTMLInputElement>(null);
   const [selected, setSelected] = useState<File | null>(null);
+  const [processing, setProcessing] = useState(false);
   return (
     <form
       ref={ref}
@@ -110,41 +110,21 @@ export function DocumentForm({
         </div>
         <div className="grid gap-2">
           <span>{initial ? t.docReplace : t.docFile}</span>
-          <input
-            ref={gallery}
-            aria-label={t.docFile}
-            className="sr-only"
-            type="file"
-            name="file"
-            accept="application/pdf,image/jpeg,image/png,image/webp"
-            required={!initial?.current_file_id && !selected}
-            onChange={(e) => setSelected(e.target.files?.[0] ?? null)}
-          />
-          <input
-            ref={camera}
-            type="file"
-            className="hidden"
-            aria-label={t.takePhoto}
-            accept="image/jpeg,image/png,image/webp"
-            capture="environment"
-            onChange={(e) => {
-              if (e.target.files?.[0]) setSelected(e.target.files[0]);
-              e.target.value = '';
+          <MediaPicker
+            locale={locale}
+            value={selected}
+            onChange={(file) => {
+              setSelected(file);
+              setRequest(crypto.randomUUID());
             }}
+            profile="document"
+            allowPdf
+            name="file"
+            required={!initial?.current_file_id}
+            disabled={pending}
+            onBusy={setProcessing}
           />
-          <div className="grid grid-cols-2 gap-3">
-            <button type="button" className={c} onClick={() => camera.current?.click()}>
-              {t.takePhoto}
-            </button>
-            <button type="button" className={c} onClick={() => gallery.current?.click()}>
-              {t.docChooseFile}
-            </button>
-          </div>
-          {selected && (
-            <p className="break-all text-sm" role="status">
-              {selected.name}
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground">{t.docFileHint}</p>
         </div>
         {owner ? (
           <>
@@ -194,7 +174,7 @@ export function DocumentForm({
         )}
         <button
           className="min-h-14 rounded-xl bg-primary p-3 font-semibold text-primary-foreground"
-          disabled={pending}
+          disabled={pending || processing || (!selected && !initial?.current_file_id)}
         >
           {pending ? t.docUploading : t.docSave}
         </button>

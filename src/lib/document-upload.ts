@@ -1,4 +1,5 @@
 'use client';
+import { optimizedImage } from './image-processing-client';
 import { uploadOnce } from './upload-once';
 import { createBrowserClient } from '@supabase/ssr';
 import {
@@ -13,15 +14,22 @@ export async function uploadDocument(
   _previous: DocumentResult,
   form: FormData,
 ): Promise<DocumentResult> {
-  const file = form.get('file'),
-    hasFile = file instanceof File && file.size > 0;
+  let file = form.get('file');
+  const hasFile = file instanceof File && file.size > 0;
   let metadata = null;
-  if (hasFile) {
+  if (file instanceof File && hasFile) {
     if (
       file.size > documentLimit ||
       !documentMimes.includes(file.type as (typeof documentMimes)[number])
     )
       return { error: 'docInvalidFile' };
+    if (file.type !== 'application/pdf') {
+      try {
+        file = await optimizedImage(file, 'document');
+      } catch {
+        return { error: 'docInvalidFile' };
+      }
+    }
     const hash = [
       ...new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer())),
     ]
@@ -35,7 +43,7 @@ export async function uploadDocument(
     };
   }
   const values = Object.fromEntries(form);
-  // Only metadata crosses the Server Action boundary. Original bytes go
+  // Only metadata crosses the Server Action boundary. Processed image or unchanged PDF bytes go
   // directly to authenticated Storage, including files above Vercel's limit.
   delete values.file;
   const prepared = await prepareDocument(
@@ -48,15 +56,16 @@ export async function uploadDocument(
     metadata,
   );
   if (prepared.error || !prepared.id) return prepared;
-  if (hasFile && prepared.path && prepared.file_id) {
+  if (file instanceof File && hasFile && prepared.path && prepared.file_id) {
     try {
       const db = createBrowserClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
       );
+      const uploadedFile = file;
       await uploadOnce('documents/' + prepared.path + '/' + metadata!.sha256, () =>
-        db.storage.from('documents').upload(prepared.path!, file, {
-          contentType: file.type,
+        db.storage.from('documents').upload(prepared.path!, uploadedFile, {
+          contentType: uploadedFile.type,
           upsert: false,
           cacheControl: '0',
         }),

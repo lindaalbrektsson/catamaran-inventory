@@ -52,6 +52,12 @@ function isStandalone() {
   );
 }
 
+export function useInstallAvailability() {
+  const value = useContext(InstallContext);
+  const standalone = useSyncExternalStore(subscribeStandalone, isStandalone, () => false);
+  return { ...value, installed: value.installed || standalone };
+}
+
 export function PwaProvider({
   locale,
   children,

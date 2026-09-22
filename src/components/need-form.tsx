@@ -1,7 +1,10 @@
 'use client';
 import Link from 'next/link';
 import { useActionState, useState } from 'react';
-import { saveNeed } from '@/lib/quick-actions';
+import { uploadNeed } from '@/lib/need-upload';
+import { MediaPicker } from './media-picker';
+import { SlowOperationNotice } from './slow-operation-notice';
+import { recoverUpload } from '@/lib/upload-recovery';
 import { dictionary, type Locale } from '@/lib/i18n';
 import type { ItemCatalog } from '@/lib/item-domain';
 import type { PurchaseNeed } from '@/lib/database.types';
@@ -25,22 +28,34 @@ export function NeedForm({
   suggestion?: { name: string; product_id: string };
 }) {
   const t = dictionary(locale),
-    [state, action, pending] = useActionState(saveNeed, {}),
+    [state, action, pending] = useActionState(
+      (previous: { error?: keyof typeof t; existingNeed?: string }, form: FormData) =>
+        recoverUpload(() => uploadNeed(previous, form), { error: 'needPhotoRetry' as const }),
+      {},
+    ),
+    [photo, setPhoto] = useState<File | null>(null),
+    [processing, setProcessing] = useState(false),
+    // Keep retry identity stable when the metadata action revalidates this route.
+    [draftId] = useState(id),
+    [baseVersion] = useState(initial?.version ?? 0),
     [request, setRequest] = useState(requestId),
     [productId, setProductId] = useState(initial?.product_id ?? suggestion?.product_id ?? ''),
     ref = usePreservedForm(),
     c = 'min-h-12 w-full rounded-xl border bg-background p-3';
-  const existing = catalog.needs?.find((n) => n.product_id === productId && n.id !== id);
+  const existing = catalog.needs?.find((n) => n.product_id === productId && n.id !== draftId);
   return (
     <form
       ref={ref}
-      action={action}
+      action={(form) => {
+        if (photo) form.set('photo', photo);
+        action(form);
+      }}
       className="grid max-w-xl gap-4"
       onChange={() => setRequest(crypto.randomUUID())}
     >
       <input type="hidden" name="requestId" value={request} />
-      <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="version" value={initial?.version ?? 0} />
+      <input type="hidden" name="id" value={draftId} />
+      <input type="hidden" name="version" value={baseVersion} />
       <NeedItemPicker
         catalog={catalog}
         locale={locale}
@@ -111,20 +126,25 @@ export function NeedForm({
               lang={locale}
             />
           </label>
-          {!initial?.photo_ready && (
-            <label className="grid gap-2">
-              {t.needPhoto}
-              <input
-                className={c}
-                type="file"
-                name="photo"
-                accept="image/jpeg,image/png,image/webp"
-              />
-              <span className="text-sm">{t.needPhotoHint}</span>
-            </label>
-          )}
         </div>
       </details>
+      <div className="grid gap-2">
+        <span>{t.needPhoto}</span>
+        <MediaPicker
+          locale={locale}
+          value={photo}
+          onChange={(value) => {
+            setPhoto(value);
+            setRequest(crypto.randomUUID());
+          }}
+          profile="need"
+          disabled={pending}
+          onBusy={setProcessing}
+          previewAlt={t.needPhotoOpen}
+        />
+        <p className="text-sm text-muted-foreground">{t.needPhotoHint}</p>
+      </div>
+      <SlowOperationNotice pending={pending} locale={locale} />
       {initial ? (
         <label className="grid gap-2">
           {t.needStatus}
@@ -150,11 +170,11 @@ export function NeedForm({
         </Link>
       )}
       {state.error === 'needPhotoRetry' && (
-        <Link href={`/needs/${id}`} className="min-h-12 underline">
+        <Link href={`/needs/${draftId}`} className="min-h-12 underline">
           {t.needEdit}
         </Link>
       )}
-      <Button disabled={pending || (!!existing && initial?.status !== 'DONE')}>
+      <Button disabled={processing || pending || (!!existing && initial?.status !== 'DONE')}>
         {pending ? t.saving : t.needSave}
       </Button>
     </form>

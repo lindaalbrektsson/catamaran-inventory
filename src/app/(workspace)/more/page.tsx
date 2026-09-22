@@ -1,4 +1,5 @@
 import { MobilePwaOnly } from '@/components/mobile-pwa-only';
+import { InstallationSettings } from '@/components/mobile-onboarding';
 import Link from 'next/link';
 import { getLocale, requireProfile } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
@@ -71,6 +72,7 @@ export default async function More() {
       <MobilePwaOnly includeBrowser>
         <section className="mt-6" aria-label={t.uxSettings}>
           <h2 className="mb-3 font-semibold">{t.uxSettings}</h2>
+          <InstallationSettings locale={locale} />
           <Link
             href="/notifications"
             className="flex min-h-14 items-center gap-3 rounded-xl border bg-card p-3"

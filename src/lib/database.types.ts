@@ -107,6 +107,7 @@ export type TaskSubtask = {
 };
 export type TaskType = { code: string; name_en: string; name_es: string; active: boolean };
 export type PurchaseNeed = {
+  current_photo_id?: string | null;
   quantity_needed: number | null;
   id: string;
   name: string;
@@ -239,6 +240,18 @@ export type Database = {
       task_subtasks: Table<TaskSubtask>;
       task_types: Table<TaskType>;
       purchase_needs: Table<PurchaseNeed>;
+      need_photos: Table<{
+        id: string;
+        need_id: string;
+        object_path: string;
+        sha256: string;
+        byte_size: number;
+        base_version: number;
+        uploaded_by: string;
+        ready: boolean;
+        created_at: string;
+        uploaded_at: string | null;
+      }>;
       receipt_intake: Table<{
         content_type: string;
         original_preserved: boolean;
@@ -473,11 +486,15 @@ export type Database = {
         };
         Returns: string;
       };
+      reserve_need_image: {
+        Args: { p_id: string; p_need: string; p_hash: string; p_size: number; p_version: number };
+        Returns: string;
+      };
+      complete_need_image: { Args: { p_id: string; p_actor: string }; Returns: string };
       reserve_need_photo: {
         Args: { p_id: string; p_hash: string; p_size: number };
         Returns: string;
       };
-      complete_need_photo: { Args: { p_id: string }; Returns: undefined };
       reserve_original_receipt: {
         Args: {
           p_id: string;

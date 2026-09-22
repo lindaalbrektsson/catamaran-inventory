@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { belizeDate } from './task-domain';
 export const documentMimes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'] as const;
 export const documentAccess = ['OWNERS', 'MANAGERS', 'STAFF', 'SELECTED'] as const;
-export const documentLimit = 20 * 1024 * 1024;
+export const documentLimit = 30 * 1024 * 1024;
 export const documentSchema = z
   .object({
     id: z.uuid(),

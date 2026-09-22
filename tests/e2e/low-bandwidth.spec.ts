@@ -27,7 +27,10 @@ test('interrupted document upload keeps inputs and shows retry feedback', async 
   await expect(page.getByRole('button', { name: 'Saving document…' })).toBeDisabled();
   await expect(page.getByRole('alert')).toContainText('file upload is incomplete');
   await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Fixture document');
-  await expect(page.locator('input[name=file]')).not.toHaveValue('');
+  // Shared picker clears the native input to allow selecting the same file again,
+  // while retaining the selected File in React state for retry.
+  await expect(page.getByRole('status')).toHaveText('fixture.pdf');
+  await expect(page.getByRole('button', { name: 'Replace image' })).toBeEnabled();
 });
 test('slow updates are optional, paginated, retryable and do not preload media', async ({
   page,

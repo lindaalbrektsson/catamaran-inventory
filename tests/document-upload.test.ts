@@ -1,10 +1,17 @@
 import { beforeEach, it, expect, vi } from 'vitest';
-const m = vi.hoisted(() => ({ prepare: vi.fn(), finish: vi.fn(), open: vi.fn(), upload: vi.fn() }));
+const m = vi.hoisted(() => ({
+  prepare: vi.fn(),
+  finish: vi.fn(),
+  open: vi.fn(),
+  upload: vi.fn(),
+  process: vi.fn(),
+}));
 vi.mock('../src/lib/document-actions', () => ({
   prepareDocument: m.prepare,
   finishDocument: m.finish,
   openSavedDocument: m.open,
 }));
+vi.mock('../src/lib/image-processing-client', () => ({ optimizedImage: m.process }));
 vi.mock('@supabase/ssr', () => ({
   createBrowserClient: () => ({ storage: { from: () => ({ upload: m.upload }) } }),
 }));
@@ -39,4 +46,47 @@ it('does not open the document when file completion fails', async () => {
   f.set('file', new File(['fixture'], 'fixture.pdf', { type: 'application/pdf' }));
   expect(await uploadDocument({}, f)).toEqual({ error: 'docUploadIncomplete' });
   expect(m.open).not.toHaveBeenCalled();
+});
+
+it('optimizes once and preserves upload hash/bytes across ambiguous finalization retry', async () => {
+  const optimized = new File(['optimized-unique-jpeg'], 'document.jpg', { type: 'image/jpeg' });
+  m.process.mockResolvedValue(optimized);
+  const f = new FormData();
+  f.set('requestId', crypto.randomUUID());
+  f.set('file', new File(['original-large'], 'camera.png', { type: 'image/png' }));
+  m.finish.mockResolvedValueOnce({ error: 'docUploadIncomplete' }).mockResolvedValue({ id: 'doc' });
+  await uploadDocument({}, f);
+  await uploadDocument({}, f);
+  expect(m.process).toHaveBeenCalledTimes(2);
+  expect(m.upload).toHaveBeenCalledOnce();
+  expect(m.finish).toHaveBeenCalledTimes(2);
+  expect(m.upload.mock.calls[0][1]).toBe(optimized);
+  expect(m.prepare.mock.calls[0][1]).toEqual(m.prepare.mock.calls[1][1]);
+  expect(m.prepare.mock.calls[0][1].content_type).toBe('image/jpeg');
+});
+it('rejects decoding failure before reservation or upload', async () => {
+  m.process.mockRejectedValue(Error('decode'));
+  const f = new FormData();
+  f.set('file', new File(['html'], 'fake.jpg', { type: 'image/jpeg' }));
+  expect(await uploadDocument({}, f)).toEqual({ error: 'docInvalidFile' });
+  expect(m.prepare).not.toHaveBeenCalled();
+  expect(m.upload).not.toHaveBeenCalled();
+});
+it('30 MiB PDF travels unchanged to Storage; oversized PDF never reserves', async () => {
+  const file = new File([new Uint8Array(30 * 1024 * 1024)], 'large.pdf', {
+      type: 'application/pdf',
+    }),
+    f = new FormData();
+  f.set('file', file);
+  await uploadDocument({}, f);
+  expect(m.upload.mock.calls[0][1]).toBe(file);
+  expect(m.prepare.mock.calls[0][0]).not.toHaveProperty('file');
+  expect(m.process).not.toHaveBeenCalled();
+  m.prepare.mockClear();
+  f.set(
+    'file',
+    new File([new Uint8Array(30 * 1024 * 1024 + 1)], 'too-big.pdf', { type: 'application/pdf' }),
+  );
+  expect(await uploadDocument({}, f)).toEqual({ error: 'docInvalidFile' });
+  expect(m.prepare).not.toHaveBeenCalled();
 });

@@ -1,5 +1,7 @@
 > Historical implementation snapshot. See [combined release audit](COMBINED-RELEASE-2026-09-16.md) for the later applied migrations and release checks.
 
+> Pending local change (not deployed): Documents will accept 30 MiB source images/PDFs, optimize images to JPEG <=5 MiB and preserve PDF bytes. See [Document upload review](DOCUMENT-UPLOAD-2026-09-22.md) and migration `20260922000100_document_upload_limits.sql`. The original 20 MB behavior below describes the deployed baseline.
+
 > Current local scope: mobile installed-PWA push only. Migrations 008 (mobile push/Snooze) and 009 (Maintenance planning) also remain pending. See MAINTENANCE-MOBILE-REMINDERS.md. Production Cron remains paused; infrastructure notes below describe the earlier configuration snapshot.
 
 # Documents, install guide and Web Push

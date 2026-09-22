@@ -24,7 +24,7 @@ it('rejects unsupported MIME types and oversize files', () => {
     documentFileSchema.safeParse({
       id: crypto.randomUUID(),
       content_type: 'application/pdf',
-      byte_size: 20971521,
+      byte_size: 30 * 1024 * 1024 + 1,
       sha256: 'a'.repeat(64),
     }).success,
   ).toBe(false);
@@ -41,4 +41,32 @@ it('validates actual image bytes and rejects renamed HTML', async () => {
   await expect(
     validateDocument(Buffer.from('<html>not PDF</html>'), 'application/pdf'),
   ).rejects.toThrow();
+});
+
+it.each(['image/jpeg', 'image/png', 'image/webp'])(
+  'validates decoded %s documents',
+  async (mime) => {
+    const image = sharp({ create: { width: 10, height: 20, channels: 3, background: 'white' } });
+    const bytes = await (
+      mime === 'image/jpeg' ? image.jpeg() : mime === 'image/png' ? image.png() : image.webp()
+    ).toBuffer();
+    await expect(validateDocument(bytes, mime)).resolves.toBeUndefined();
+  },
+);
+it('PDF limit is exactly 30 MiB; PDF bytes are validated unchanged', async () => {
+  const bytes = Buffer.alloc(30 * 1024 * 1024, 32);
+  bytes.write('%PDF-1.4\n');
+  bytes.write('\n%%EOF', bytes.length - 6);
+  await expect(validateDocument(bytes, 'application/pdf')).resolves.toBeUndefined();
+  await expect(
+    validateDocument(Buffer.concat([bytes, Buffer.from(' ')]), 'application/pdf'),
+  ).rejects.toThrow();
+  expect(
+    documentFileSchema.safeParse({
+      id: crypto.randomUUID(),
+      content_type: 'application/pdf',
+      byte_size: bytes.length,
+      sha256: 'a'.repeat(64),
+    }).success,
+  ).toBe(true);
 });

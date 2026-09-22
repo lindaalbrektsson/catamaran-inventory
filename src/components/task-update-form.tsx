@@ -2,6 +2,7 @@
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { dictionary, type Locale } from '@/lib/i18n';
 import { addTaskUpdate } from '@/lib/task-update-upload';
+import { MediaPicker } from './media-picker';
 import { VoiceRecorder, type Recording } from './voice-recorder';
 export function TaskUpdateForm({
   task = '',
@@ -14,12 +15,11 @@ export function TaskUpdateForm({
 }) {
   const t = dictionary(locale),
     ref = useRef<HTMLFormElement>(null),
-    camera = useRef<HTMLInputElement>(null),
-    gallery = useRef<HTMLInputElement>(null),
     [photo, setPhoto] = useState<File | null>(null),
     [body, setBody] = useState(''),
     [voice, setVoice] = useState<Recording | null>(null),
     [busy, setBusy] = useState(false),
+    [photoBusy, setPhotoBusy] = useState(false),
     [id, setId] = useState(() => crypto.randomUUID()),
     [reset, setReset] = useState(0);
   const [state, action, pending] = useActionState(
@@ -78,44 +78,17 @@ export function TaskUpdateForm({
             className={cls}
           />
         </label>
-        <input
-          ref={camera}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          capture="environment"
-          className="sr-only"
-          onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+        <MediaPicker
+          locale={locale}
+          value={photo}
+          onChange={(value) => {
+            setPhoto(value);
+            setId(crypto.randomUUID());
+          }}
+          profile="update"
+          disabled={pending}
+          onBusy={setPhotoBusy}
         />
-        <input
-          ref={gallery}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="sr-only"
-          onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
-        />
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className={cls} onClick={() => camera.current?.click()}>
-            {t.takePhoto}
-          </button>
-          <button type="button" className={cls} onClick={() => gallery.current?.click()}>
-            {t.maintenanceChooseImage}
-          </button>
-        </div>
-        {photo && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="break-all">{photo.name}</span>
-            <button
-              type="button"
-              className={cls}
-              onClick={() => {
-                setPhoto(null);
-                setId(crypto.randomUUID());
-              }}
-            >
-              {t.photoRemove}
-            </button>
-          </div>
-        )}
         <VoiceRecorder
           key={reset}
           value={voice}
@@ -132,7 +105,7 @@ export function TaskUpdateForm({
         {state.error && <p role="alert">{t[state.error]}</p>}
         {state.saved && <p role="status">{t.maintenanceSaved}</p>}
         <button
-          disabled={busy}
+          disabled={busy || photoBusy}
           className="min-h-12 rounded-xl bg-primary p-3 font-semibold text-primary-foreground"
         >
           {pending ? t.saving : t.maintenanceUpdate}

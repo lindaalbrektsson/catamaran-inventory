@@ -88,9 +88,16 @@ test('delete/re-record and text plus photo plus voice remain an explicit save', 
   await expect(page.getByRole('status')).toContainText('0:01');
   await page.getByRole('button', { name: 'Stop recording', exact: true }).click();
   await page.getByRole('textbox', { name: 'Update', exact: true }).fill('Checked hinge');
-  await page
-    .locator('input[capture=environment]')
-    .setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: Buffer.from('fixture') });
+  await page.locator('input[capture=environment]').setInputFiles({
+    name: 'photo.png',
+    mimeType: 'image/png',
+    buffer: await (
+      await import('sharp')
+    )
+      .default({ create: { width: 10, height: 10, channels: 3, background: 'white' } })
+      .png()
+      .toBuffer(),
+  });
   await page.getByRole('button', { name: 'Add update', exact: true }).click();
   await expect(page.getByRole('status')).toHaveText('Saved');
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('voice-fixture')!));

@@ -8,6 +8,7 @@ export default async function Notifications() {
   return (
     <div className="page max-w-xl">
       <NotificationSettings
+        userId={p.id}
         locale={await getLocale()}
         publicKey={pushConfigured() ? process.env.WEB_PUSH_PUBLIC_KEY! : ''}
       />

@@ -87,9 +87,7 @@ test('manager mobile document upload has camera and file controls, no access adm
 }) => {
   await page.goto('http://127.0.0.1:4174/?view=document-form&staff');
   await expect(page.getByRole('button', { name: 'Take photo', exact: true })).toBeVisible();
-  await expect(
-    page.getByRole('button', { name: 'Choose image or PDF', exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Choose file', exact: true })).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Who can access this document?' })).toHaveCount(
     0,
   );
@@ -97,7 +95,12 @@ test('manager mobile document upload has camera and file controls, no access adm
   await page.locator('input[capture=environment]').setInputFiles({
     name: 'camera.jpg',
     mimeType: 'image/jpeg',
-    buffer: Buffer.from('isolated-image-fixture'),
+    buffer: await (
+      await import('sharp')
+    )
+      .default({ create: { width: 12, height: 12, channels: 3, background: 'white' } })
+      .jpeg()
+      .toBuffer(),
   });
   await page.getByRole('button', { name: 'Save document' }).click();
   await expect(page.getByRole('alert')).toBeVisible();

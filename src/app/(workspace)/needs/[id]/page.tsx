@@ -53,7 +53,7 @@ export default async function NeedDetail({ params }: { params: Promise<{ id: str
           {t.needOpenLink}
         </a>
       )}
-      {n.photo_ready && (
+      {(n.photo_ready || n.current_photo_id) && (
         <Link href={`/need-image/${n.id}`} target="_blank" className="mb-5 block max-w-sm">
           <Image
             src={`/need-image/${n.id}`}

@@ -550,3 +550,46 @@ it('one user with multiple devices gets an independent lease for each device', a
   await finishDelivery(first, 'SENT');
   expect(await claimDelivery()).toBeNull();
 });
+
+it.each([owner, manager])(
+  '30 MiB reservation works for authorized actor %s and finalization remains service-only',
+  async (actor) => {
+    await user(actor);
+    const id = crypto.randomUUID(),
+      file = crypto.randomUUID();
+    await save(id, 0, values({ favorite: false, access_level: 'MANAGERS' }), {
+      id: file,
+      content_type: 'application/pdf',
+      byte_size: 31457280,
+      sha256: 'a'.repeat(64),
+    });
+    await db.exec('savepoint blocked');
+    await expect(
+      db.query('select public.complete_document_file($1,$2)', [file, actor]),
+    ).rejects.toThrow(/permission denied/);
+    await db.exec('rollback to savepoint blocked');
+    await db.exec('savepoint oversized');
+    await expect(
+      save(crypto.randomUUID(), 0, values({ favorite: false, access_level: 'MANAGERS' }), {
+        id: crypto.randomUUID(),
+        content_type: 'application/pdf',
+        byte_size: 31457281,
+        sha256: 'a'.repeat(64),
+      }),
+    ).rejects.toThrow(/INVALID_INPUT/);
+    await db.exec('rollback to savepoint oversized');
+    await db.exec('reset role');
+    const bucket = (
+      await db.query<{ file_size_limit: number; allowed_mime_types: string[] }>(
+        "select * from storage.buckets where id='documents'",
+      )
+    ).rows[0];
+    expect(Number(bucket.file_size_limit)).toBe(31457280);
+    expect(bucket.allowed_mime_types.sort()).toEqual([
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ]);
+  },
+);

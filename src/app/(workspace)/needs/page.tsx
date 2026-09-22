@@ -1,3 +1,4 @@
+import { ImageIcon } from 'lucide-react';
 import { EmptyState } from '@/components/empty-state';
 import { StatusBadge } from '@/components/status-badge';
 import { NeedProgress } from '@/components/need-progress';
@@ -64,6 +65,12 @@ export default async function Needs({
               <h2 className="break-words font-semibold leading-snug">
                 {catalog.products.find((p) => p.id === n.product_id)?.name ?? n.name}
               </h2>
+              {(n.photo_ready || n.current_photo_id) && (
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <ImageIcon className="size-4" aria-hidden="true" />
+                  {t.needPhotoOpen}
+                </span>
+              )}
               {n.quantity_needed != null && (
                 <p className="text-sm">
                   {t.usabilityNeedQuantity}: {number(n.quantity_needed, locale)}{' '}

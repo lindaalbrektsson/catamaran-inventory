@@ -85,7 +85,7 @@ test('Spanish maintenance and photo capture controls', async ({ page }) => {
   await page.locator('input[capture=environment]').setInputFiles({
     name: 'work.jpg',
     mimeType: 'image/jpeg',
-    buffer: Buffer.from('isolated-photo-fixture'),
+    buffer: await (await import('sharp')).default({create:{width:12,height:12,channels:3,background:'white'}}).jpeg().toBuffer(),
   });
   await page.getByRole('button', { name: 'Agregar actualización', exact: true }).click();
   await expect(page.getByRole('alert')).toBeVisible();

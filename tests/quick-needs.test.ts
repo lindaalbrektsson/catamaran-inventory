@@ -210,6 +210,9 @@ it('needs cannot be directly edited or deleted by operational users', async () =
 it('private photo policies resist unrelated permissive Storage policies', async () => {
   const id = crypto.randomUUID();
   await need(id);
+  await db.exec(
+    `reset role;create or replace function storage.allow_only_operation(p text) returns boolean language sql stable as $$select current_setting('storage.operation',true)=p$$;select set_config('storage.operation','object.get_authenticated',true);`,
+  );
   const hash = 'a'.repeat(64);
   const path = (
     await db.query<{ path: string }>('select public.reserve_need_photo($1,$2,128) as path', [
@@ -221,7 +224,7 @@ it('private photo policies resist unrelated permissive Storage policies', async 
     `insert into storage.objects(bucket_id,name,metadata) values('need-photos',$1,'{"size":128,"mimetype":"image/jpeg"}')`,
     [path],
   );
-  await db.query('select public.complete_need_photo($1)', [id]);
+  await db.query('select private.complete_need_photo($1)', [id]);
   await user(crew);
   expect(
     (await db.query("select * from storage.objects where bucket_id='need-photos'")).rows,
@@ -606,4 +609,127 @@ it('legacy Need creates without quantity and duplicate protection still applies'
   await expect(need(crypto.randomUUID(), { ...needValue, quantity_needed: 3 })).rejects.toThrow(
     'DUPLICATE_NEED',
   );
+});
+
+async function photoOperation(op: string) {
+  await db.query("select set_config('storage.operation',$1,true)", [op]);
+}
+async function setupPhotoOperations() {
+  await db.exec(
+    `reset role;create or replace function storage.allow_only_operation(p text) returns boolean language sql stable as $$select current_setting('storage.operation',true)=p$$;`,
+  );
+}
+it.each([owner, manager])(
+  'versioned photo for %s requires trusted finalization and preserves replaced history',
+  async (actor) => {
+    await setupPhotoOperations();
+    await user(actor);
+    const id = crypto.randomUUID();
+    await need(id);
+    const file = crypto.randomUUID(),
+      hash = 'b'.repeat(64);
+    const reserve = () =>
+      db.query<{ path: string }>('select public.reserve_need_image($1,$2,$3,128,1) path', [
+        file,
+        id,
+        hash,
+      ]);
+    const path = (await reserve()).rows[0].path;
+    expect((await reserve()).rows[0].path).toBe(path);
+    await photoOperation('object.upload');
+    await db.query(
+      "insert into storage.objects(bucket_id,name,metadata) values('need-photos',$1,$2)",
+      [path, JSON.stringify({ size: 128, mimetype: 'image/jpeg' })],
+    );
+    await db.exec('savepoint denied');
+    await expect(
+      db.query('select public.complete_need_image($1,$2)', [file, actor]),
+    ).rejects.toThrow(/permission denied/);
+    await db.exec('rollback to savepoint denied');
+    await db.exec('reset role;set role service_role');
+    await db.query('select public.complete_need_image($1,$2)', [file, actor]);
+    await db.query('select public.complete_need_image($1,$2)', [file, actor]);
+    await user(actor);
+    expect(
+      (
+        await db.query<{ current_photo_id: string; version: number }>(
+          'select current_photo_id,version from public.purchase_needs where id=$1',
+          [id],
+        )
+      ).rows[0],
+    ).toEqual({ current_photo_id: file, version: 2 });
+    const replacement = crypto.randomUUID();
+    const p2 = (
+      await db.query<{ path: string }>('select public.reserve_need_image($1,$2,$3,120,2) path', [
+        replacement,
+        id,
+        'c'.repeat(64),
+      ])
+    ).rows[0].path;
+    await photoOperation('object.upload');
+    await db.query(
+      "insert into storage.objects(bucket_id,name,metadata) values('need-photos',$1,$2)",
+      [p2, JSON.stringify({ size: 120, mimetype: 'image/jpeg' })],
+    );
+    await db.exec('reset role;set role service_role');
+    await db.query('select public.complete_need_image($1,$2)', [replacement, actor]);
+    // Retrying an older success cannot roll the current pointer back.
+    await db.query('select public.complete_need_image($1,$2)', [file, actor]);
+    await user(actor);
+    expect(
+      (await db.query('select * from public.need_photos where need_id=$1 and ready', [id])).rows,
+    ).toHaveLength(2);
+    expect(
+      (
+        await db.query<{ current_photo_id: string }>(
+          'select current_photo_id from public.purchase_needs where id=$1',
+          [id],
+        )
+      ).rows[0].current_photo_id,
+    ).toBe(replacement);
+    await photoOperation('object.sign');
+    expect(
+      (await db.query("select * from storage.objects where bucket_id='need-photos'")).rows,
+    ).toHaveLength(0);
+    await photoOperation('object.get_authenticated');
+    expect(
+      (await db.query("select * from storage.objects where bucket_id='need-photos'")).rows,
+    ).toHaveLength(2);
+    await user(crew);
+    expect((await db.query('select * from public.need_photos')).rows).toHaveLength(0);
+    await db.exec('reset role');
+    expect((await db.query('select * from public.inventory_transactions')).rows).toHaveLength(0);
+  },
+);
+it('photo cannot publish over a concurrent Need edit', async () => {
+  const id = crypto.randomUUID(),
+    file = crypto.randomUUID();
+  await need(id);
+  await db.query('select public.reserve_need_image($1,$2,$3,128,1)', [file, id, 'a'.repeat(64)]);
+  await need(id, { ...needValue, name: 'Changed' }, 1);
+  await db.exec('savepoint denied');
+  await db.exec('reset role;set role service_role');
+  await expect(
+    db.query('select public.complete_need_image($1,$2)', [file, manager]),
+  ).rejects.toThrow(/STALE_NEED/);
+  await db.exec('rollback to savepoint denied');
+});
+it('photo cannot bind to a different Need and pending bytes stay private to uploader', async () => {
+  await setupPhotoOperations();
+  await user(manager);
+  const id = crypto.randomUUID(),
+    otherNeed = crypto.randomUUID(),
+    file = crypto.randomUUID();
+  await need(id);
+  await need(otherNeed, { ...needValue, name: 'Another', product_id: '' });
+  await db.query('select public.reserve_need_image($1,$2,$3,128,1)', [file, id, 'a'.repeat(64)]);
+  await user(other);
+  expect(
+    (await db.query('select * from public.need_photos where id=$1', [file])).rows,
+  ).toHaveLength(0);
+  await db.exec('reset role;savepoint denied');
+  await expect(
+    db.query('update public.purchase_needs set current_photo_id=$1 where id=$2', [file, otherNeed]),
+  ).rejects.toThrow(/need_current_photo_fk/);
+  await db.exec('rollback to savepoint denied');
 });

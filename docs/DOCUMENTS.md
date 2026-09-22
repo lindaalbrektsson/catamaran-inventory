@@ -1,5 +1,7 @@
 # Documents
 
+> Pending local change (not deployed): Documents will accept 30 MiB source images/PDFs, optimize images to JPEG <=5 MiB and preserve PDF bytes. See [Document upload review](DOCUMENT-UPLOAD-2026-09-22.md) and migration `20260922000100_document_upload_limits.sql`. The original 20 MB behavior below describes the deployed baseline.
+
 Documents remain files; they never change inventory or become interactive checklists automatically. Favorites on Home open the current file directly. See all opens the permitted document list with search, category, Favorites and Archived filters. Uploaded examples are not seeded.
 
 Owners administer documents on desktop. Other active staff can view/download documents shared with their role or stable user UUID. V1 uploads are Owner-only. The category is optional free text with suggestions from existing documents. No predefined document categories or staff names are required.
