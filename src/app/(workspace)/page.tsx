@@ -1,3 +1,4 @@
+import { CashbookHomeCard } from '@/components/cashbook-entry-points';
 import { ListSkeleton } from '@/components/list-skeleton';
 import { MobileOnboarding } from '@/components/mobile-onboarding';
 import { Suspense } from 'react';
@@ -79,6 +80,9 @@ async function renderHome() {
         locale={locale}
         canAdd={can(profile.role, 'inventory.add')}
       />
+      <Suspense fallback={null}>
+        <CashbookHomeCard locale={locale} />
+      </Suspense>
       {canUseNeeds && (
         <section className="mt-4 rounded-2xl border bg-card p-5" aria-labelledby="home-needs">
           <div className="flex min-h-14 items-center gap-4">

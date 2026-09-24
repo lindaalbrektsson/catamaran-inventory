@@ -4,6 +4,8 @@ import { Brand } from '@/components/brand';
 import { Navigation } from '@/components/navigation';
 import { LanguageSwitch } from '@/components/language-switch';
 import { ShieldCheck } from 'lucide-react';
+import { Suspense } from 'react';
+import { CashbookNavigationLink } from '@/components/cashbook-navigation-link';
 export default async function Workspace({ children }: { children: React.ReactNode }) {
   const profile = await requireProfile(),
     locale = await getLocale(),
@@ -20,6 +22,9 @@ export default async function Workspace({ children }: { children: React.ReactNod
         <Brand locale={locale} />
         <p className="eyebrow mb-4 mt-12">{t.workspace}</p>
         <Navigation locale={locale} />
+        <Suspense fallback={null}>
+          <CashbookNavigationLink locale={locale} desktop />
+        </Suspense>
         <div className="mt-auto border-t pt-5">
           <div className="flex items-center gap-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary text-sm font-semibold text-primary">

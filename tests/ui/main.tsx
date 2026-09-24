@@ -1,4 +1,5 @@
 import { TestDataField, TestBadge, DeleteTestData } from '@/components/test-data';
+import { CashbookFixture } from './cashbook';
 import { CategoryEditor } from '@/components/category-editor';
 import { StaffActivity } from '@/components/staff-activity';
 import { ListSkeleton } from '@/components/list-skeleton';
@@ -129,7 +130,9 @@ createRoot(document.getElementById('root')!).render(
           description={t.inventoryIntro}
           locale={locale}
         />
-        {params.get('view') === 'test-data' ? (
+        {params.get('view') === 'cashbook' ? (
+          <CashbookFixture locale={locale} />
+        ) : params.get('view') === 'test-data' ? (
           <div className="grid gap-4">
             <TestDataField locale={locale} />
             <TestBadge value />

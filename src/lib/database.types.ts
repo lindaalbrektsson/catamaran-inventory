@@ -1,4 +1,12 @@
 import type { Role, Unit, MovementType } from './domain';
+import type {
+  CashbookTemplate,
+  CashbookDebt,
+  CashbookDue,
+  CashbookTransaction,
+  CashbookTransactionRow,
+  CashbookEntry,
+} from './cashbook-types';
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 export type OperationalDocument = {
   is_test?: boolean;
@@ -236,6 +244,10 @@ type Table<Row, Insert = Partial<Row>> = {
 export type Database = {
   public: {
     Tables: {
+      cashbook_templates: Table<CashbookTemplate>;
+      cashbook_debts: Table<CashbookDebt>;
+      cashbook_transactions: Table<CashbookTransactionRow>;
+      cashbook_entries: Table<CashbookEntry>;
       maintenance_rules: Table<MaintenanceRule>;
       maintenance_occurrences: Table<MaintenanceOccurrence>;
       maintenance_updates: Table<MaintenanceUpdate>;
@@ -299,8 +311,19 @@ export type Database = {
         created_at: string;
       }>;
     };
-    Views: Record<string, never>;
+    Views: {
+      cashbook_due: { Row: CashbookDue; Relationships: [] };
+      cashbook_transaction_history: { Row: CashbookTransaction; Relationships: [] };
+    };
     Functions: {
+      cashbook_access: { Args: Record<string, never>; Returns: boolean };
+      cashbook_balances: { Args: Record<string, never>; Returns: Json };
+      cashbook_report: { Args: { p_to: string }; Returns: Json };
+      cashbook_payment_details: { Args: { p_id: string }; Returns: Json };
+      cashbook_mutate: {
+        Args: { p_request: string; p_action: string; p_values: Json };
+        Returns: Json;
+      };
       create_test_record: { Args: { p_function: string; p_args: Json }; Returns: Json };
       delete_test_record: { Args: { p_table: string; p_id: string }; Returns: undefined };
       claim_test_storage_cleanup: { Args: Record<string, never>; Returns: Json };

@@ -1,4 +1,6 @@
 import { MobilePwaOnly } from '@/components/mobile-pwa-only';
+import { Suspense } from 'react';
+import { CashbookNavigationLink } from '@/components/cashbook-navigation-link';
 import { InstallationSettings } from '@/components/mobile-onboarding';
 import Link from 'next/link';
 import { getLocale, requireProfile } from '@/lib/auth';
@@ -58,6 +60,9 @@ export default async function More() {
             <ChevronRight aria-hidden="true" className="size-4" />
           </Link>
         ))}
+        <Suspense fallback={null}>
+          <CashbookNavigationLink locale={locale} />
+        </Suspense>
 
         {profile.account_admin && (
           <Link

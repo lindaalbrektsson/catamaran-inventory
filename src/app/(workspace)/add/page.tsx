@@ -1,3 +1,5 @@
+import { Suspense } from 'react';
+import { CashbookAddActions } from '@/components/cashbook-entry-points';
 import { AddHub } from '@/components/add-hub';
 import { redirect } from 'next/navigation';
 import { getLocale, requireProfile } from '@/lib/auth';
@@ -18,6 +20,9 @@ export default async function Add({
       <div className="page">
         <h1 className="mb-5 text-2xl font-semibold">{t.add}</h1>
         <AddHub locale={locale} />
+        <Suspense fallback={null}>
+          <CashbookAddActions locale={locale} />
+        </Suspense>
       </div>
     );
   return (

@@ -7,6 +7,10 @@ export const READ_TIMEOUT_MS = 15_000;
 // These RPCs only SELECT. Supabase transports them using POST by default.
 // Keep this allowlist narrow: writes must never inherit the read timeout.
 const readRpcs = new Set([
+  'cashbook_access',
+  'cashbook_balances',
+  'cashbook_report',
+  'cashbook_payment_details',
   'item_merge_relationship',
   'task_people',
   'task_history',
