@@ -50,6 +50,14 @@ export async function saveTask(_state: ActionState, form: FormData): Promise<Act
   );
   if (error) return taskError(error.message);
   refreshTask(id);
+  // A newly assigned private reminder is not readable by a Manager who is only its creator.
+  if (
+    version === 0 &&
+    values.remind_at &&
+    actor.role === 'MANAGER' &&
+    values.assignee_id !== actor.id
+  )
+    redirect('/tasks?reminderSaved=1');
   redirect(`/tasks/${id}`);
 }
 export async function taskProgress(_state: ActionState, form: FormData): Promise<ActionState> {

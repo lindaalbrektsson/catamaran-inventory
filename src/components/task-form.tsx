@@ -3,7 +3,7 @@ import { TestDataField } from './test-data';
 import { useActionState, useState } from 'react';
 import { saveTask } from '@/lib/task-actions';
 import { dictionary, type Locale } from '@/lib/i18n';
-import { reminderToInput, reminderFromInput } from '@/lib/task-domain';
+import { reminderToInput, reminderFromInput, defaultReminderRecipient } from '@/lib/task-domain';
 import type { Task, TaskSubtask } from '@/lib/database.types';
 import type { TaskCatalog } from '@/lib/tasks';
 import { usePreservedForm } from './use-preserved-form';
@@ -26,16 +26,20 @@ export function TaskForm({
   actorRole: string;
   initial?: Task;
   subtasks?: TaskSubtask[];
-  reminderFor?: { id: string; title: string };
+  reminderFor?: { id: string; title: string; assignee_id?: string | null };
 }) {
   const t = dictionary(locale),
     [state, action, pending] = useActionState(saveTask, {}),
     [request, setRequest] = useState(requestId),
     [rows, setRows] = useState(subtasks.map((s) => ({ id: s.id, title: s.title }))),
     [reminder, setReminder] = useState(reminderToInput(initial?.remind_at ?? null)),
+    [assignee, setAssignee] = useState(
+      initial?.assignee_id ??
+        defaultReminderRecipient(reminderFor?.assignee_id, actorId, catalog.reminderPeople),
+    ),
     ref = usePreservedForm();
   const scopedReminder = Boolean(reminderFor || reminder || initial?.reminder_private);
-  const selfOnly = scopedReminder && actorRole !== 'OWNER';
+  const selfOnly = scopedReminder && Boolean(initial) && actorRole !== 'OWNER';
   const control = 'min-h-12 w-full rounded-xl border bg-background p-3';
   function relation(
     name: 'product_id' | 'need_id' | 'receipt_id' | 'location_id' | 'related_task_id',
@@ -109,11 +113,16 @@ export function TaskForm({
             <input type="hidden" name="assignee_id" value={actorId} />
           ) : (
             <label className="grid gap-2">
-              {scopedReminder ? t.reminderAssignedTo : t.taskAssignee}
+              {scopedReminder ? t.reminderRecipient : t.taskAssignee}
               <select
                 key={String(scopedReminder)}
                 name="assignee_id"
-                defaultValue={initial?.assignee_id ?? actorId}
+                value={
+                  scopedReminder
+                    ? defaultReminderRecipient(assignee, actorId, catalog.reminderPeople)
+                    : assignee
+                }
+                onChange={(event) => setAssignee(event.target.value)}
                 className={control}
                 required={scopedReminder}
               >

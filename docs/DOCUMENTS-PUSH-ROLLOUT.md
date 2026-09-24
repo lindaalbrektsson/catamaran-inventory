@@ -40,7 +40,7 @@ Opt in explicitly at More → Notifications. Settings apply to this device/brows
 
 
 
-Active Owners and Managers receive reminders assigned to them. Managers can create/edit/delete only their own reminders. Owners can assign to active Owners/Managers and edit/delete reminders they created or receive. Deletion archives the task and preserves audit/history. Reminder-bearing tasks remain private to their recipient for Managers even if the reminder time is later removed. Owners retain read access. Ordinary tasks retain their existing shared behavior. Unassigned tasks notify their creator. Only reminder timestamps at or after device opt-in are eligible; old overdue reminders are not replayed. Done/archived tasks, inactive users and accounts pending credential setup/password change are excluded. Database time determines when a reminder is due.
+Active, fully provisioned Owners and Managers can create reminders for any active, fully provisioned Owner/Manager. Managers can still read/edit/archive only reminders addressed to themselves; assigning a reminder does not grant private access. Owners retain read access and can edit/archive reminders they created or receive. Only the recipient can Snooze. Deletion archives the task and preserves audit/history. Reminder-bearing tasks stay private for Managers even if the reminder time is later removed. Ordinary tasks retain their existing shared behavior. Unassigned tasks notify their creator. Only reminder timestamps at or after device opt-in are eligible; old overdue reminders are not replayed. Done/archived tasks, inactive users and accounts pending credential setup/password change are excluded. Database time determines when a reminder is due. See `STOCK-REMINDER-WORKFLOWS.md` for the current assignment UI and migration; earlier verification sections below describe their historical release.
 
 
 
@@ -165,4 +165,3 @@ After activation, test an Owner assigning a near-future reminder to a Manager an
 
 
 Latest checks: 409 automated tests passed; 180 browser checks passed, two expected skips. Browser tests use Chromium desktop/mobile emulation and simulated push APIs, not physical iPhone/Android push delivery.
-

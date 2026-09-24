@@ -10,11 +10,13 @@ export function NeedItemPicker({
   locale,
   productId,
   onProduct,
+  locationId,
   name: initialName,
 }: {
   catalog: ItemCatalog;
   locale: Locale;
   productId: string;
+  locationId?: string;
   onProduct: (id: string) => void;
   name: string;
 }) {
@@ -27,9 +29,11 @@ export function NeedItemPicker({
     [active, setActive] = useState(0);
   const matches = needMatches(catalog, name),
     selected = catalog.products.find((p) => p.id === productId);
-  const quantity = productId ? suggestedNeedQuantity(catalog, productId) : null;
-  const linkedLocation = catalog.locations.find((l) =>
-    catalog.balances?.some((b) => b.product_id === productId && b.location_id === l.id),
+  const quantity = productId ? suggestedNeedQuantity(catalog, productId, locationId) : null;
+  const linkedLocation = catalog.locations.find(
+    (l) =>
+      (!locationId || l.id === locationId) &&
+      catalog.balances?.some((b) => b.product_id === productId && b.location_id === l.id),
   );
   function choose(id: string) {
     const p = catalog.products.find((p) => p.id === id);
@@ -39,20 +43,22 @@ export function NeedItemPicker({
     setOpen(false);
   }
   function stocks(id: string) {
-    return locationOrder(catalog.locations).map((l) => {
-      const b = catalog.balances?.find((b) => b.product_id === id && b.location_id === l.id);
-      return (
-        <span className="block text-sm" key={l.id}>
-          {l.name}: {b ? Number(b.quantity) : t.notSet}
-          {b && (
-            <>
-              {' '}
-              · {t.minimum}: {Number(b.minimum_stock)}
-            </>
-          )}
-        </span>
-      );
-    });
+    return locationOrder(catalog.locations)
+      .filter((l) => !locationId || l.id === locationId)
+      .map((l) => {
+        const b = catalog.balances?.find((b) => b.product_id === id && b.location_id === l.id);
+        return (
+          <span className="block text-sm" key={l.id}>
+            {l.name}: {b ? Number(b.quantity) : t.notSet}
+            {b && (
+              <>
+                {' '}
+                · {t.minimum}: {Number(b.minimum_stock)}
+              </>
+            )}
+          </span>
+        );
+      });
   }
   return (
     <div className="grid gap-2">

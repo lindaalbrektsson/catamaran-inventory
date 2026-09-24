@@ -68,3 +68,12 @@ export function reminderFromInput(value: string) {
   const instant = new Date(value + '-06:00');
   return Number.isNaN(instant.getTime()) ? value : instant.toISOString();
 }
+
+// Only IDs in the server-filtered app-user directory are eligible; external people have none.
+export function defaultReminderRecipient(
+  assigneeId: string | null | undefined,
+  actorId: string,
+  people: { id: string; active: boolean }[],
+) {
+  return people.some((person) => person.active && person.id === assigneeId) ? assigneeId! : actorId;
+}

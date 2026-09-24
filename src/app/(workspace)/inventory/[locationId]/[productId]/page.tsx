@@ -62,7 +62,7 @@ export default async function ProductDetail({
         />
       </div>
       {['OWNER', 'MANAGER'].includes(profile.role) && (
-        <LowNeedSuggestions items={[item]} location={location} locale={locale} />
+        <LowNeedSuggestions items={[item]} location={location} locale={locale} expanded />
       )}
     </div>
   );

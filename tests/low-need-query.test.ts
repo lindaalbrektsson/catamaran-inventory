@@ -6,7 +6,8 @@ vi.mock('server-only', () => ({}));
 const m = vi.hoisted(() => ({
   from: vi.fn(),
   ids: [] as string[],
-  rows: [] as { id: string; product_id: string; status: string }[],
+  scopes: [] as string[],
+  rows: [] as { id: string; product_id: string; status: string; location_id?: string | null }[],
 }));
 vi.mock('@/lib/supabase/server', () => ({ supabase: async () => ({ from: m.from }) }));
 vi.mock('@/lib/inventory', () => ({
@@ -17,17 +18,23 @@ import { LowNeedSuggestions } from '@/components/low-need-suggestions';
 const location = { id: 'location', name: 'Bodega' } as Location;
 const item = {
   product_id: 'linked-product',
+  location_id: 'location',
   quantity: 10,
   minimum_stock: 3,
-  product: { name: 'Fixture item' },
+  product: { name: 'Fixture item', unit: 'bottle' },
 } as InventoryItem;
 beforeEach(() => {
   m.ids = [];
   m.rows = [];
+  m.scopes = [];
   m.from.mockReset();
   const query = {
     select: () => query,
     eq: () => query,
+    or: (scope: string) => {
+      m.scopes.push(scope);
+      return query;
+    },
     in: (key: string, values: string[]) => {
       if (key === 'product_id') m.ids = values;
       return query;
@@ -59,5 +66,45 @@ it('below minimum without an active Need keeps the exact product link in Spanish
     await LowNeedSuggestions({ items: [{ ...item, quantity: 1 }], location, locale: 'es' }),
   );
   expect(markup).toContain('/needs/new?product=linked-product');
-  expect(markup).toContain('Agregar a compras necesarias');
+  expect(markup).toContain('+ Agregar a Por comprar');
+  expect(markup).toContain('location=location');
+  expect(m.scopes).toContain('location_id.eq.location,location_id.is.null');
+});
+
+it('at minimum opens a visible detail action with a per-location target suggestion', async () => {
+  const markup = renderToStaticMarkup(
+    await LowNeedSuggestions({
+      items: [{ ...item, quantity: 10, minimum_stock: 10, target_stock: 20 }],
+      location,
+      locale: 'es',
+      expanded: true,
+    }),
+  );
+  expect(markup).toContain('+ Agregar a Por comprar');
+  expect(markup).toContain('Sugerencia: comprar 10 botellas');
+  expect(markup).not.toContain('<details');
+});
+it('above minimum shows no shopping creation prompt', async () => {
+  expect(await LowNeedSuggestions({ items: [item], location, locale: 'en' })).toBeNull();
+});
+it('unset target does not invent a suggestion, and another location Need does not suppress the action', async () => {
+  m.rows = [
+    {
+      id: 'other-location-need',
+      product_id: item.product_id,
+      status: 'PENDING',
+      location_id: 'other-location',
+    },
+  ];
+  const markup = renderToStaticMarkup(
+    await LowNeedSuggestions({
+      items: [{ ...item, quantity: 3, target_stock: null }],
+      location,
+      locale: 'en',
+      expanded: true,
+    }),
+  );
+  expect(markup).toContain('+ Add to shopping list');
+  expect(markup).not.toContain('Suggestion: buy');
+  expect(markup).not.toContain('/needs/other-location-need');
 });

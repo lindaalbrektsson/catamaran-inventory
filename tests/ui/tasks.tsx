@@ -42,6 +42,7 @@ const catalog = {
   reminderPeople: [
     { id: actor, display_name: 'Fixture operator', active: true },
     { id: '40000000-0000-4000-8000-000000000002', display_name: 'Fixture manager', active: true },
+    { id: '40000000-0000-4000-8000-000000000003', display_name: 'Inactive person', active: false },
   ],
   people: [{ id: actor, display_name: 'Fixture operator', active: true }],
   types: [
@@ -71,12 +72,18 @@ export function TasksFixture({ locale, view }: { locale: Locale; view: string })
         catalog={catalog}
         reminderFor={
           new URLSearchParams(location.search).has('context')
-            ? { id: task.id, title: task.title }
+            ? {
+                id: task.id,
+                title: task.title,
+                assignee_id: new URLSearchParams(location.search).has('external')
+                  ? null
+                  : '40000000-0000-4000-8000-000000000002',
+              }
             : undefined
         }
         actorId={actor}
         actorRole={new URLSearchParams(location.search).has('manager') ? 'MANAGER' : 'OWNER'}
-        id={task.id}
+        id="50000000-0000-4000-8000-000000000003"
         requestId={crypto.randomUUID()}
       />
     );

@@ -1,10 +1,11 @@
 import { getLocale, requireProfile } from '@/lib/auth';
 import { taskSummary } from '@/lib/tasks';
+import { dictionary } from '@/lib/i18n';
 import { TaskList } from '@/components/task-list';
 export default async function Tasks({
   searchParams,
 }: {
-  searchParams: Promise<{ assignee?: string }>;
+  searchParams: Promise<{ assignee?: string; reminderSaved?: string }>;
 }) {
   const profile = await requireProfile(),
     locale = await getLocale(),
@@ -12,6 +13,11 @@ export default async function Tasks({
     query = await searchParams;
   return (
     <div className="page">
+      {query.reminderSaved === '1' && (
+        <p role="status" className="mb-3 text-sm">
+          {dictionary(locale).reminderSaved}
+        </p>
+      )}
       <TaskList
         {...catalog}
         locale={locale}

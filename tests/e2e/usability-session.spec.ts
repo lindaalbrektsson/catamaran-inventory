@@ -64,13 +64,15 @@ test('planner preselects only contextual task', async ({ page }) => {
   await expect(page.getByRole('checkbox', { name: 'Check oil' })).toBeChecked();
   await expect(page.getByRole('checkbox', { name: 'Repair hatch' })).not.toBeChecked();
 });
-test('contextual reminder requires date and enforces Manager self-assignment', async ({ page }) => {
+test('contextual reminder requires date and lets Manager choose eligible app recipients', async ({
+  page,
+}) => {
   await page.goto(base + 'task-form&context=1&manager=1');
   await expect(page.locator('input[type=datetime-local]')).toBeVisible();
   await expect(page.locator('input[type=datetime-local]')).toHaveAttribute('required', '');
-  await expect(page.locator('select[name=assignee_id]')).toHaveCount(0);
-  await expect(page.locator('input[name=assignee_id]')).toHaveValue(
-    '40000000-0000-4000-8000-000000000001',
+  await expect(page.locator('select[name=assignee_id]')).toHaveCount(1);
+  await expect(page.locator('select[name=assignee_id]')).toHaveValue(
+    '40000000-0000-4000-8000-000000000002',
   );
   await page.goto(base + 'task-form&context=1');
   await expect(page.locator('select[name=assignee_id]')).toBeVisible();

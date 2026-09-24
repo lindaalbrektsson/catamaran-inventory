@@ -88,28 +88,54 @@ test('Spanish home tasks have clear indicators and quick add', async ({ page }) 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
-test('Manager reminder forces self assignment; Owner can choose active staff', async ({ page }) => {
-  await page.goto(url + 'task-form&manager');
-  await page.getByLabel('Title', { exact: true }).fill('Own reminder');
-  await page.getByText('Description and reminder', { exact: true }).click();
-  await page.getByLabel('Reminder (Belize time)', { exact: true }).fill('2026-10-01T08:30');
-  await expect(page.locator('select[name=assignee_id]')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Save task' }).click();
-  await expect(page.getByRole('alert')).toBeVisible();
-  expect(
-    await page.evaluate(() => JSON.parse(sessionStorage.getItem('task-fixture')!).assignee_id),
-  ).toBe('40000000-0000-4000-8000-000000000001');
-  await page.goto(url + 'task-form');
-  await page.getByText('Description and reminder', { exact: true }).click();
-  await page.getByLabel('Reminder (Belize time)', { exact: true }).fill('2026-10-01T08:30');
-  await expect(page.getByRole('combobox', { name: 'Assigned to' })).toHaveValue(
+for (const role of ['manager', 'owner']) {
+  for (const lang of ['en', 'es']) {
+    test(`${role} selects reminder recipient using localized For and eligible task assignee default (${lang})`, async ({
+      page,
+    }) => {
+      await page.goto(
+        url + 'task-form&context=1&lang=' + lang + (role === 'manager' ? '&manager=1' : ''),
+      );
+      const recipient = page.getByRole('combobox', {
+        name: lang === 'en' ? 'For' : 'Para',
+        exact: true,
+      });
+      await expect(recipient).toHaveValue('40000000-0000-4000-8000-000000000002');
+      await expect(recipient.locator('option')).toHaveCount(2);
+      await expect(recipient).not.toContainText('Inactive');
+      await recipient.selectOption('40000000-0000-4000-8000-000000000001');
+      await page.locator('input[type=datetime-local]').fill('2026-10-01T08:30');
+      await page
+        .getByRole('button', { name: lang === 'en' ? 'Save task' : 'Guardar tarea', exact: true })
+        .click();
+      await expect(page.getByRole('alert')).toBeVisible();
+      const data = await page.evaluate(() => JSON.parse(sessionStorage.getItem('task-fixture')!));
+      expect(data.assignee_id).toBe('40000000-0000-4000-8000-000000000001');
+      expect(data.related_task_id).toBe('50000000-0000-4000-8000-000000000001');
+      expect(data.remind_at).toBe('2026-10-01T14:30:00.000Z');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+    });
+  }
+}
+test('external/unassigned contextual task defaults to current app user without adding manual assignees', async ({
+  page,
+}) => {
+  await page.goto(url + 'task-form&context=1&manager=1&external=1');
+  await expect(page.getByRole('combobox', { name: 'For', exact: true })).toHaveValue(
     '40000000-0000-4000-8000-000000000001',
   );
-  await page
-    .getByRole('combobox', { name: 'Assigned to' })
-    .selectOption('40000000-0000-4000-8000-000000000002');
+});
+test('ordinary task selection is retained when a reminder is added', async ({ page }) => {
+  await page.goto(url + 'task-form&manager=1');
+  await page.getByText('Description and reminder', { exact: true }).click();
+  await page.locator('input[type=datetime-local]').fill('2026-10-01T08:30');
+  const recipient = page.getByRole('combobox', { name: 'For', exact: true });
+  await expect(recipient).toHaveValue('40000000-0000-4000-8000-000000000001');
+  await recipient.selectOption('40000000-0000-4000-8000-000000000002');
   await page.getByLabel('Title', { exact: true }).fill('Assigned reminder');
-  await page.getByRole('button', { name: 'Save task' }).click();
+  await page.getByRole('button', { name: 'Save task', exact: true }).click();
   await expect(page.getByRole('alert')).toBeVisible();
   expect(
     await page.evaluate(() => JSON.parse(sessionStorage.getItem('task-fixture')!).assignee_id),

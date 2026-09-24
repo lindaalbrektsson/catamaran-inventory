@@ -78,7 +78,7 @@ export async function saveNeed(
         name: v.name,
         quantity_needed: v.quantity_needed === '' ? null : Number(v.quantity_needed),
         product_id: v.product_id,
-        location_id: '',
+        location_id: v.location_id,
         country: v.country,
         status: v.status,
         product_url: v.product_url,
@@ -88,17 +88,22 @@ export async function saveNeed(
   );
   if (error) {
     if (error.message.includes('DUPLICATE_NEED') && v.product_id) {
-      const { data: existing } = await db
+      let query = db
         .from('purchase_needs')
         .select('id')
         .eq('product_id', v.product_id)
         .eq('archived', false)
         .in('status', ['PENDING', 'ORDERED'])
-        .neq('id', v.id)
-        .limit(1);
+        .neq('id', v.id);
+      if (v.location_id) query = query.or(`location_id.eq.${v.location_id},location_id.is.null`);
+      const { data: existing } = await query.limit(1);
       return { error: 'DUPLICATE_NEED', existingNeed: existing?.[0]?.id };
     }
-    return { error: errorKey(error.message) };
+    return {
+      error: error.message.includes('TEST_CLASSIFICATION_CONFLICT')
+        ? 'needClassificationConflict'
+        : errorKey(error.message),
+    };
   }
   revalidatePath('/needs', 'layout');
   revalidatePath('/inventory', 'layout');

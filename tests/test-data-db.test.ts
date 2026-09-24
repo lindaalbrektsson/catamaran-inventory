@@ -358,7 +358,14 @@ it('Need photo versions inherit classification; an existing real Need blocks Ite
     p_version: 0,
     p_confirm_duplicate: false,
   };
-  await query('select public.save_purchase_need($1,$2,$3,$4,$5)', Object.values(args));
+  // Privileged fixture reproduces a pre-existing mixed dependency. New linked
+  // Needs now inherit classification, but old real rows must never be reclassified.
+  await db.exec('reset role');
+  await query(
+    "insert into public.purchase_needs(id,name,product_id,country,status,created_by,updated_by) values($1,'Legacy Need',$2,'BELIZE','PENDING',$3,$3)",
+    [id, p.id, owner],
+  );
+  await user(owner);
   await expect(remove('products', p.id)).rejects.toThrow('TEST_DEPENDENCY_BLOCKED');
   const testId = crypto.randomUUID();
   args.p_id = testId;
@@ -412,16 +419,26 @@ it('private deletion authority cannot be forged by an authenticated caller', asy
 
 it('a former Owner cannot delete spending after losing spending access', async () => {
   const id = crypto.randomUUID();
-  const category = (await query<{id:string}>('select id from public.expense_categories limit 1')).rows[0].id;
-  await query("select public.create_test_record('record_spending',$1)", [{
-    p_id:id,p_kind:'EXPENSE',p_category_id:category,p_amount:1,p_currency:'BZD',
-    p_location_id:'10000000-0000-4000-8000-000000000003',p_paid_by:owner,
-    p_payment_method:'CASH',p_occurred_at:'2026-09-22T12:00:00Z',p_notes:''
-  }]);
+  const category = (await query<{ id: string }>('select id from public.expense_categories limit 1'))
+    .rows[0].id;
+  await query("select public.create_test_record('record_spending',$1)", [
+    {
+      p_id: id,
+      p_kind: 'EXPENSE',
+      p_category_id: category,
+      p_amount: 1,
+      p_currency: 'BZD',
+      p_location_id: '10000000-0000-4000-8000-000000000003',
+      p_paid_by: owner,
+      p_payment_method: 'CASH',
+      p_occurred_at: '2026-09-22T12:00:00Z',
+      p_notes: '',
+    },
+  ]);
   await db.exec('reset role');
-  await query("update public.profiles set role='MANAGER',account_admin=false where id=$1",[owner]);
+  await query("update public.profiles set role='MANAGER',account_admin=false where id=$1", [owner]);
   await user(owner);
-  await expect(remove('expenses',id)).rejects.toThrow('FORBIDDEN');
+  await expect(remove('expenses', id)).rejects.toThrow('FORBIDDEN');
   await db.exec('reset role');
-  expect((await query('select id from public.expenses where id=$1',[id])).rows).toHaveLength(1);
+  expect((await query('select id from public.expenses where id=$1', [id])).rows).toHaveLength(1);
 });

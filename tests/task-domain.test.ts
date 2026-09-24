@@ -4,6 +4,7 @@ import {
   taskIndicators,
   reminderFromInput,
   reminderToInput,
+  defaultReminderRecipient,
 } from '../src/lib/task-domain';
 const task = {
   status: 'NEED_REVIEW' as const,
@@ -32,4 +33,15 @@ it('converts Belize reminder inputs without using browser timezone', () => {
   expect(reminderFromInput('2026-10-01T08:30')).toBe('2026-10-01T14:30:00.000Z');
   expect(reminderToInput('2026-10-01T14:30:00Z')).toBe('2026-10-01T08:30');
   expect(() => reminderFromInput('invalid')).not.toThrow();
+});
+
+it('reminder defaults to the eligible task assignee, otherwise current user (including external assignees)', () => {
+  const people = [
+    { id: 'me', active: true },
+    { id: 'other', active: true },
+    { id: 'inactive', active: false },
+  ];
+  expect(defaultReminderRecipient('other', 'me', people)).toBe('other');
+  for (const id of [null, undefined, 'inactive', 'external-name', 'deleted'])
+    expect(defaultReminderRecipient(id, 'me', people)).toBe('me');
 });

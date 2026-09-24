@@ -299,14 +299,20 @@ createRoot(document.getElementById('root')!).render(
             locale={locale}
             catalog={{
               categories: [item.category],
-              products: [item.product],
+              products: [{ ...item.product, is_test: params.has('testProduct') }],
               locations,
-              balances: [item],
+              balances: [
+                {
+                  ...item,
+                  location_id: params.has('shopping') ? locations[1].id : item.location_id,
+                },
+              ],
               needs: params.has('activeNeed')
                 ? [
                     {
                       id: '90000000-0000-4000-8000-000000000004',
                       product_id: item.product_id,
+                      location_id: params.has('scopedNeed') ? locations[0].id : null,
                       status: params.get('activeNeed') === 'ORDERED' ? 'ORDERED' : 'PENDING',
                     },
                   ]
@@ -314,7 +320,12 @@ createRoot(document.getElementById('root')!).render(
             }}
             suggestion={
               params.has('linked')
-                ? { name: item.product.name, product_id: item.product_id }
+                ? {
+                    name: item.product.name,
+                    product_id: item.product_id,
+                    location_id: params.has('shopping') ? locations[1].id : undefined,
+                    quantity_needed: params.has('shopping') ? 10 : undefined,
+                  }
                 : undefined
             }
             id="90000000-0000-4000-8000-000000000002"

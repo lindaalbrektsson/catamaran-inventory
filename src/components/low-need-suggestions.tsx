@@ -2,18 +2,24 @@ import { timed } from '@/lib/performance';
 import Link from 'next/link';
 import type { InventoryItem } from '@/lib/inventory';
 import type { Location } from '@/lib/database.types';
-import { isLowStock } from '@/lib/domain';
-import { dictionary, type Locale } from '@/lib/i18n';
+import {
+  activeNeedForLocation,
+  needsShoppingPrompt,
+  suggestedNeedQuantity,
+} from '@/lib/need-matching';
+import { dictionary, number, type Locale } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase/server';
 import { collect } from '@/lib/inventory';
 export async function LowNeedSuggestions({
   items,
   location,
   locale,
+  expanded = false,
 }: {
   items: InventoryItem[];
   location: Location;
   locale: Locale;
+  expanded?: boolean;
 }) {
   if (!items.length) return null;
   const t = dictionary(locale),
@@ -27,8 +33,9 @@ export async function LowNeedSuggestions({
         ...(await collect((a, b) =>
           db
             .from('purchase_needs')
-            .select('id,product_id,status')
+            .select('id,product_id,location_id,status')
             .eq('archived', false)
+            .or(`location_id.eq.${location.id},location_id.is.null`)
             .in('status', ['PENDING', 'ORDERED'])
             .in('product_id', ids.slice(offset, offset + 100))
             .order('id')
@@ -40,17 +47,20 @@ export async function LowNeedSuggestions({
   });
   const low = items.filter(
     (i) =>
-      isLowStock(i.quantity, i.minimum_stock) || open.some((n) => n.product_id === i.product_id),
+      needsShoppingPrompt(i.quantity, i.minimum_stock) ||
+      activeNeedForLocation({ needs: open }, i.product_id, location.id),
   );
   if (!low.length) return null;
-  return (
-    <details className="mb-3 rounded-xl border px-3">
-      <summary className="min-h-12 cursor-pointer py-3 font-medium">
-        {t.needsTitle} · {low.length}
-      </summary>
+  const content = (
+    <div className="mb-3">
       <div className="grid gap-2">
         {low.map((i) => {
-          const existing = open.find((n) => n.product_id === i.product_id);
+          const existing = activeNeedForLocation({ needs: open }, i.product_id, location.id);
+          const suggestion = suggestedNeedQuantity(
+            { categories: [], products: [], locations: [location], balances: [i] },
+            i.product_id,
+            location.id,
+          );
           return (
             <div key={i.product_id} className="rounded-xl border p-3">
               <p>
@@ -59,6 +69,13 @@ export async function LowNeedSuggestions({
               <p>
                 {t.quantity}: {Number(i.quantity)} · {t.minimum}: {Number(i.minimum_stock)}
               </p>
+              {!existing && suggestion !== null && (
+                <p className="mt-2 text-sm">
+                  {t.shoppingSuggestion
+                    .replace('{quantity}', number(suggestion, locale))
+                    .replace('{unit}', t[i.product.unit])}
+                </p>
+              )}
               {existing && (
                 <p>
                   {t.needAlreadyActive} ·{' '}
@@ -67,7 +84,11 @@ export async function LowNeedSuggestions({
               )}
               <Link
                 className="mt-2 inline-flex min-h-12 items-center rounded-xl border bg-card p-3 font-semibold"
-                href={existing ? `/needs/${existing.id}` : `/needs/new?product=${i.product_id}`}
+                href={
+                  existing
+                    ? `/needs/${existing.id}`
+                    : `/needs/new?product=${i.product_id}&location=${location.id}`
+                }
               >
                 {existing ? t.needOpen : t.addToNeed}
               </Link>
@@ -75,6 +96,16 @@ export async function LowNeedSuggestions({
           );
         })}
       </div>
+    </div>
+  );
+  return expanded ? (
+    content
+  ) : (
+    <details className="mb-3 rounded-xl border px-3">
+      <summary className="min-h-12 cursor-pointer py-3 font-medium">
+        {t.needsTitle} · {low.length}
+      </summary>
+      {content}
     </details>
   );
 }

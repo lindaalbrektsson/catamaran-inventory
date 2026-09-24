@@ -317,7 +317,7 @@ it('failed transfer rolls a newly configured destination back', async () => {
   ).toHaveLength(0);
 });
 
-it('linked needs are unique across locations and countries even with override, and DONE permits another', async () => {
+it('unscoped and same-location Needs cannot duplicate active product Needs, and DONE permits another', async () => {
   const id = crypto.randomUUID();
   await need(id);
   await db.exec('savepoint duplicate');
@@ -344,7 +344,7 @@ it('linked needs are unique across locations and countries even with override, a
   ).toEqual([{ n: 2 }]);
 });
 
-it('new needs omit location, keep product UUID through rename, and permit text-only needs', async () => {
+it('scoped needs retain location and product UUID through rename, and permit text-only needs', async () => {
   const id = crypto.randomUUID();
   await need(id);
   await db.exec('reset role');
@@ -352,7 +352,7 @@ it('new needs omit location, keep product UUID through rename, and permit text-o
   expect(
     (await db.query('select product_id,location_id from public.purchase_needs where id=$1', [id]))
       .rows,
-  ).toEqual([{ product_id: product, location_id: null }]);
+  ).toEqual([{ product_id: product, location_id: boat }]);
   await user(owner);
   await need(crypto.randomUUID(), {
     ...needValue,
@@ -721,7 +721,7 @@ it('photo cannot bind to a different Need and pending bytes stay private to uplo
     otherNeed = crypto.randomUUID(),
     file = crypto.randomUUID();
   await need(id);
-  await need(otherNeed, { ...needValue, name: 'Another', product_id: '' });
+  await need(otherNeed, { ...needValue, name: 'Another', product_id: '', location_id: '' });
   await db.query('select public.reserve_need_image($1,$2,$3,128,1)', [file, id, 'a'.repeat(64)]);
   await user(other);
   expect(
@@ -732,4 +732,127 @@ it('photo cannot bind to a different Need and pending bytes stay private to uplo
     db.query('update public.purchase_needs set current_photo_id=$1 where id=$2', [file, otherNeed]),
   ).rejects.toThrow(/need_current_photo_fk/);
   await db.exec('rollback to savepoint denied');
+});
+
+it('Bodega and Cas Cat have independent active Needs, while same-location and locationless duplicates remain blocked', async () => {
+  const boatNeed = crypto.randomUUID(),
+    landNeed = crypto.randomUUID();
+  await need(boatNeed);
+  await need(landNeed, { ...needValue, location_id: storage, country: 'USA' });
+  await db.exec('savepoint duplicate_scope');
+  await expect(
+    need(
+      crypto.randomUUID(),
+      { ...needValue, location_id: storage, country: 'BELIZE' },
+      0,
+      crypto.randomUUID(),
+      true,
+    ),
+  ).rejects.toThrow('DUPLICATE_NEED');
+  await db.exec('rollback to savepoint duplicate_scope');
+  await expect(need(crypto.randomUUID(), { ...needValue, location_id: '' })).rejects.toThrow(
+    'DUPLICATE_NEED',
+  );
+  await db.exec('rollback to savepoint duplicate_scope');
+  expect(
+    (await db.query('select location_id from public.purchase_needs order by location_id')).rows,
+  ).toEqual([{ location_id: boat }, { location_id: storage }]);
+});
+it('legacy or manually created unscoped Need prevents either location from creating a duplicate', async () => {
+  await need(crypto.randomUUID(), { ...needValue, location_id: '' });
+  await db.exec('savepoint legacy_scope');
+  await expect(need()).rejects.toThrow('DUPLICATE_NEED');
+  await db.exec('rollback to savepoint legacy_scope');
+  await expect(need(crypto.randomUUID(), { ...needValue, location_id: storage })).rejects.toThrow(
+    'DUPLICATE_NEED',
+  );
+});
+it.each([owner, manager])(
+  'linked TEST product inherits TEST classification even through direct Need RPC for %s',
+  async (actor) => {
+    await user(actor);
+    const args = {
+      p_request: crypto.randomUUID(),
+      p_location: boat,
+      p_product: null,
+      p_name: 'TEST linked fixture',
+      p_category: '20000000-0000-4000-8000-000000000001',
+      p_quantity: 4,
+      p_confirm_duplicate: false,
+      p_unit: 'piece',
+      p_minimum: 5,
+    };
+    const p = (
+      await db.query<{ id: string }>(
+        "select public.create_test_record('quick_add_item',$1)#>>'{}' id",
+        [args],
+      )
+    ).rows[0].id;
+    const id = crypto.randomUUID(),
+      request = crypto.randomUUID();
+    await need(id, { ...needValue, product_id: p }, 0, request);
+    await need(id, { ...needValue, product_id: p }, 0, request);
+    expect(
+      (
+        await db.query(
+          'select is_test,created_by,location_id from public.purchase_needs where id=$1',
+          [id],
+        )
+      ).rows,
+    ).toEqual([{ is_test: true, created_by: actor, location_id: boat }]);
+    await db.exec('reset role');
+    expect(
+      (await db.query('select count(*)::int n from private.test_creation_context')).rows,
+    ).toEqual([{ n: 0 }]);
+    await user(actor);
+    await db.query("select public.delete_test_record('purchase_needs',$1)", [id]);
+    await db.exec('savepoint deleted_replay');
+    await expect(need(id, { ...needValue, product_id: p }, 0, request)).rejects.toThrow(
+      'TEST_DATA_DELETED',
+    );
+  },
+);
+it('normal linked product produces ordinary Need and rejects explicit TEST override', async () => {
+  const id = crypto.randomUUID();
+  await need(id);
+  expect(
+    (await db.query('select is_test from public.purchase_needs where id=$1', [id])).rows,
+  ).toEqual([{ is_test: false }]);
+  await db.exec('savepoint mismatch');
+  await expect(
+    db.query("select public.create_test_record('save_purchase_need',$1)", [
+      {
+        p_request: crypto.randomUUID(),
+        p_id: crypto.randomUUID(),
+        p_version: 0,
+        p_values: { ...needValue, location_id: storage },
+        p_confirm_duplicate: false,
+      },
+    ]),
+  ).rejects.toThrow('TEST_CLASSIFICATION_CONFLICT');
+});
+it('editing a Need cannot create a new mixed real/test product link', async () => {
+  const id = crypto.randomUUID();
+  await need(id, { ...needValue, product_id: '', location_id: '' });
+  const args = {
+    p_request: crypto.randomUUID(),
+    p_location: boat,
+    p_product: null,
+    p_name: 'TEST separate item',
+    p_category: '20000000-0000-4000-8000-000000000001',
+    p_quantity: 4,
+    p_confirm_duplicate: false,
+    p_unit: 'piece',
+    p_minimum: 5,
+  };
+  const p = (
+    await db.query<{ id: string }>(
+      "select public.create_test_record('quick_add_item',$1)#>>'{}' id",
+      [args],
+    )
+  ).rows[0].id;
+  await db.exec('savepoint mismatch');
+  await expect(need(id, { ...needValue, product_id: p, location_id: '' }, 1)).rejects.toThrow(
+    'TEST_CLASSIFICATION_CONFLICT',
+  );
 });

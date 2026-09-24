@@ -30,14 +30,31 @@ export function needMatches(catalog: ItemCatalog, text: string) {
     .slice(0, 8)
     .map((x) => x.product);
 }
-export function suggestedNeedQuantity(catalog: ItemCatalog, product: string) {
-  const rows = (catalog.balances ?? []).filter(
-    (b) => b.product_id === product && catalog.locations.some((l) => l.id === b.location_id),
+// Stock suggestions always belong to one location. A locationless Need has no
+// automatically calculated quantity; never offset Bodega against Cas Cat.
+export function suggestedNeedQuantity(catalog: ItemCatalog, product: string, location?: string) {
+  if (!location) return null;
+  const row = catalog.balances?.find((b) => b.product_id === product && b.location_id === location);
+  if (!row || row.target_stock == null || Number(row.target_stock) <= Number(row.quantity))
+    return null;
+  return Math.round((Number(row.target_stock) - Number(row.quantity)) * 1000) / 1000;
+}
+export function needsShoppingPrompt(quantity: number, minimum: number | null) {
+  return (
+    minimum !== null && Number.isFinite(Number(minimum)) && Number(quantity) <= Number(minimum)
   );
-  if (!rows.length || !rows.some((b) => Number(b.target_stock) > 0)) return null;
-  return Math.max(
-    0,
-    Math.round(rows.reduce((n, b) => n + Number(b.target_stock) - Number(b.quantity), 0) * 1000) /
-      1000,
+}
+export function activeNeedForLocation(
+  catalog: Pick<ItemCatalog, 'needs'>,
+  product: string,
+  location?: string,
+  exceptId?: string,
+) {
+  return catalog.needs?.find(
+    (n) =>
+      n.id !== exceptId &&
+      n.product_id === product &&
+      (n.status === 'PENDING' || n.status === 'ORDERED') &&
+      (!location || !n.location_id || n.location_id === location),
   );
 }

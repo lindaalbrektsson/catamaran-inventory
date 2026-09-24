@@ -306,9 +306,8 @@ it('manager creates, edits, completes and deletes own reminder with immutable au
   expect(h.every((x) => x.actor_id === manager)).toBe(true);
   expect(h.some((x) => x.before_data && x.after_data)).toBe(true);
 });
-it('manager cannot assign another user or bypass scope by clearing reminder time', async () => {
+it('manager still cannot reassign an existing reminder or bypass scope by clearing reminder time', async () => {
   await user(manager);
-  await rejected(() => mutate(crypto.randomUUID(), 0, 'SAVE', { ...values(), assignee_id: owner }));
   const id = crypto.randomUUID(),
     v = values();
   await mutate(id, 0, 'SAVE', v);
@@ -388,7 +387,7 @@ it('owner can assign self, manager and another active owner, but not unsupported
     (await db.query<{ id: string }>('select * from public.reminder_people()')).rows.map(
       (x) => x.id,
     ),
-  ).toEqual([manager]);
+  ).toEqual(expect.arrayContaining([owner, manager]));
 });
 it('owner cannot edit reminders they neither assigned nor received', async () => {
   await user(manager);
@@ -449,4 +448,200 @@ it('one occurrence sends once to each assigned-user device, never creator device
   expect(await claim()).toBeTruthy();
   expect(await claim()).toBeTruthy();
   expect(await claim()).toBeNull();
+});
+
+async function addStaff(role = 'MANAGER', fields: Record<string, boolean> = {}) {
+  const id = crypto.randomUUID();
+  await db.exec('reset role');
+  await db.query('insert into auth.users(id) values($1)', [id]);
+  await db.query(
+    'update public.profiles set role=$1,active=$2,must_change_password=$3,credential_pending=$4 where id=$5',
+    [
+      role,
+      fields.active ?? true,
+      fields.must_change_password ?? false,
+      fields.credential_pending ?? false,
+      id,
+    ],
+  );
+  return id;
+}
+it.each([
+  ['MANAGER', 'MANAGER'],
+  ['MANAGER', 'OWNER'],
+  ['OWNER', 'MANAGER'],
+  ['OWNER', 'OWNER'],
+])(
+  '%s creates a private reminder for another %s without account-admin capability',
+  async (creatorRole, recipientRole) => {
+    const creator = await addStaff(creatorRole),
+      recipient = await addStaff(recipientRole);
+    await user(creator);
+    const id = crypto.randomUUID(),
+      v = { ...values(), assignee_id: recipient };
+    await mutate(id, 0, 'SAVE', { ...v, created_by: owner });
+    if (creatorRole === 'MANAGER') {
+      expect(await row(id)).toBeUndefined();
+      expect((await db.query('select * from public.task_history($1)', [id])).rows).toEqual([]);
+      await rejected(() => mutate(id, 1, 'SAVE', v));
+      await rejected(() => mutate(id, 1, 'ARCHIVE', { archived: true }));
+      await rejected(() => db.query("select public.snooze_reminder($1,1,60,'09:00')", [id]));
+    }
+    await user(recipient);
+    expect(await row(id)).toMatchObject({
+      assignee_id: recipient,
+      created_by: creator,
+      reminder_private: true,
+    });
+    expect(
+      (
+        await db.query<{ actor_id: string }>('select * from public.task_history($1)', [id])
+      ).rows.every((x) => x.actor_id === creator),
+    ).toBe(true);
+    await db.query("select public.snooze_reminder($1,1,1440,'07:35')", [id]);
+    expect(await row(id)).toMatchObject({
+      assignee_id: recipient,
+      created_by: creator,
+      updated_by: recipient,
+      version: 2,
+    });
+    const time = (
+      await db.query<{ time: string }>(
+        "select to_char(remind_at at time zone 'America/Belize','HH24:MI') time from public.tasks where id=$1",
+        [id],
+      )
+    ).rows[0].time;
+    expect(time).toBe('07:35');
+  },
+);
+it('cross-recipient Manager creation can safely acknowledge an identical retry without granting private read', async () => {
+  await user(manager);
+  const id = crypto.randomUUID(),
+    request = crypto.randomUUID(),
+    v = { ...values(), assignee_id: owner };
+  await mutate(id, 0, 'SAVE', v, request);
+  await mutate(id, 0, 'SAVE', v, request);
+  expect(await row(id)).toBeUndefined();
+  await rejected(() => mutate(id, 0, 'SAVE', { ...v, title: 'Changed' }, request));
+  await rejected(() => mutate(id, 0, 'SAVE', v, crypto.randomUUID()));
+  await user(owner);
+  expect((await db.query('select * from public.task_history($1)', [id])).rows).toHaveLength(2);
+  await mutate(id, 1, 'STATUS', { status: 'IN_PROGRESS' });
+  await user(manager);
+  await mutate(id, 0, 'SAVE', v, request);
+  expect(await row(id)).toBeUndefined();
+});
+it('fully provisioned staff directory excludes inactive/deactivated, missing, credential-pending, first-login and unsupported users', async () => {
+  const invalid = [
+    await addStaff('OWNER', { active: false }),
+    await addStaff('MANAGER', { credential_pending: true }),
+    await addStaff('OWNER', { must_change_password: true }),
+    await addStaff('CREW'),
+  ];
+  const eligible = await addStaff();
+  await db.exec('reset role');
+  // A missing profile or arbitrary external-person ID must never be an eligible recipient.
+  const external = crypto.randomUUID();
+  for (const actor of [owner, manager]) {
+    await user(actor);
+    const directory = (
+      await db.query<{ id: string }>('select * from public.reminder_people()')
+    ).rows.map((x) => x.id);
+    expect(directory).toEqual(expect.arrayContaining([owner, manager, eligible]));
+    for (const recipient of [...invalid, external]) {
+      expect(directory).not.toContain(recipient);
+      await rejected(
+        () => mutate(crypto.randomUUID(), 0, 'SAVE', { ...values(), assignee_id: recipient }),
+        'INVALID_INPUT',
+      );
+    }
+  }
+});
+it.each(['credential_pending', 'must_change_password'])(
+  'staff with %s cannot create or discover reminder recipients',
+  async (flag) => {
+    const pending = await addStaff('MANAGER', { [flag]: true });
+    await user(pending);
+    expect((await db.query('select * from public.reminder_people()')).rows).toEqual([]);
+    await rejected(() =>
+      mutate(crypto.randomUUID(), 0, 'SAVE', { ...values(), assignee_id: owner }),
+    );
+  },
+);
+it('a Manager-created reminder pushes to both recipient devices and never the creator, preserving retry deduplication', async () => {
+  const subscribe = async (suffix: string) =>
+    db.query('select public.save_push_subscription($1,$2,$3)', [
+      'https://fcm.googleapis.com/fcm/send/' + suffix,
+      'a'.repeat(87),
+      'b'.repeat(22),
+    ]);
+  await subscribe('recipient-phone');
+  await subscribe('recipient-tablet');
+  await user(manager);
+  await subscribe('creator-phone');
+  await db.exec('reset role;update private.push_subscriptions set mobile_pwa=true');
+  await user(manager);
+  const now = (await db.query<{ t: string }>('select now()::text t')).rows[0].t
+    .replace(' ', 'T')
+    .replace(/\+00$/, '+00:00');
+  const id = crypto.randomUUID();
+  await mutate(id, 0, 'SAVE', { ...values(), assignee_id: owner, remind_at: now });
+  await db.exec('reset role');
+  const claim = async () =>
+    (
+      await db.query<{ r: { id: string; endpoint: string; claim_token: string } | null }>(
+        'select public.claim_due_push() r',
+      )
+    ).rows[0].r;
+  for (let n = 0; n < 2; n++) {
+    const delivery = await claim();
+    expect(delivery?.endpoint).toContain('recipient-');
+    await db.query("select public.finish_push($1,'SENT',$2,$3)", [
+      delivery!.id,
+      delivery!.endpoint,
+      delivery!.claim_token,
+    ]);
+  }
+  expect(await claim()).toBeNull();
+  await db.exec(
+    "update private.push_deliveries set claimed_at=now()-interval '15 minutes', lease_until=now()-interval '10 minutes'",
+  );
+  expect(await claim()).toBeNull();
+  expect(
+    (await db.query<{ user_id: string }>('select user_id from private.push_deliveries')).rows.every(
+      (x) => x.user_id === owner,
+    ),
+  ).toBe(true);
+});
+
+it('recipient can edit their reminder retaining its private parent link without gaining parent access', async () => {
+  const recipient = await addStaff();
+  await user(manager);
+  const parent = crypto.randomUUID(),
+    otherPrivate = crypto.randomUUID(),
+    id = crypto.randomUUID();
+  await mutate(parent, 0, 'SAVE', values());
+  await mutate(otherPrivate, 0, 'SAVE', values());
+  const reminder = { ...values(), assignee_id: recipient, related_task_id: parent };
+  await mutate(id, 0, 'SAVE', reminder);
+  await user(recipient);
+  expect(await row(parent)).toBeUndefined();
+  expect((await db.query('select * from public.task_history($1)', [parent])).rows).toEqual([]);
+  await mutate(id, 1, 'SAVE', { ...reminder, title: 'Updated by recipient' });
+  expect(await row(id)).toMatchObject({
+    title: 'Updated by recipient',
+    related_task_id: parent,
+    created_by: manager,
+    assignee_id: recipient,
+  });
+  await rejected(
+    () => mutate(id, 2, 'SAVE', { ...reminder, related_task_id: otherPrivate }),
+    'INVALID_INPUT',
+  );
+  await rejected(
+    () => mutate(id, 2, 'SAVE', { ...reminder, related_task_id: id }),
+    'INVALID_INPUT',
+  );
+  expect(await row(parent)).toBeUndefined();
+  expect((await db.query('select * from public.task_history($1)', [parent])).rows).toEqual([]);
 });

@@ -34,7 +34,7 @@ export type ItemCatalog = {
   locations: Location[];
   products: Product[];
   balances?: Balance[];
-  needs?: Pick<PurchaseNeed, 'id' | 'product_id' | 'status'>[];
+  needs?: Pick<PurchaseNeed, 'id' | 'product_id' | 'location_id' | 'status'>[];
 };
 export type ItemError =
   | 'ITEM_INVALID'

@@ -1,5 +1,6 @@
 'use client';
-import { TestDataField } from './test-data';
+import { TestDataField, TestBadge } from './test-data';
+import { activeNeedForLocation } from '@/lib/need-matching';
 import Link from 'next/link';
 import { useActionState, useState } from 'react';
 import { uploadNeed } from '@/lib/need-upload';
@@ -26,7 +27,12 @@ export function NeedForm({
   id: string;
   requestId: string;
   initial?: PurchaseNeed;
-  suggestion?: { name: string; product_id: string };
+  suggestion?: {
+    name: string;
+    product_id: string;
+    location_id?: string;
+    quantity_needed?: number | null;
+  };
 }) {
   const t = dictionary(locale),
     [state, action, pending] = useActionState(
@@ -43,7 +49,10 @@ export function NeedForm({
     [productId, setProductId] = useState(initial?.product_id ?? suggestion?.product_id ?? ''),
     ref = usePreservedForm(),
     c = 'min-h-12 w-full rounded-xl border bg-background p-3';
-  const existing = catalog.needs?.find((n) => n.product_id === productId && n.id !== draftId);
+  const locationId = initial?.location_id ?? (productId ? suggestion?.location_id : undefined);
+  const existing = activeNeedForLocation(catalog, productId, locationId ?? undefined, draftId);
+  const selected = catalog.products.find((p) => p.id === productId);
+  const linkedLocation = catalog.locations.find((l) => l.id === locationId);
   return (
     <form
       ref={ref}
@@ -57,10 +66,13 @@ export function NeedForm({
       <input type="hidden" name="requestId" value={request} />
       <input type="hidden" name="id" value={draftId} />
       <input type="hidden" name="version" value={baseVersion} />
+      {locationId && <input type="hidden" name="location_id" value={locationId} />}
+      {linkedLocation && <p className="text-sm font-medium">{linkedLocation.name}</p>}
       <NeedItemPicker
         catalog={catalog}
         locale={locale}
         productId={productId}
+        locationId={locationId ?? undefined}
         name={initial?.name ?? suggestion?.name ?? ''}
         onProduct={(id) => {
           setProductId(id);
@@ -95,7 +107,7 @@ export function NeedForm({
           inputMode="decimal"
           maxLength={15}
           pattern="(?:0|[1-9][0-9]{0,10})(?:[.,][0-9]{1,3})?"
-          defaultValue={initial?.quantity_needed ?? ''}
+          defaultValue={initial?.quantity_needed ?? suggestion?.quantity_needed ?? ''}
         />
         {catalog.products.find((p) => p.id === productId) && (
           <span className="text-sm text-muted-foreground">
@@ -175,7 +187,17 @@ export function NeedForm({
           {t.needEdit}
         </Link>
       )}
-      {!initial && <TestDataField disabled={pending} locale={locale} />}
+      {!initial &&
+        (selected ? (
+          selected.is_test ? (
+            <div>
+              <input type="hidden" name="is_test" value="on" />
+              <TestBadge value />
+            </div>
+          ) : null
+        ) : (
+          <TestDataField disabled={pending} locale={locale} />
+        ))}
       <Button disabled={processing || pending || (!!existing && initial?.status !== 'DONE')}>
         {pending ? t.saving : t.needSave}
       </Button>

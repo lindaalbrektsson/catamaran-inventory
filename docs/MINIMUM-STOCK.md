@@ -21,8 +21,12 @@ All stock goes through change_stock. Creation/configuration audits preserve the
 actor, product ID, before/after values and server timestamp. Normal UI deactivates
 items; audit update/delete/truncate protections remain intact.
 
-Below-minimum items retain the manual linked Need action and active-Need duplicate
-protection. Current 4 / target 12 suggests 8. No Need is created automatically.
+Item/location detail offers the manual shopping-list action when stock is at or
+below a configured minimum. A null minimum means monitoring is off. A target
+above current stock suggests target minus current, using only that location;
+without a target there is no suggested quantity. Current 4 / target 12 suggests 8.
+No Need is created automatically. See `STOCK-REMINDER-WORKFLOWS.md` for location
+duplicate protection and linked Item/Need test classification.
 
 Release is independent of the pending Smart Scan and Auth migrations.
 

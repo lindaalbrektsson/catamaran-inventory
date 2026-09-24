@@ -26,7 +26,7 @@ export async function needCatalog() {
     collect((a, b) =>
       db
         .from('purchase_needs')
-        .select('id,product_id,status')
+        .select('id,product_id,location_id,status')
         .eq('archived', false)
         .in('status', ['PENDING', 'ORDERED'])
         .order('id')

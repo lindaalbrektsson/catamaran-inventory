@@ -134,7 +134,7 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
           {type ? (locale === 'es' ? type.name_es : type.name_en) : task.type_code}
         </p>
         <p>
-          {t.taskAssignee}: {name(task.assignee_id)}
+          {task.reminder_private ? t.reminderRecipient : t.taskAssignee}: {name(task.assignee_id)}
         </p>
         {task.description && <p className="whitespace-pre-wrap">{task.description}</p>}
         {task.due_date && (
@@ -148,7 +148,7 @@ export default async function TaskDetail({ params }: { params: Promise<{ id: str
           </p>
         )}
         <p className="text-sm">
-          {t.taskCreated}: {name(task.created_by)} ·{' '}
+          {task.reminder_private ? t.reminderCreatedBy : t.taskCreated}: {name(task.created_by)} ·{' '}
           <LocalTime locale={locale} value={task.created_at} />
         </p>
         <p className="text-sm">

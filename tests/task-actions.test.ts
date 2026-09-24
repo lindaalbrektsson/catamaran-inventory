@@ -92,3 +92,26 @@ it('server action preserves database denial for manager archiving another task',
   expect(await taskProgress({}, f)).toEqual({ error: 'FORBIDDEN' });
   expect(m.rpc).toHaveBeenCalled();
 });
+
+it('Manager sending a private reminder to another user returns to Tasks, without opening the private detail', async () => {
+  const actor = crypto.randomUUID();
+  m.profile.mockResolvedValue({ id: actor, role: 'MANAGER' });
+  const f = form();
+  f.set('assignee_id', crypto.randomUUID());
+  f.set('remind_at', '2026-10-01T14:30:00Z');
+  await expect(saveTask({}, f)).rejects.toThrow('REDIRECT:/tasks?reminderSaved=1');
+  expect(m.rpc).toHaveBeenCalledWith(
+    'manage_task',
+    expect.objectContaining({
+      p_values: expect.objectContaining({ assignee_id: f.get('assignee_id') }),
+    }),
+  );
+});
+it.each(['OWNER', 'MANAGER'])('%s self reminder opens its accessible detail', async (role) => {
+  const actor = crypto.randomUUID();
+  m.profile.mockResolvedValue({ id: actor, role });
+  const f = form();
+  f.set('assignee_id', actor);
+  f.set('remind_at', '2026-10-01T14:30:00Z');
+  await expect(saveTask({}, f)).rejects.toThrow('REDIRECT:/tasks/' + f.get('id'));
+});
