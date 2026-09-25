@@ -1,10 +1,23 @@
-// Test-only adapter for the isolated component fixture, not authentication.
+import { useSyncExternalStore } from 'react';
+const subscribe = (cb: () => void) => {
+  window.addEventListener('popstate', cb);
+  return () => window.removeEventListener('popstate', cb);
+};
 export function usePathname() {
-  return '/inventory';
+  return useSyncExternalStore(subscribe, () =>
+    document.querySelector('script[src="/back.tsx"]') ? location.pathname : '/inventory',
+  );
 }
-
+export function useSearchParams() {
+  return new URLSearchParams(location.search);
+}
 export function useRouter() {
   return {
+    back: () => history.back(),
+    replace: (url: string) => {
+      history.replaceState({}, '', url);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    },
     push: (url: string) => {
       sessionStorage.setItem('navigation-fixture', url);
       window.dispatchEvent(new CustomEvent('fixture-navigation', { detail: url }));
@@ -12,7 +25,6 @@ export function useRouter() {
     refresh: () => sessionStorage.setItem('refreshed-fixture', 'yes'),
   };
 }
-
 export function unstable_rethrow(error: unknown) {
   if (
     error &&

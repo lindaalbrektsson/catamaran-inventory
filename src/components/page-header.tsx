@@ -1,7 +1,5 @@
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { PageBack } from './app-back';
 import type { Locale } from '@/lib/i18n';
-import { dictionary } from '@/lib/i18n';
 export function PageHeader({
   title,
   description,
@@ -15,21 +13,12 @@ export function PageHeader({
   locale: Locale;
   locationType?: string;
 }) {
-  const t = dictionary(locale);
   return (
     <header
       data-location={locationType}
       className={`mb-7 ${locationType ? 'location-header' : ''}`}
     >
-      {back && (
-        <Link
-          href={back}
-          className="mb-4 inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground"
-        >
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          {t.back}
-        </Link>
-      )}
+      {back && <PageBack locale={locale} />}
       <h1 className="page-title">{title}</h1>
       {description && (
         <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">{description}</p>

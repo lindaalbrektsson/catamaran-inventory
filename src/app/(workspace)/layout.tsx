@@ -1,3 +1,4 @@
+import { WorkspaceNavigation } from '@/components/app-back';
 import { requireProfile, getLocale } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
 import { Brand } from '@/components/brand';
@@ -54,7 +55,9 @@ export default async function Workspace({ children }: { children: React.ReactNod
           </p>
           <LanguageSwitch locale={locale} />
         </header>
-        <main id="main">{children}</main>
+        <main id="main">
+          <WorkspaceNavigation locale={locale}>{children}</WorkspaceNavigation>
+        </main>
       </div>
       <div className="md:hidden">
         <Navigation locale={locale} />

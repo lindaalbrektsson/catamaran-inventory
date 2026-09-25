@@ -5,12 +5,7 @@ import { supabase } from './supabase/server';
 import { collect } from './inventory';
 import { cashbookBelizeDate, safeMinor } from './cashbook-domain';
 import { cashbookFilters } from './cashbook-input';
-import type {
-  CashbookBalances,
-  CashbookData,
-  CashbookDue,
-  CashbookTemplate,
-} from './cashbook-types';
+import type { CashbookBalances, CashbookData, CashbookDue } from './cashbook-types';
 import { z } from 'zod';
 
 // Request-scoped only. Never cache authorization or live financial balances across users.
@@ -47,17 +42,12 @@ export async function cashbookData(
   const [balanceResult, historyResult, templates, dues] = await Promise.all([
     db.rpc('cashbook_balances'),
     ledger ? history() : Promise.resolve({ data: [], error: null }),
-    !ledger
-      ? collect((from, to) =>
-          db
-            .from('cashbook_templates')
-            .select('*')
-            .order('kind')
-            .order('name_en')
-            .order('id')
-            .range(from, to),
-        )
-      : Promise.resolve([] as CashbookTemplate[]),
+    collect((from, to) => {
+      let query = db.from('cashbook_templates').select('*');
+      // Cashflow needs only the active concepts used by the shared Food Debt form.
+      if (ledger) query = query.eq('kind', 'FOOD').eq('active', true);
+      return query.order('kind').order('name_en').order('id').range(from, to);
+    }),
     filters.view === 'payments'
       ? collect((from, to) =>
           db

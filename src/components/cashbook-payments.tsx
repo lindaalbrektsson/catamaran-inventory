@@ -96,7 +96,7 @@ export function CashbookFoodLines({
   );
 }
 
-function FoodEntryForm({
+export function FoodEntryForm({
   locale,
   today,
   templates,

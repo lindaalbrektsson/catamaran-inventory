@@ -1,3 +1,4 @@
+import { AppHistory } from '@/components/app-back';
 import type { Metadata, Viewport } from 'next';
 import { getLocale } from '@/lib/auth';
 import { dictionary } from '@/lib/i18n';
@@ -57,7 +58,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
             'local'
           }
         >
-          {children}
+          <AppHistory>{children}</AppHistory>
         </PwaProvider>
       </body>
     </html>

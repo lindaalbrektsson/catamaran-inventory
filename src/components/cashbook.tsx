@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Wallet } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Wallet, Plus } from 'lucide-react';
 import { dictionary, type Locale } from '@/lib/i18n';
 import type {
   CashbookBalances,
@@ -21,7 +21,7 @@ import {
   cashbookDay,
   cashbookMoney,
 } from './cashbook-controls';
-import { CashbookFoodLines, CashbookPayments } from './cashbook-payments';
+import { CashbookFoodLines, CashbookPayments, FoodEntryForm } from './cashbook-payments';
 import { CashbookTemplates } from './cashbook-templates';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -350,7 +350,7 @@ export function CashbookWorkspace({
   initialAction?: string;
 }) {
   const t = dictionary(locale),
-    [adding, setAdding] = useState<EntryKind | null>(
+    [adding, setAdding] = useState<EntryKind | 'FOOD' | null>(
       ['INCOME', 'EXPENSE', 'TRANSFER'].includes(initialAction ?? '')
         ? (initialAction as EntryKind)
         : null,
@@ -407,7 +407,14 @@ export function CashbookWorkspace({
           )}
         </div>
       )}
-      {adding ? (
+      {adding === 'FOOD' ? (
+        <FoodEntryForm
+          locale={locale}
+          today={data.today}
+          templates={data.templates}
+          onClose={() => setAdding(null)}
+        />
+      ) : adding ? (
         <MovementForm
           key={adding}
           locale={locale}
@@ -435,6 +442,17 @@ export function CashbookWorkspace({
             {t.cashbookTransfer}
           </Button>
         </div>
+      )}
+      {filters.view === 'ledger' && !adding && (
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-12 w-full sm:w-fit"
+          onClick={() => setAdding('FOOD')}
+        >
+          <Plus aria-hidden="true" />
+          {t.cashbookAddFood}
+        </Button>
       )}
       <nav className="flex flex-wrap gap-2 border-b pb-4" aria-label={t.cashbook}>
         {(['ledger', 'payments', ...(isOwner ? (['templates'] as const) : [])] as const).map(

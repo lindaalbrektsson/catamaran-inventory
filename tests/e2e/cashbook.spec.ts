@@ -243,3 +243,46 @@ for (const [action, label] of [
     expect(await requests(page)).toHaveLength(0);
   });
 }
+
+for (const locale of ['en', 'es']) {
+  for (const role of ['owner', 'jackie']) {
+    test(`Cashflow reuses Food Debt creation and stays in place (${locale}, ${role})`, async ({
+      page,
+    }) => {
+      await page.goto(`${fixture}&lang=${locale}&role=${role}`);
+      const url = page.url();
+      const label = locale === 'es' ? 'Agregar deuda de comida' : 'Add food debt';
+      const button = page.getByRole('button', { name: label, exact: true });
+      await button.click();
+      const form = page.getByRole('form', { name: label });
+      await expect(form.locator('input[name="action"]')).toHaveValue('ADD_FOOD');
+      await expect(form.locator('input[name="unit_amount"]')).toHaveValue('20.00');
+      await form
+        .getByRole('button', { name: locale === 'es' ? 'Cancelar' : 'Cancel', exact: true })
+        .click();
+      await expect(form).toHaveCount(0);
+      expect(await requests(page)).toHaveLength(0);
+      await expect(page).toHaveURL(url);
+      await button.click();
+      await form.locator('input[name="quantity"]').fill('2');
+      await form
+        .getByRole('button', { name: locale === 'es' ? 'Guardar' : 'Save', exact: true })
+        .dblclick();
+      await expect(form).toHaveCount(0);
+      await expect(page).toHaveURL(url);
+      const saved = await requests(page);
+      expect(saved).toHaveLength(1);
+      expect(saved[0]).toMatchObject({
+        action: 'ADD_FOOD',
+        quantity: '2',
+        unit_amount: '20.00',
+        effective_date: '2026-09-23',
+      });
+      expect(saved[0].kind).toBeUndefined();
+      await expect(button).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+    });
+  }
+}
